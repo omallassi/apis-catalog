@@ -26,9 +26,10 @@ struct Endpoint {
     name: String,
 }
 
-fn get_endpoints(_api: &str) -> Result<(), reqwest::Error> {
+fn get_endpoints(api: &str) -> Result<(), reqwest::Error> {
     let client = Client::new();
-    let mut resp = client.get("http://127.0.0.1:8088/v1/endpoints").send()?;
+    let url = format!("http://127.0.0.1:8088/v1/endpoints/{api}" , api = &api);
+    let mut resp = client.get(&url).send()?;
     debug!("body: {:?}", resp.status());
     let endpoints: Endpoints = resp.json()?;
     //

@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate log;
 extern crate env_logger;
 use log::{info, debug, warn, error};
@@ -9,7 +10,7 @@ use std::vec::Vec;
 use serde_yaml;
 use openapiv3::OpenAPI;
 
-use actix_web::{App, HttpResponse, HttpServer};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use actix_web::{get, post};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
@@ -36,8 +37,10 @@ struct Endpoint {
     name: String,
 }
 
-#[get("/v1/endpoints")]
-fn get_endpoints() -> HttpResponse {
+//#[get("/v1/endpoints/{api}")]
+fn get_endpoints(info: web::Path<(String,)>) -> HttpResponse {
+
+    println!("Welcome {}!", info.0);
     
     let mut endpoints = Endpoints{
         endpoints: Vec::new(),
@@ -133,7 +136,7 @@ fn main() {
     HttpServer::new(|| {
         App::new()
             //.route("/v1/endpoints", web::get().to(get_endpoints))
-            .service(get_endpoints)
+            .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))
             .service(add_release)
             .service(get_apis)
     })
