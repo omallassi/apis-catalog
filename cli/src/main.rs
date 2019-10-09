@@ -55,6 +55,7 @@ struct Apis {
 #[derive(Serialize, Deserialize)]
 struct Api {
     name: String,
+    id: String,
 }
 
 fn get_apis() -> Result<(), reqwest::Error> {
@@ -65,9 +66,9 @@ fn get_apis() -> Result<(), reqwest::Error> {
     //
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row![b -> "Apis", b -> "Deployed Version"]);
+    table.set_titles(row![b -> "Id", b -> "Apis", b -> "Deployed Version"]);
     for val in apis.apis {
-        table.add_row(row![val.name, "..."]);
+        table.add_row(row![val.id, val.name, "..."]);
     };
     
     // Print the table to stdout

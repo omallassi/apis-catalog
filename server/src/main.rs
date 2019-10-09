@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate log;
 extern crate env_logger;
 use log::{info, debug, warn, error};
@@ -40,19 +39,20 @@ struct Endpoint {
 //#[get("/v1/endpoints/{api}")]
 fn get_endpoints(info: web::Path<(String,)>) -> HttpResponse {
 
-    println!("Welcome {}!", info.0);
+    println!("Welcome {}!", info.0);  //TODO
     
     let mut endpoints = Endpoints{
         endpoints: Vec::new(),
     };
 
     let mut all_endpoints = catalog::list_openapi_files(API_CATALOG_PATH);
+
     while let Some(top) = all_endpoints.pop() {
-        info!("Analysing file [{}]", top);
+        info!("Analysing file [{:?}]", top.name);
 
         //top /Users/omallassi/code/apis-catalog/catalog/reference-data.reference-data/system-descriptor.yaml  
         //let data = include_str!("openapi-sample.yaml");
-        let mut file = match File::open(&top) {
+        let mut file = match File::open(&top.name) {
             Err(why) => panic!("couldn't open file [{}]", why.description()),
             Ok(file) => file,
         };
@@ -92,6 +92,7 @@ struct Apis {
 #[derive(Serialize, Deserialize)]
 struct Api {
     name: String,
+    id: String,
 }
 
 #[get("/v1/apis")]
@@ -103,10 +104,11 @@ fn get_apis() -> HttpResponse {
 
     let mut all_apis = catalog::list_openapi_files(API_CATALOG_PATH);
     while let Some(top) = all_apis.pop() {
-        info!("Analysing file [{}]", top);
-        let short_path = &top[API_CATALOG_DIR.len()..top.len()];
+        info!("Analysing file [{:?}]", top.name);
+        let short_path = &top.name[API_CATALOG_DIR.len()..top.name.len()];
         let api = Api {
             name: String::from(short_path),
+            id: top.id,
         };
         apis.apis.push(api);
     }    
