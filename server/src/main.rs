@@ -1,12 +1,8 @@
 extern crate log;
 extern crate env_logger;
-use log::{info, debug, warn, error};
+use log::{info};
 
-use std::fs::File;
-use std::io::Read;
-use std::error::Error;
 use std::vec::Vec;
-use serde_yaml;
 use openapiv3::OpenAPI;
 
 use actix_web::{web, App, HttpResponse, HttpServer};
@@ -38,43 +34,22 @@ struct Endpoint {
 
 //#[get("/v1/endpoints/{api}")]
 fn get_endpoints(info: web::Path<(String,)>) -> HttpResponse {
-
-    println!("Welcome {}!", info.0);  //TODO
     
     let mut endpoints = Endpoints{
         endpoints: Vec::new(),
     };
 
-    let mut all_endpoints = catalog::list_openapi_files(API_CATALOG_PATH);
+    let mut all_apis = catalog::get_api(API_CATALOG_PATH, &info.0);
 
-    while let Some(top) = all_endpoints.pop() {
-        info!("Analysing file [{:?}]", top.name);
+    while let Some(api) = all_apis.pop() {
+        info!("Analysing file [{:?}]", api.name);
 
-        //top /Users/omallassi/code/apis-catalog/catalog/reference-data.reference-data/system-descriptor.yaml  
-        //let data = include_str!("openapi-sample.yaml");
-        let mut file = match File::open(&top.name) {
-            Err(why) => panic!("couldn't open file [{}]", why.description()),
-            Ok(file) => file,
-        };
-
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-        //println!("{}", contents);
-        if contents.starts_with("openapi") {
-            let openapi: OpenAPI = serde_yaml::from_str(&contents).unwrap();
-
-            //match openapi {
-            //    Ok(openapi) => openapi,
-            //    Err(why) => warn!("couldn't parse {}: {}", top,
-            //                                           why.description()),
-            //};
-
-            for val in openapi.paths.keys() {
-                let endpoint = Endpoint {
-                    name: String::from(val),
-                };
-                endpoints.endpoints.push(endpoint);
-            }
+        let openapi: OpenAPI = api.api_spec;
+        for val in openapi.paths.keys() {
+            let endpoint = Endpoint {
+                name: String::from(val),
+            };
+            endpoints.endpoints.push(endpoint);
         }
     }    
     
@@ -102,13 +77,13 @@ fn get_apis() -> HttpResponse {
         apis: Vec::new(),
     };
 
-    let mut all_apis = catalog::list_openapi_files(API_CATALOG_PATH);
-    while let Some(top) = all_apis.pop() {
-        info!("Analysing file [{:?}]", top.name);
-        let short_path = &top.name[API_CATALOG_DIR.len()..top.name.len()];
+    let mut all_apis = catalog::list_apis(API_CATALOG_PATH);
+    while let Some(api) = all_apis.pop() {
+        info!("Analysing file [{:?}]", api.name);
+        let short_path = &api.name[API_CATALOG_DIR.len()..api.name.len()];
         let api = Api {
             name: String::from(short_path),
-            id: top.id,
+            id: api.id,
         };
         apis.apis.push(api);
     }    
