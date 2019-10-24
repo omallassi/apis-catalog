@@ -6,7 +6,7 @@ use prettytable::{Table, Row, Cell};
 use prettytable::format;
 
 extern crate reqwest;
-use reqwest::{Client};
+use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 
 extern crate log;
@@ -66,9 +66,9 @@ fn get_apis() -> Result<(), reqwest::Error> {
     //
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row![b -> "Id", b -> "Apis", b -> "Deployed Version"]);
+    table.set_titles(row![b -> "Id", b -> "Apis"]);
     for val in apis.apis {
-        table.add_row(row![val.id, val.name, "..."]);
+        table.add_row(row![val.id, val.name]);
     };
     
     // Print the table to stdout
@@ -84,6 +84,11 @@ struct Deployment {
     env: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Deployments {
+    deployments: Vec<Deployment>
+}
+
 fn deploy(api: &str, env: &str) -> Result<(), reqwest::Error> {
     let client = Client::new();
 
@@ -97,11 +102,33 @@ fn deploy(api: &str, env: &str) -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-fn get_deployments() -> Result<(), reqwest::Error> {
+fn get_deployments(api: Option<&str>) -> Result<(), reqwest::Error> {
     let client = Client::new();
-
-    let resp = client.get("http://127.0.0.1:8088/v1/deployments").send()?;
+    let mut resp: Response;
+    let api_id = match api {
+        Some(api_id) => {
+            println!("API {:?}", api_id);
+            let url = format!("http://127.0.0.1:8088/v1/deployments/{}", api_id);
+            resp = client.get(&url).send()?;
+        },
+        None => {
+            println!("nothing to print");
+            resp = client.get("http://127.0.0.1:8088/v1/deployments").send()?;
+        },
+    };
+    
     debug!("body: {:?}", resp.status());
+    let deployments: Deployments = resp.json()?;
+    //
+    let mut table = Table::new();
+    table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    table.set_titles(row![b -> "Apis", b -> "Env"]);
+    for val in deployments.deployments {
+        table.add_row(row![val.api, val.env]);
+    };
+    
+    // Print the table to stdout
+    table.printstd();
 
     Ok(())
 }
@@ -127,6 +154,12 @@ fn main() {
         .subcommand(SubCommand::with_name("deployments")
                     .about("List all deployments")
                     .version("0.1")
+                    .arg(Arg::with_name("api")
+                        .short("a")
+                        .long("api")
+                        .takes_value(true)
+                        .required(false)
+                        .help("Specify the API"))
                     )         
         .subcommand(SubCommand::with_name("deploy")
                     .about("Deploy an api")
@@ -137,7 +170,7 @@ fn main() {
                         .takes_value(true)
                         .required(true)
                         .help("the api to deploy"))
-                     .arg(Arg::with_name("env")
+                    .arg(Arg::with_name("env")
                         .short("e")
                         .long("env")
                         .takes_value(true)
@@ -160,6 +193,6 @@ fn main() {
         }
     }  
     if let Some(matches) = matches.subcommand_matches("deployments") {
-        get_deployments();
+        get_deployments(matches.value_of("api"));
     }  
 }

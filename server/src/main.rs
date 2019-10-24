@@ -97,6 +97,11 @@ struct Deployment {
     env: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Deployments {
+    deployments: Vec<Deployment>
+}
+
 #[post("/v1/deployments")]
 fn add_deployment(deployment: Json<Deployment>) -> HttpResponse {
     repo::release(deployment.api.clone(), deployment.env.clone());
@@ -106,9 +111,50 @@ fn add_deployment(deployment: Json<Deployment>) -> HttpResponse {
 
 #[get("/v1/deployments")]
 fn get_deployments() -> HttpResponse {
-    repo::list_all_deployments();
 
-    HttpResponse::Ok().json("")
+    let mut deployments = Deployments {
+        deployments : Vec::new(),
+    };
+
+    let mut all_tuples: Vec<(String, String)> = match repo::list_all_deployments() {
+        Ok(all_tuples) => all_tuples, 
+        Err(why) => { 
+            panic!("Unable to get deployments: {}", why);
+        },
+    };
+
+    while let Some(tuple) = all_tuples.pop() {
+        let deployment = Deployment {
+            api: tuple.0,
+            env: tuple.1,
+        };        
+        deployments.deployments.push(deployment);
+    }
+
+    HttpResponse::Ok().json(deployments)
+}
+
+fn get_deployments_for_api(path: web::Path<(String,)>) -> HttpResponse {
+    let mut deployments = Deployments {
+        deployments : Vec::new(),
+    };
+
+    let mut all_tuples: Vec<(String, String)> = match repo::get_all_deployments_for_api(&path.0) {
+        Ok(all_tuples) => all_tuples, 
+        Err(why) => { 
+            panic!("Unable to get deployments: {}", why);
+        },
+    };
+
+    while let Some(tuple) = all_tuples.pop() {
+        let deployment = Deployment {
+            api: tuple.0,
+            env: tuple.1,
+        };        
+        deployments.deployments.push(deployment);
+    }
+
+    HttpResponse::Ok().json(deployments)
 }
 
 /**
@@ -123,6 +169,7 @@ fn main() {
             .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))
             .service(add_deployment)
             .service(get_deployments)
+            .service(web::resource("/v1/deployments/{api}").route(web::get().to(get_deployments_for_api)))
             .service(get_apis)
     })
     .workers(4)

@@ -3,12 +3,10 @@ extern crate rusqlite;
 extern crate time;
 
 use rusqlite::{params, Connection, Result};
-use rusqlite::NO_PARAMS;
-use time::Timespec;
+use rusqlite::{NO_PARAMS, named_params};
 
 //use rustbreak::{FileDatabase, deser::Ron};
 use log::{info, debug};
-use std::collections::HashMap;
 
 pub fn release(api: String, env: String) -> Result<()> {
     info!("hop {:?}", api);
@@ -56,15 +54,32 @@ pub fn list_all_deployments() -> Result<Vec<(String, String)>> {
     let mut stmt = conn.prepare("SELECT api, env FROM deployments")?;
     let mut rows = stmt.query(NO_PARAMS)?;
 
-    let mut names = Vec::new();
+    let mut tuples = Vec::new();
     while let Some(row) = rows.next()? {
         let api: String = row.get(0)?;
         let env: String = row.get(1)?;
         let value = (api, env);
 
-        println!("deployment {:?}", value);
-        names.push(value);
+        tuples.push(value);
     }
 
-    Ok(names)
+    Ok(tuples)
+}
+
+pub fn get_all_deployments_for_api(api: &str) -> Result<Vec<(String, String)>> {
+    debug!("Reading from Database");
+    let conn = Connection::open("/tmp/apis-catalog-store.db")?;
+    let mut stmt = conn.prepare("SELECT api, env FROM deployments WHERE api = :api")?;
+    let mut rows = stmt.query_named(named_params!{ ":api": api })?;
+
+    let mut tuples = Vec::new();
+    while let Some(row) = rows.next()? {
+        let api: String = row.get(0)?;
+        let env: String = row.get(1)?;
+        let value = (api, env);
+        
+        tuples.push(value);
+    }
+
+    Ok(tuples)
 }
