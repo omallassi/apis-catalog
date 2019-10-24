@@ -92,14 +92,21 @@ fn get_apis() -> HttpResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Release {
+struct Deployment {
     api: String, 
-    commit_id: String,
+    env: String,
 }
 
-#[post("/v1/releases")]
-fn add_release(release: Json<Release>) -> HttpResponse {
-    repo::release(release.api.clone(), release.commit_id.clone());
+#[post("/v1/deployments")]
+fn add_deployment(deployment: Json<Deployment>) -> HttpResponse {
+    repo::release(deployment.api.clone(), deployment.env.clone());
+
+    HttpResponse::Ok().json("")
+}
+
+#[get("/v1/deployments")]
+fn get_deployments() -> HttpResponse {
+    repo::list_all_deployments();
 
     HttpResponse::Ok().json("")
 }
@@ -114,7 +121,8 @@ fn main() {
         App::new()
             //.route("/v1/endpoints", web::get().to(get_endpoints))
             .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))
-            .service(add_release)
+            .service(add_deployment)
+            .service(get_deployments)
             .service(get_apis)
     })
     .workers(4)

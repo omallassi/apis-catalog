@@ -19,8 +19,12 @@ serde = "1.0.101"
 glob = "0.3.0"
 failure = "0.1.1"
 git2 = "0.10.1"
+lazy_static = "1.4.0"
 
-[dependencies.rustbreak]
-version = "2.0.0-rc3"
-features = ["ron_enc"]
+rusqlite = "0.20.0"
+time = "0.1"
+# sqlite = "0.25.0"
 
+# [dependencies.rustbreak]
+# version = "2.0.0-rc3"
+# features = ["ron_enc"]

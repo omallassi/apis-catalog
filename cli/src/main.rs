@@ -79,19 +79,28 @@ fn get_apis() -> Result<(), reqwest::Error> {
 
 //
 #[derive(Serialize, Deserialize, Debug)]
-struct Release {
+struct Deployment {
     api: String, 
-    commit_id: String,
+    env: String,
 }
 
-fn release(api: &str, commit: &str) -> Result<(), reqwest::Error> {
+fn deploy(api: &str, env: &str) -> Result<(), reqwest::Error> {
     let client = Client::new();
 
-    let release = Release {
+    let deployment = Deployment {
         api: api.to_string(), 
-        commit_id: commit.to_string(),
+        env: env.to_string(),
     };
-    let mut resp = client.post("http://127.0.0.1:8088/v1/releases").json(&release).send()?;
+    let resp = client.post("http://127.0.0.1:8088/v1/deployments").json(&deployment).send()?;
+    debug!("body: {:?}", resp.status());
+
+    Ok(())
+}
+
+fn get_deployments() -> Result<(), reqwest::Error> {
+    let client = Client::new();
+
+    let resp = client.get("http://127.0.0.1:8088/v1/deployments").send()?;
     debug!("body: {:?}", resp.status());
 
     Ok(())
@@ -115,31 +124,25 @@ fn main() {
                         .required(true)
                         .help("List all available endpoints for specified api"))
                     )  
-        .subcommand(SubCommand::with_name("releases")
-                    .about("List all releases")
+        .subcommand(SubCommand::with_name("deployments")
+                    .about("List all deployments")
                     .version("0.1")
-                    .arg(Arg::with_name("api")
-                        .short("a")
-                        .long("api")
-                        .takes_value(true)
-                        .required(true)
-                        .help("List all available releases for specified api"))
                     )         
-        .subcommand(SubCommand::with_name("release")
-                    .about("Release an api")
+        .subcommand(SubCommand::with_name("deploy")
+                    .about("Deploy an api")
                     .version("0.1")
                     .arg(Arg::with_name("api")
                         .short("a")
                         .long("api")
                         .takes_value(true)
                         .required(true)
-                        .help("the api to release"))
-                     .arg(Arg::with_name("commit-id")
-                        .short("cid")
-                        .long("commit-id")
+                        .help("the api to deploy"))
+                     .arg(Arg::with_name("env")
+                        .short("e")
+                        .long("env")
                         .takes_value(true)
                         .required(true)
-                        .help("the commit-id of the release"))
+                        .help("the env of the deployment"))
                     )
         .get_matches();
 
@@ -151,9 +154,12 @@ fn main() {
             get_endpoints(matches.value_of("api").unwrap());
         }
     }  
-    if let Some(matches) = matches.subcommand_matches("release") {
-        if matches.is_present("api") &&  matches.is_present("commit-id"){
-            release(matches.value_of("api").unwrap(), matches.value_of("commit-id").unwrap());
+    if let Some(matches) = matches.subcommand_matches("deploy") {
+        if matches.is_present("api") &&  matches.is_present("env"){
+            deploy(matches.value_of("api").unwrap(), matches.value_of("env").unwrap());
         }
+    }  
+    if let Some(matches) = matches.subcommand_matches("deployments") {
+        get_deployments();
     }  
 }
