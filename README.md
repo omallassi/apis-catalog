@@ -1,3 +1,5 @@
+[![Actions Status](https://github.com/omallassi/apis-catalog/workflows/Rust/badge.svg)](https://github.com/omallassi/apis-catalog/actions)
+
 # apis-catalog
 
 ## run the server
