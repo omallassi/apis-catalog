@@ -165,6 +165,10 @@ fn main() {
 
     HttpServer::new(|| {
         App::new()
+            // to generate open_api specification - Record services and routes from this line.
+            //.wrap_api()
+            // to generate open_api specification - Mount the JSON spec at this path.
+            //.with_json_spec_at("/api/spec")
             //.route("/v1/endpoints", web::get().to(get_endpoints))
             .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))
             .service(add_deployment)
