@@ -179,6 +179,5 @@ fn main() {
     .workers(4)
     .bind("127.0.0.1:8088")
     .unwrap()
-    .run()
-    .unwrap();
+    .run();
 }
