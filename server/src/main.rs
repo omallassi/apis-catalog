@@ -49,7 +49,7 @@ fn get_endpoints(info: web::Path<(String,)>) -> HttpResponse {
         endpoints: Vec::new(),
     };
 
-    let mut all_apis = catalog::get_api(API_CATALOG_PATH, &info.0);
+    let mut all_apis = catalog::get_spec(API_CATALOG_PATH, &info.0);
 
     while let Some(api) = all_apis.pop() {
         info!("Analysing file [{:?}]", api.name);
@@ -70,35 +70,35 @@ fn get_endpoints(info: web::Path<(String,)>) -> HttpResponse {
  * 
  */
 #[derive(Serialize, Deserialize)]
-struct Apis {
-    apis: Vec<Api>,
+struct Specs {
+    specs: Vec<Spec>,
 }
 
 #[derive(Serialize, Deserialize)]
-struct Api {
+struct Spec {
     name: String,
     id: String,
 }
 
-#[get("/v1/apis")]
-fn get_apis() -> HttpResponse {
-    debug!("get_apis()");
-    let mut apis = Apis{
-        apis: Vec::new(),
+#[get("/v1/specs")]
+fn get_all_specs() -> HttpResponse {
+    debug!("get_all_specs()");
+    let mut specs = Specs{
+        specs: Vec::new(),
     };
 
-    let mut all_apis = catalog::list_apis(API_CATALOG_PATH);
-    while let Some(api) = all_apis.pop() {
-        info!("Analysing file [{:?}]", api.name);
-        let short_path = &api.name[API_CATALOG_DIR.len()..api.name.len()];
-        let api = Api {
+    let mut all_specs = catalog::list_specs(API_CATALOG_PATH);
+    while let Some(spec) = all_specs.pop() {
+        info!("Analysing file [{:?}]", spec.name);
+        let short_path = &spec.name[API_CATALOG_DIR.len()..spec.name.len()];
+        let spec = Spec {
             name: String::from(short_path),
-            id: api.id,
+            id: spec.id,
         };
-        apis.apis.push(api);
+        specs.specs.push(spec);
     }    
     
-    HttpResponse::Ok().json(apis)
+    HttpResponse::Ok().json(specs)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -227,7 +227,7 @@ async fn main() {
             .service(web::resource("/v1/deployments/{api}").route(web::get().to(get_deployments_for_api)))
             .service(get_domains)
             .service(create_domain)
-            .service(get_apis)
+            .service(get_all_specs)
     })
     .workers(4)
     .bind("127.0.0.1:8088")

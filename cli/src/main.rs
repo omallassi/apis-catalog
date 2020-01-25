@@ -51,26 +51,26 @@ fn get_endpoints(api: &str) -> Result<(), reqwest::Error> {
 
 //
 #[derive(Serialize, Deserialize)]
-struct Apis {
-    apis: Vec<Api>,
+struct Specs {
+    specs: Vec<Spec>,
 }
 
 #[derive(Serialize, Deserialize)]
-struct Api {
+struct Spec {
     name: String,
     id: String,
 }
 
-fn get_apis() -> Result<(), reqwest::Error> {
+fn get_specs() -> Result<(), reqwest::Error> {
     let client = Client::new();
-    let mut resp = client.get("http://127.0.0.1:8088/v1/apis").send()?;
+    let mut resp = client.get("http://127.0.0.1:8088/v1/specs").send()?;
     debug!("body: {:?}", resp.status());
-    let apis: Apis = resp.json()?;
+    let specs: Specs = resp.json()?;
     //
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row![b -> "Id", b -> "Apis"]);
-    for val in apis.apis {
+    table.set_titles(row![b -> "Id", b -> "Specs"]);
+    for val in specs.specs {
         table.add_row(row![val.id, val.name]);
     };
     
@@ -199,6 +199,12 @@ fn main() {
                         .help("The name of the domain"))
                 ),
         )
+        .subcommand(
+            App::new("specs")
+                .about("Manage Specifications")
+                .setting(AppSettings::SubcommandRequiredElseHelp)
+                .subcommand(SubCommand::with_name("list").about("List All the Specs")),
+        )
         .subcommand(SubCommand::with_name("list")
                     .about("List all available apis")
                     .version("0.1")
@@ -242,7 +248,7 @@ fn main() {
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("list") {
-        get_apis();
+        println!("not implemented");
     }  
     if let Some(matches) = matches.subcommand_matches("endpoints") {
         if matches.is_present("api") {
@@ -266,6 +272,13 @@ fn main() {
             ("create", Some(matches)) => {
                 create_domain(matches.value_of("name").unwrap());
             }
+            _ => unreachable!(),
+        },
+        ("specs", Some(matches)) => match matches.subcommand() {
+            ("list", Some(_matches)) => {
+                get_specs();
+            }
+
             _ => unreachable!(),
         },
 

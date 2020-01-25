@@ -12,14 +12,14 @@ use serde_yaml;
 use openapiv3::OpenAPI;
 
 //
-pub struct ApiItem{
+pub struct SpecItem{
     pub name: std::string::String,
     pub id: std::string::String,
     pub api_spec: OpenAPI,
 }
 
-pub fn list_apis(path: &str) -> Vec<ApiItem> {
-    let mut apis = Vec::new();
+pub fn list_specs(path: &str) -> Vec<SpecItem> {
+    let mut specs = Vec::new();
     //get connection to git repo (should be cloned as prerequisite)
     if let Ok(repo) = get_git_repo(path) {
         let pattern = format!("{}{}", path, "**/*.yaml");
@@ -42,12 +42,12 @@ pub fn list_apis(path: &str) -> Vec<ApiItem> {
 
             if let Ok(openapi) = serde_yaml::from_reader(blob.content()) {
                 //create the API Item and add it to the returned value
-                let api = ApiItem {
+                let spec = SpecItem {
                     name: path, 
                     id: format!("{:?}", oid),
                     api_spec: openapi,
                 };
-                apis.push(api);
+                specs.push(spec);
             }
             else{
                 warn!("Unable to parse file [{}]", path);
@@ -58,12 +58,12 @@ pub fn list_apis(path: &str) -> Vec<ApiItem> {
         warn!("Unable to parse file [{}]", path);
     }
     
-    apis
+    specs
 }
 
 //
-pub fn get_api(path: &str, id: &str) -> Vec<ApiItem> {
-    let mut apis = Vec::new();
+pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
+    let mut specs = Vec::new();
     //get connection to git repo (should be cloned as prerequisite)
     if let Ok(repo) = get_git_repo(path) {
         //generate the OpenAPI
@@ -77,12 +77,12 @@ pub fn get_api(path: &str, id: &str) -> Vec<ApiItem> {
 
             if let Ok(openapi) = serde_yaml::from_reader(blob.content()) {
                 //create the API Item and add it to the returned value
-                let api = ApiItem {
+                let spec = SpecItem {
                     name: path.to_string(), 
                     id: format!("{:?}", oid),
                     api_spec: openapi,
                 };
-                apis.push(api);
+                specs.push(spec);
             }
             else{
                 warn!("Unable to parse file [{}]", path);
@@ -93,7 +93,7 @@ pub fn get_api(path: &str, id: &str) -> Vec<ApiItem> {
             warn!("Unable to parse file [{}]", path);
     }
 
-    apis
+    specs
 }
 
 //
