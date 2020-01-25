@@ -14,3 +14,4 @@ log = "0.4.8"
 env_logger = "0.7.0"
 crossterm = "0.11"
 prettytable-rs = "^0.8"
+uuid = { version = "0.8", features = ["serde", "v1", "v3", "v4","v5"] }

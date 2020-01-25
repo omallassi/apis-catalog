@@ -1,6 +1,9 @@
 extern crate failure;
 extern crate rusqlite;
 extern crate time;
+extern crate uuid;
+
+use uuid::Uuid;
 
 use rusqlite::{params, Connection, Result};
 use rusqlite::{NO_PARAMS, named_params};

@@ -1,6 +1,8 @@
 extern crate log;
 extern crate env_logger;
-use log::{info};
+extern crate uuid;
+
+use log::{debug,info};
 
 use std::vec::Vec;
 use openapiv3::OpenAPI;
@@ -10,8 +12,16 @@ use actix_web::{get, post};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
 
-mod catalog;
-mod repo;
+use uuid::Uuid;
+
+mod dao;
+use dao::catalog;
+use dao::repo_deployments;
+use dao::repo_domains;
+
+use repo_deployments::{*};
+use repo_domains::{*};
+
 /**
  * 
  */
@@ -72,7 +82,7 @@ struct Api {
 
 #[get("/v1/apis")]
 fn get_apis() -> HttpResponse {
-    
+    debug!("get_apis()");
     let mut apis = Apis{
         apis: Vec::new(),
     };
@@ -104,19 +114,18 @@ struct Deployments {
 
 #[post("/v1/deployments")]
 fn add_deployment(deployment: Json<Deployment>) -> HttpResponse {
-    repo::release(deployment.api.clone(), deployment.env.clone());
+    release(deployment.api.clone(), deployment.env.clone());
 
     HttpResponse::Ok().json("")
 }
 
 #[get("/v1/deployments")]
 fn get_deployments() -> HttpResponse {
-
     let mut deployments = Deployments {
         deployments : Vec::new(),
     };
 
-    let mut all_tuples: Vec<(String, String)> = match repo::list_all_deployments() {
+    let mut all_tuples: Vec<(String, String)> = match list_all_deployments() {
         Ok(all_tuples) => all_tuples, 
         Err(why) => { 
             panic!("Unable to get deployments: {}", why);
@@ -139,7 +148,7 @@ fn get_deployments_for_api(path: web::Path<(String,)>) -> HttpResponse {
         deployments : Vec::new(),
     };
 
-    let mut all_tuples: Vec<(String, String)> = match repo::get_all_deployments_for_api(&path.0) {
+    let mut all_tuples: Vec<(String, String)> = match get_all_deployments_for_api(&path.0) {
         Ok(all_tuples) => all_tuples, 
         Err(why) => { 
             panic!("Unable to get deployments: {}", why);
@@ -157,27 +166,72 @@ fn get_deployments_for_api(path: web::Path<(String,)>) -> HttpResponse {
     HttpResponse::Ok().json(deployments)
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Domain {
+    pub name: String,
+    pub id: Uuid,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Domains {
+    pub domains: Vec<Domain>
+}
+
+#[get("/v1/domains")]
+pub fn get_domains() -> HttpResponse {
+    info!("get domains");
+    let mut all_domains: Vec<DomainItem> = match list_all_domains() {
+        Ok(all_domains) => all_domains, 
+        Err(why) => { 
+            panic!("Unable to get domains: {}", why);
+        },
+    };
+
+    let mut domains = Vec::new();
+
+    while let Some(domain) = all_domains.pop() {
+        let domain = Domain {
+            name: domain.name,
+            id: domain.id,
+        };
+        domains.push(domain);
+    }
+
+    let domains_obj = Domains{
+            domains: domains,
+    };
+
+    HttpResponse::Ok().json(domains_obj)
+}
+
+
+#[post("/v1/domains")]
+pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
+    add_domain(&domain.name);
+    HttpResponse::Ok().json("")
+}
+
 /**
  * 
  */
-fn main() {
+#[actix_rt::main]
+async fn main() {
     env_logger::init();
 
     HttpServer::new(|| {
         App::new()
-            // to generate open_api specification - Record services and routes from this line.
-            //.wrap_api()
-            // to generate open_api specification - Mount the JSON spec at this path.
-            //.with_json_spec_at("/api/spec")
-            //.route("/v1/endpoints", web::get().to(get_endpoints))
+            .route("/v1/endpoints", web::get().to(get_endpoints))
             .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))
             .service(add_deployment)
             .service(get_deployments)
             .service(web::resource("/v1/deployments/{api}").route(web::get().to(get_deployments_for_api)))
+            .service(get_domains)
+            .service(create_domain)
             .service(get_apis)
     })
     .workers(4)
     .bind("127.0.0.1:8088")
     .unwrap()
-    .run();
+    .run()
+    .await;
 }
