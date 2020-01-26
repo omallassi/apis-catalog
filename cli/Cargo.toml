@@ -1,5 +1,5 @@
 [package]
-name = "apis"
+name = "catalog"
 version = "0.1.0"
 authors = ["MALLASSI Olivier <Olivier.MALLASSI@gmail.com>"]
 edition = "2018"

@@ -128,7 +128,8 @@ fn get_deployments() -> HttpResponse {
     let mut all_tuples: Vec<(String, String)> = match list_all_deployments() {
         Ok(all_tuples) => all_tuples, 
         Err(why) => { 
-            panic!("Unable to get deployments: {}", why);
+            debug!("No Deployments found");
+            Vec::new()
         },
     };
 
@@ -151,7 +152,8 @@ fn get_deployments_for_api(path: web::Path<(String,)>) -> HttpResponse {
     let mut all_tuples: Vec<(String, String)> = match get_all_deployments_for_api(&path.0) {
         Ok(all_tuples) => all_tuples, 
         Err(why) => { 
-            panic!("Unable to get deployments: {}", why);
+            debug!("No Deployments found for api [{:?}]", &path.0);
+            Vec::new()
         },
     };
 
@@ -211,6 +213,20 @@ pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
     HttpResponse::Ok().json("")
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Api {
+    pub name: String, 
+    pub domain_id: Uuid, 
+    pub spec_ids: Vec<String>,
+}
+
+#[post("/v1/apis")]
+pub fn create_api(api: Json<Api>) -> HttpResponse {
+    info!("create api [{:?}]", api);
+
+    HttpResponse::Ok().json("")
+}
+
 /**
  * 
  */
@@ -228,6 +244,7 @@ async fn main() {
             .service(get_domains)
             .service(create_domain)
             .service(get_all_specs)
+            .service(create_api)
     })
     .workers(4)
     .bind("127.0.0.1:8088")
