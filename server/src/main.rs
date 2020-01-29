@@ -11,6 +11,9 @@ use actix_web::{web, App, HttpResponse, HttpServer};
 use actix_web::{get, post};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
+use actix_files::{NamedFile, Files};
+use actix_web::{HttpRequest, Result};
+use std::path::PathBuf;
 
 use uuid::Uuid;
 
@@ -18,9 +21,11 @@ mod dao;
 use dao::catalog;
 use dao::repo_deployments;
 use dao::repo_domains;
+use dao::repo_envs;
 
 use repo_deployments::{*};
 use repo_domains::{*};
+use repo_envs::{*};
 
 /**
  * 
@@ -227,6 +232,64 @@ pub fn create_api(api: Json<Api>) -> HttpResponse {
     HttpResponse::Ok().json("")
 }
 
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Envs {
+    pub envs: Vec<Env>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Env {
+    pub id: Uuid, 
+    pub name: String,
+    pub description: String,
+}
+
+#[post("/v1/envs")]
+pub fn create_env(env: Json<Env>) -> HttpResponse {
+    info!("create env [{:?}]", env);
+    add_env(&env.name, &env.description);
+
+    HttpResponse::Ok().json("")
+}
+
+#[get("/v1/envs")]
+pub fn list_env() -> HttpResponse {
+    info!("list envs");
+
+    let mut envs = Envs {
+        envs: Vec::new(),
+    };
+
+    let mut all_tuples: Vec<EnvItem> = match list_all_envs() {
+        Ok(all_tuples) => all_tuples, 
+        Err(why) => { 
+            debug!("No env found [{:?}]", why);
+            Vec::new()
+        },
+    };
+
+    while let Some(tuple) = all_tuples.pop() {
+        let env = Env {
+            id: tuple.id,
+            name: tuple.name,
+            description: tuple.description,
+        };        
+        envs.envs.push(env);
+    }
+
+    HttpResponse::Ok().json(envs)
+}
+
+
+/**
+ * To server static pages
+ */
+async fn index(req: HttpRequest) -> Result<NamedFile> {
+    let path: PathBuf = PathBuf::from("./static/index.html");
+    Ok(NamedFile::open(path)?)
+}
+
 /**
  * 
  */
@@ -245,6 +308,10 @@ async fn main() {
             .service(create_domain)
             .service(get_all_specs)
             .service(create_api)
+            .service(create_env)
+            .service(list_env)
+            .route("/static", web::get().to(index))
+            .service(Files::new("/", "/Users/omallassi/code/rust/apis-catalog-web/build").index_file("index.html"))  // tmp can be replaced with relative "./ui/", 
     })
     .workers(4)
     .bind("127.0.0.1:8088")

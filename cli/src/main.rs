@@ -206,6 +206,52 @@ fn create_api(name: &str, domain_id: &str, specs: Vec<&str> ) -> Result<(), reqw
 }
 
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Envs {
+    pub envs: Vec<Env>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Env {
+    pub id: Uuid, 
+    pub name: String,
+    pub description: String,
+}
+
+fn list_env() -> Result<(), reqwest::Error> {
+    let client = Client::new();
+    let mut resp = client.get("http://127.0.0.1:8088/v1/envs").send()?;
+    debug!("body: {:?}", resp.status());
+    let envs: Envs = resp.json()?;
+    //
+    let mut table = Table::new();
+    table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    table.set_titles(row![b -> "Id", b -> "Env Name", b -> "Description"]);
+    for env in envs.envs {
+        table.add_row(row![env.id, env.name, env.description]);
+    };
+    
+    // Print the table to stdout
+    table.printstd();
+
+    Ok(())
+}
+
+fn create_env(name: &str, description: &str) -> Result<(), reqwest::Error> {
+    let client = Client::new();
+
+    let env = Env {
+        id: Uuid::nil(),
+        name: name.to_string(), 
+        description: description.to_string(),
+    };
+    let resp = client.post("http://127.0.0.1:8088/v1/envs").json(&env).send()?;
+    debug!("body: {:?}", resp.status());
+
+    Ok(())
+}
+
+
 fn main() {
     env_logger::init();
 
@@ -255,7 +301,7 @@ fn main() {
                     .about("List all available apis")
                     .version("0.1")
                 )
-                .subcommand(SubCommand::with_name("new")
+                .subcommand(SubCommand::with_name("create")
                     .about("Create a new API")
                     .arg(Arg::with_name("name")
                             .short("n")
@@ -288,21 +334,33 @@ fn main() {
                     )  
         .subcommand(
             App::new("deployments")
-                .about("List deployments")
+                .about("Manage deployments")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
                 .subcommand(
                     SubCommand::with_name("list")
-                        .about("List all deployments (for a given api)")
+                        .about("List all deployments (for the specified api)")
                         .arg(Arg::with_name("api-id")
                             .long("api-id")
                             .takes_value(true)
                             .required(false)
-                            .help("The name of the api")
+                            .help("The id of the api")
                         )
                 )
                 .subcommand(
                     SubCommand::with_name("create")
                         .about("Create a new deployment")
+                        .arg(Arg::with_name("api-id")
+                            .long("api-id")
+                            .takes_value(true)
+                            .required(true)
+                            .help("The id of the api")
+                        )
+                        .arg(Arg::with_name("env-id")
+                            .long("env-id")
+                            .takes_value(true)
+                            .required(true)
+                            .help("The id of the env")
+                        )
                 )
             )
             .subcommand(
@@ -322,8 +380,17 @@ fn main() {
                                 .required(true)
                                 .help("The name of the env")
                             )
+                            .arg(Arg::with_name("description")
+                                .long("description")
+                                .takes_value(true)
+                                .required(true)
+                                .help("A description associated to the env")
+                            )
                     )
                 )
+            .subcommand(
+                App::new("xxx - extensions: layers, services etc....").about("DO WE NEED THIS HERE?")
+            )
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("endpoints") {
@@ -356,19 +423,22 @@ fn main() {
             ("list", Some(matches)) => {
                 get_deployments(matches.value_of("api-id"));
             }
+            ("create", Some(matches)) => {
+                println!("create deployment");
+            }
             _ => unreachable!(),
         }
         ("env", Some(deployments)) => match deployments.subcommand() {
             ("list", Some(matches)) => {
-                println!("To Be Implemented");
+                list_env();
             }
             ("create", Some(matches)) => {
-                println!("To Be Implemented [{}]", matches.value_of("name").unwrap());
+                create_env(matches.value_of("name").unwrap(), matches.value_of("description").unwrap()).unwrap();
             }
             _ => unreachable!(),
         }
         ("apis", Some(deployments)) => match deployments.subcommand() {
-            ("new", Some(matches)) => {
+            ("create", Some(matches)) => {
                 let specs: Vec<_> = matches.values_of("spec-ids").unwrap().collect();
     
                 create_api(matches.value_of("name").unwrap(), 
