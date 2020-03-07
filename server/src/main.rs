@@ -22,10 +22,12 @@ use dao::catalog;
 use dao::repo_deployments;
 use dao::repo_domains;
 use dao::repo_envs;
+use dao::repo_apis;
 
 use repo_deployments::{*};
 use repo_domains::{*};
 use repo_envs::{*};
+use repo_apis::{*};
 
 /**
  * 
@@ -220,16 +222,59 @@ pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Api {
+    pub id: Uuid,
     pub name: String, 
     pub domain_id: Uuid, 
+    pub domain_name: String,
     pub spec_ids: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Apis {
+    pub apis: Vec<Api>
 }
 
 #[post("/v1/apis")]
 pub fn create_api(api: Json<Api>) -> HttpResponse {
     info!("create api [{:?}]", api);
 
+    repo_apis::add_api(&api.name, &api.domain_id);
+
     HttpResponse::Ok().json("")
+}
+
+#[get("/v1/apis")]
+pub fn list_all_apis() -> HttpResponse {
+    info!("list all apis");
+
+    let mut all_apis: Vec<ApiItem> = match repo_apis::list_all_apis() {
+        Ok(all_apis) => all_apis, 
+        Err(why) => { 
+            panic!("Unable to get apis: {}", why);
+        },
+    };
+
+    let mut apis = Vec::new();
+
+    while let Some(api) = all_apis.pop() {
+        //get domain related to this API
+        let domain = repo_domains::get_domain(api.domain_id).unwrap();
+        //
+        let api = Api {
+            name: api.name,
+            id: api.id,
+            domain_id: domain.id, 
+            domain_name: domain.name,
+            spec_ids: Vec::new(), //TODO
+        };
+        apis.push(api);
+    }
+
+    let apis_obj = Apis{
+            apis: apis,
+    };
+
+    HttpResponse::Ok().json(apis_obj)
 }
 
 
@@ -308,6 +353,7 @@ async fn main() {
             .service(create_domain)
             .service(get_all_specs)
             .service(create_api)
+            .service(list_all_apis)
             .service(create_env)
             .service(list_env)
             .route("/static", web::get().to(index))

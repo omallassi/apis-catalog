@@ -183,24 +183,55 @@ fn create_domain(name: &str) -> Result<(), reqwest::Error> {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Api {
+    pub id: Uuid,
     pub name: String, 
     pub domain_id: Uuid, 
+    pub domain_name: String,
     pub spec_ids: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Apis {
+    pub apis: Vec<Api>
+}
+
 fn create_api(name: &str, domain_id: &str, specs: Vec<&str> ) -> Result<(), reqwest::Error> {
+    debug!("create_api() is called [{:?}], [{:?}], [{:?}]", name, domain_id, specs);
+
     let specs_as_string: Vec<String> = Vec::from_iter(specs.iter().map(|spec| spec.to_string()));
 
     let client =  Client::new();
 
     let api = Api {
+        id: Uuid::nil(),
         name: name.to_string(),
         domain_id: Uuid::parse_str(domain_id).unwrap(),
+        domain_name: String::from(""),
         spec_ids: specs_as_string,
     };
 
     let resp = client.post("http://127.0.0.1:8088/v1/apis").json(&api).send()?;
     debug!("body: {:?}", resp.status());
+    
+    Ok(())
+}
+
+fn list_all_apis() -> Result<(), reqwest::Error> {
+    let client =  Client::new();
+
+    let mut resp = client.get("http://127.0.0.1:8088/v1/apis").send()?;
+    debug!("body: {:?}", resp.status());
+
+    let apis: Apis = resp.json()?;
+    let mut table = Table::new();
+    table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    table.set_titles(row![b -> "Id", b -> "Name", b -> "Domain", b -> "Domain", b -> "Specs"]);
+    for api in apis.apis {
+        table.add_row(row![api.id, api.name, api.domain_id, api.domain_name, format!("{:?}", api.spec_ids)]);
+    };
+    
+    // Print the table to stdout
+    table.printstd();
     
     Ok(())
 }
@@ -278,20 +309,20 @@ fn main() {
                 .about("Manage Specifications")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
                 .subcommand(SubCommand::with_name("list").about("List All the Specs"))
-                .subcommand(SubCommand::with_name("deploy")
-                    .about("Deploy a spec")
-                    .version("0.1")
-                    .arg(Arg::with_name("spec-id")
-                        .long("spec-id")
-                        .takes_value(true)
-                        .required(true)
-                        .help("the api to deploy"))
-                    .arg(Arg::with_name("env")
-                        .long("env")
-                        .takes_value(true)
-                        .required(true)
-                        .help("the id of the deployment"))
-                )
+                // .subcommand(SubCommand::with_name("deploy")
+                //     .about("Deploy a spec")
+                //     .version("0.1")
+                //     .arg(Arg::with_name("spec-id")
+                //         .long("spec-id")
+                //         .takes_value(true)
+                //         .required(true)
+                //         .help("the api to deploy"))
+                //     .arg(Arg::with_name("env")
+                //         .long("env")
+                //         .takes_value(true)
+                //         .required(true)
+                //         .help("the id of the deployment"))
+                // )
         )
         .subcommand(
             App::new("apis")
@@ -322,75 +353,75 @@ fn main() {
                             .help("The id(s) of the spec(s) to add to the api"))
                 )
         )
-        .subcommand(SubCommand::with_name("endpoints")
-                    .about("Give access to list of items")
-                    .version("0.1")
-                    .arg(Arg::with_name("api")
-                        .short("a")
-                        .long("api")
-                        .takes_value(true)
-                        .required(true)
-                        .help("List all available endpoints for specified api"))
-                    )  
-        .subcommand(
-            App::new("deployments")
-                .about("Manage deployments")
-                .setting(AppSettings::SubcommandRequiredElseHelp)
-                .subcommand(
-                    SubCommand::with_name("list")
-                        .about("List all deployments (for the specified api)")
-                        .arg(Arg::with_name("api-id")
-                            .long("api-id")
-                            .takes_value(true)
-                            .required(false)
-                            .help("The id of the api")
-                        )
-                )
-                .subcommand(
-                    SubCommand::with_name("create")
-                        .about("Create a new deployment")
-                        .arg(Arg::with_name("api-id")
-                            .long("api-id")
-                            .takes_value(true)
-                            .required(true)
-                            .help("The id of the api")
-                        )
-                        .arg(Arg::with_name("env-id")
-                            .long("env-id")
-                            .takes_value(true)
-                            .required(true)
-                            .help("The id of the env")
-                        )
-                )
-            )
-            .subcommand(
-                App::new("env")
-                    .about("Manage environments")
-                    .setting(AppSettings::SubcommandRequiredElseHelp)
-                    .subcommand(
-                        SubCommand::with_name("list")
-                            .about("List all env")
-                    )
-                    .subcommand(
-                        SubCommand::with_name("create")
-                            .about("Create a new env")
-                            .arg(Arg::with_name("name")
-                                .long("name")
-                                .takes_value(true)
-                                .required(true)
-                                .help("The name of the env")
-                            )
-                            .arg(Arg::with_name("description")
-                                .long("description")
-                                .takes_value(true)
-                                .required(true)
-                                .help("A description associated to the env")
-                            )
-                    )
-                )
-            .subcommand(
-                App::new("xxx - extensions: layers, services etc....").about("DO WE NEED THIS HERE?")
-            )
+        // .subcommand(SubCommand::with_name("endpoints")
+        //             .about("Give access to list of items")
+        //             .version("0.1")
+        //             .arg(Arg::with_name("api")
+        //                 .short("a")
+        //                 .long("api")
+        //                 .takes_value(true)
+        //                 .required(true)
+        //                 .help("List all available endpoints for specified api"))
+        //             )  
+        // .subcommand(
+        //     App::new("deployments")
+        //         .about("Manage deployments")
+        //         .setting(AppSettings::SubcommandRequiredElseHelp)
+        //         .subcommand(
+        //             SubCommand::with_name("list")
+        //                 .about("List all deployments (for the specified api)")
+        //                 .arg(Arg::with_name("api-id")
+        //                     .long("api-id")
+        //                     .takes_value(true)
+        //                     .required(false)
+        //                     .help("The id of the api")
+        //                 )
+        //         )
+        //         .subcommand(
+        //             SubCommand::with_name("create")
+        //                 .about("Create a new deployment")
+        //                 .arg(Arg::with_name("api-id")
+        //                     .long("api-id")
+        //                     .takes_value(true)
+        //                     .required(true)
+        //                     .help("The id of the api")
+        //                 )
+        //                 .arg(Arg::with_name("env-id")
+        //                     .long("env-id")
+        //                     .takes_value(true)
+        //                     .required(true)
+        //                     .help("The id of the env")
+        //                 )
+        //         )
+        //     )
+            // .subcommand(
+            //     App::new("env")
+            //         .about("Manage environments")
+            //         .setting(AppSettings::SubcommandRequiredElseHelp)
+            //         .subcommand(
+            //             SubCommand::with_name("list")
+            //                 .about("List all env")
+            //         )
+            //         .subcommand(
+            //             SubCommand::with_name("create")
+            //                 .about("Create a new env")
+            //                 .arg(Arg::with_name("name")
+            //                     .long("name")
+            //                     .takes_value(true)
+            //                     .required(true)
+            //                     .help("The name of the env")
+            //                 )
+            //                 .arg(Arg::with_name("description")
+            //                     .long("description")
+            //                     .takes_value(true)
+            //                     .required(true)
+            //                     .help("A description associated to the env")
+            //                 )
+            //         )
+            //     )
+            // .subcommand(
+            //     App::new("xxx - extensions: layers, services etc....").about("DO WE NEED THIS HERE?")
+            // )
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("endpoints") {
@@ -440,14 +471,13 @@ fn main() {
         ("apis", Some(deployments)) => match deployments.subcommand() {
             ("create", Some(matches)) => {
                 let specs: Vec<_> = matches.values_of("spec-ids").unwrap().collect();
+                let name = matches.value_of("name").unwrap();
+                let domain_id = matches.value_of("domain-id").unwrap();
     
-                create_api(matches.value_of("name").unwrap(), 
-                    matches.value_of("domain-id").unwrap(), 
-                    specs
-                ).unwrap();
+                create_api(name, domain_id, specs).unwrap();
             }
             ("list", Some(matches)) => {
-                println!("not implemented");
+                list_all_apis().unwrap();
             }
             _ => unreachable!(),
         }

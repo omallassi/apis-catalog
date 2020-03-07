@@ -62,7 +62,28 @@ pub fn add_domain(name: &str) -> Result<()> {
     )?;
 
     conn.close().unwrap();
-    
     Ok(())
+}
+
+pub fn get_domain(id: Uuid) -> Result<DomainItem> {
+    debug!("Get domain [{}] into Domain_Database", id);
+
+    let conn = Connection::open("/tmp/apis-catalog-domains.db")?;
+    conn.execute("CREATE TABLE IF NOT EXISTS domains (
+            id UUID  NOT NULL UNIQUE,
+            name TEXT NOT NULL
+        )", 
+        NO_PARAMS,
+    )?;
+
+    let mut stmt = conn.prepare("SELECT id, name FROM domains WHERE id = ?1")?;
+    let mut row = stmt.query_row(params![id], |row |{
+        Ok(DomainItem {
+            name: row.get(1)?,
+            id: row.get(0)?,
+        })
+    })?;
+
+    Ok(row)
 }
 
