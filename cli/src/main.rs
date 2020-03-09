@@ -353,16 +353,16 @@ fn main() {
                             .help("The id(s) of the spec(s) to add to the api"))
                 )
         )
-        // .subcommand(SubCommand::with_name("endpoints")
-        //             .about("Give access to list of items")
-        //             .version("0.1")
-        //             .arg(Arg::with_name("api")
-        //                 .short("a")
-        //                 .long("api")
-        //                 .takes_value(true)
-        //                 .required(true)
-        //                 .help("List all available endpoints for specified api"))
-        //             )  
+        .subcommand(SubCommand::with_name("endpoints")
+                    .about("Give access to list of items")
+                    .version("0.1")
+                    .arg(Arg::with_name("spec")
+                        .short("s")
+                        .long("spec")
+                        .takes_value(true)
+                        .required(true)
+                        .help("List all available endpoints for specified spec"))
+                    )  
         // .subcommand(
         //     App::new("deployments")
         //         .about("Manage deployments")
@@ -394,39 +394,39 @@ fn main() {
         //                 )
         //         )
         //     )
-            // .subcommand(
-            //     App::new("env")
-            //         .about("Manage environments")
-            //         .setting(AppSettings::SubcommandRequiredElseHelp)
-            //         .subcommand(
-            //             SubCommand::with_name("list")
-            //                 .about("List all env")
-            //         )
-            //         .subcommand(
-            //             SubCommand::with_name("create")
-            //                 .about("Create a new env")
-            //                 .arg(Arg::with_name("name")
-            //                     .long("name")
-            //                     .takes_value(true)
-            //                     .required(true)
-            //                     .help("The name of the env")
-            //                 )
-            //                 .arg(Arg::with_name("description")
-            //                     .long("description")
-            //                     .takes_value(true)
-            //                     .required(true)
-            //                     .help("A description associated to the env")
-            //                 )
-            //         )
-            //     )
+            .subcommand(
+                App::new("env")
+                    .about("Manage environments")
+                    .setting(AppSettings::SubcommandRequiredElseHelp)
+                    .subcommand(
+                        SubCommand::with_name("list")
+                            .about("List all env")
+                    )
+                    .subcommand(
+                        SubCommand::with_name("create")
+                            .about("Create a new env")
+                            .arg(Arg::with_name("name")
+                                .long("name")
+                                .takes_value(true)
+                                .required(true)
+                                .help("The name of the env")
+                            )
+                            .arg(Arg::with_name("description")
+                                .long("description")
+                                .takes_value(true)
+                                .required(true)
+                                .help("A description associated to the env")
+                            )
+                    )
+                )
             // .subcommand(
             //     App::new("xxx - extensions: layers, services etc....").about("DO WE NEED THIS HERE?")
             // )
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("endpoints") {
-        if matches.is_present("api") {
-            get_endpoints(matches.value_of("api").unwrap());
+        if matches.is_present("spec") {
+            get_endpoints(matches.value_of("spec").unwrap());
         }
     }  
 
