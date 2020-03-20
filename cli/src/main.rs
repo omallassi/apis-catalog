@@ -363,20 +363,37 @@ fn main() {
                         .required(true)
                         .help("List all available endpoints for specified spec"))
                     )  
-        // .subcommand(
-        //     App::new("deployments")
-        //         .about("Manage deployments")
-        //         .setting(AppSettings::SubcommandRequiredElseHelp)
-        //         .subcommand(
-        //             SubCommand::with_name("list")
-        //                 .about("List all deployments (for the specified api)")
-        //                 .arg(Arg::with_name("api-id")
-        //                     .long("api-id")
-        //                     .takes_value(true)
-        //                     .required(false)
-        //                     .help("The id of the api")
-        //                 )
-        //         )
+        .subcommand(SubCommand::with_name("deploy")
+                    .about("deploy an API in the specified env")
+                    .version("0.1")
+                    .arg(Arg::with_name("api")
+                        .short("a")
+                        .long("api")
+                        .takes_value(true)
+                        .required(true)
+                        .help("api id")) 
+                    .arg(Arg::with_name("env")
+                        .short("e")
+                        .long("env")
+                        .takes_value(true)
+                        .required(true)
+                        .help("env id"))
+                    )
+                    
+        .subcommand(
+            App::new("deployments")
+                .about("Manage deployments")
+                .setting(AppSettings::SubcommandRequiredElseHelp)
+                .subcommand(
+                    SubCommand::with_name("list")
+                        .about("List all deployments (for the specified api)")
+                        .arg(Arg::with_name("api")
+                            .long("api")
+                            .takes_value(true)
+                            .required(false)
+                            .help("The id of the api")
+                        )
+                )
         //         .subcommand(
         //             SubCommand::with_name("create")
         //                 .about("Create a new deployment")
@@ -393,7 +410,7 @@ fn main() {
         //                     .help("The id of the env")
         //                 )
         //         )
-        //     )
+            )
             .subcommand(
                 App::new("env")
                     .about("Manage environments")
@@ -444,20 +461,21 @@ fn main() {
             ("list", Some(_matches)) => {
                 get_specs();
             }
-            ("deploy", Some(matches)) => {
-                deploy(matches.value_of("spec-id").unwrap(), matches.value_of("env").unwrap());
-            }
+            // ("deploy", Some(matches)) => {
+            //     deploy(matches.value_of("spec-id").unwrap(), matches.value_of("env").unwrap());
+            // }
 
             _ => unreachable!(),
         }
         ("deployments", Some(deployments)) => match deployments.subcommand() {
             ("list", Some(matches)) => {
-                get_deployments(matches.value_of("api-id"));
+                get_deployments(matches.value_of("api"));
             }
-            ("create", Some(matches)) => {
-                println!("create deployment");
-            }
+
             _ => unreachable!(),
+        }
+        ("deploy", Some(matches)) => {
+            deploy(matches.value_of("api").unwrap(), matches.value_of("env").unwrap());
         }
         ("env", Some(deployments)) => match deployments.subcommand() {
             ("list", Some(matches)) => {
