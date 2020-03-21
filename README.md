@@ -2,6 +2,10 @@
 
 # apis-catalog
 
+<aside class="warning">
+All of this is, at this stage ideas and POC
+</aside>
+
 ## Overview
 
 In all companies that expose APIs, there is a need to ensure a proper level of quality of these APIs, as they reflect your product, its quality and its capabilities.
