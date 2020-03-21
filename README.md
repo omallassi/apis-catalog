@@ -2,9 +2,7 @@
 
 # apis-catalog
 
-<aside class="warning">
-All of this is, at this stage ideas and POC
-</aside>
+> :warning: All of this is, at this stage ideas and POC
 
 ## Overview
 
