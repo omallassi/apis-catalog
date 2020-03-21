@@ -8,10 +8,10 @@
                                                                        |  API Gateway     |
                                                                        |                  |
 +--------------------------------------------------+                   +----+-------------+
-| apis+catalog & apis+catalog+web                  |                        ^ deploy API
+| apis+catalog & apis+catalog+web                  |                        ^ deploy API Specs
 |                                                  |                        |
 | +--------------+               +--------------+  |                   +----+-------------+
-| |              |               |              |  |                   |                  |  get API to deploy
+| |              |               |              |  |                   |                  |  get API Specs to deploy
 | |    Web UI    |               |     CLI      |  |                   |      CI/CD       +-+(commit+id / master)
 | |              |               |              |  |                   |                  |               +
 | +-------+------+               +-----------+--+  |                   +-------+----------+               |
