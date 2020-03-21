@@ -79,4 +79,4 @@ RUST_LOG=debug ./target/debug/catalog deployments list --api 160d9e73-3e6a-4387-
 static page : http://127.0.0.1:8088 -> route to underlying folder to apis-catalog-web build folder
 
 ## More 
-https://github.com/omallassi/apis-catalog/wiki
+https://github.com/omallassi/apis-catalog/wiki (In particular (kind of) UML modelisation)
