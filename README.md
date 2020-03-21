@@ -31,6 +31,8 @@
 ```
 made with http://asciiflow.com/
 
+Web UI is available here https://github.com/omallassi/apis-catalog-web
+
 ## Getting Started
 
 Some commands 
