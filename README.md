@@ -22,47 +22,55 @@ Yet, this is not enough. You need to know how many versions you have, who owns t
 * It is providing a way to follow and know which specifications are deployed into which environments. For instance, it should be easy to know that this specification (_e.g_ this open api specification at this commit-id) is deployed in `pred-prod.my-company.com` and `prod.my-company.com`.
 
 ```
-                                                                       +------------------+
-                                                                       |                  |
-                                                                       |    Environment   |
-                                                                       |   (API gateway..)|
-                                                                       |                  |
-+--------------------------------------------------+                   +----+-------------+
-| apis+catalog & apis+catalog+web                  |                        ^ deploy API Specs
-|                                                  |                        |
-| +--------------+               +--------------+  |                   +----+-------------+
-| |              |               |              |  |                   |                  |  get API Specs to deploy
-| |    Web UI    |               |     CLI      |  |                   |      CI/CD       +-+(commit+id / master)
-| |              |               |              |  |                   |    pipeline      |               +
-| +-------+------+               +-----------+--+  |                   +-------+----------+               |
-|         |                                  |     |                           |                          |
-|         |                                  |     |                           |                          |
-|         |     +------------------------+   |     |                           |                          |
-|         |     |                        |   |     |                           |                          |
-|         +---->+       HTTP Backend     +---+     |                           |                          |
-|               |                        <-------------------------------------+                          |
-|               +-----+------------+-----+         |        update "deployment" when API is deployed      |
-|                     |            |               |                                                      |
-|                     |            |               |                                                      |
-|         +-----------v---+    +---v------------+  |                   +------------------+               |
-|         |  metadata     |    | Open API specs |  |                   |   apis+catalog   |               |
-|         | (env, apis,   |    | Async API specs|  |                   |   (git Repo)     +<--------------+
-|         | domains...)   |    | (yml files)    |  |  git pull / push  |                  |
-|         |               |    |                +--------------------->+    (yml files)   |
-|         |               |    |                |  |                   |                  +----+
-|         +---------------+    +----------------+  |          +--------+---+-------^------+    |
-|                                                  |          |            |       |           |
-+--------------------------------------------------+          |            |       +-----------+
-                                                              |            |           Pull Requests / API Review
-                                                              |            |
-                                                              |            | generate code (stubs, mock...)
-                                             +----------------v-+      +---v--------------+
-                                             |                  |      |                  |
-                                             |   HTML API doc   |      |  Artifacts Repo  |
-                                             |                  |      |    (Nexus...)    |
-                                             |                  |      |                  |
-                                             |                  |      |                  |
-                                             +------------------+      +------------------+
+                                                                                                                                      +----+
+                                                                                                                           RUNTIME GOV    |
+                                                                                                                                          |
+                                                                                                                                  +---+   |
+                                                                               +------------------+                         DEPLOYMENT|   |
+                                                               metrics         |                  |                                   |   |
+                                                                 +------------>+    Environment   |                                   |   |
+                                                                 |             |   (API gateway..)|                                   |   |
+                                                                 |             |                  |                                   |   |
++----------------------------------------------------------+     |             +----+-------------+                                   |   |
+|         apis+catalog & apis+catalog+web                  |     |                  ^ deploy API Specs                            +---+   |
+|                                                          |     |                  |                                                     |
+|         +--------------+               +--------------+  |     |             +----+-------------+                                       |
+|         |              |               |              |  |     |             |                  |  get API Specs to deploy              |
+|         |    Web UI    |               |     CLI      |  |     |             |      CI/CD       +-+(commit+id / master)                 |
+|         |              |               |              |  |     |             |    pipeline      |               +                       |
+|         +-------+------+               +-+------------+  |     |             +-------+----------+               |                       |
+|                 |                        |               |     |                     |                          |                       |
+|                 |                        v               |     |                     |                          |                  +----+
+|                 |     +------------------+------         |     |                     |                          |
+|                 |     |                        +---------------+                     |                          |
+|                 +---->+       HTTP Backend     |         |        update "deployment"when API is deployed       |
+|                       |                        <-------------------------------------+                          |                  +----+
+|          +------------+                        |         |                                                      |        DESIGN TIME GOV|
+|          |            +-----+------------+-----+--------------------------------+                               |                       |
+|          |                  |            |               |    metrics           |                               |                       |
+|    +-----v---+  +-----------v---+    +---v------------+  |                   +--v---------------+               |              +---+    |
+|    | metrics |  |  metadata     |    | Open API specs |  |                   |   apis+catalog   |               |           DESIGN |    |
+|    | history |  | (env, apis,   |    | Async API specs|  |                   |   (git Repo)     +<--------------+                  |    |
+|    |         |  | domains...)   |    | (yml files)    |  |  git pull / push  |                  |                                  |    |
+|    |         |  |               |    |                +--------------------->+    (yml files)   |                                  |    |
+|    |         |  |               |    |                |  |                   |                  +----+                             |    |
+|    +---------+  +---------------+    +----------------+  |          +--------+---+-------^------+    |                             |    |
+|                                                          |          |            |       |           |                             |    |
++----------------------------------------------------------+          |            |       +-----------+                             |    |
+                                                                      |            |           Pull Requests / API Review            |    |
+                                                                      |            |                                             +---+    |
+                                                                      |            | generate code (stubs, mock...)                       |
+                                                     +----------------v-+      +---v--------------+                              +---+    |
+                                                     |                  |      |                  |                           BUILD  |    |
+                                                     |   HTML API doc   |      |  Artifacts Repo  |                                  |    |
+                                                     |                  |      |    (Nexus...)    |                                  |    |
+                                                     |                  |      |                  |                                  |    |
+                                                     |                  |      |                  |                                  |    |
+                                                     +------------------+      +------------------+                                  |    |
+                                                                                                                                 +---+    |
+                                                                                                                                          |
+                                                                                                                                     +----+
+
 
 ```
 made with http://asciiflow.com/
