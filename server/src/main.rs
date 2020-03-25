@@ -2,6 +2,13 @@ extern crate log;
 extern crate env_logger;
 extern crate uuid;
 
+extern crate reqwest;
+use reqwest::{Client, Response};
+
+extern crate config;
+
+use chrono::{DateTime, Utc};
+
 use log::{debug,info};
 
 use std::vec::Vec;
@@ -326,6 +333,54 @@ pub fn list_env() -> HttpResponse {
     HttpResponse::Ok().json(envs)
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct PullRequests {
+    size: i32,
+    limit: i32,
+    #[serde(rename(serialize = "isLastPage", deserialize = "isLastPage"))]
+    is_last_page: bool,
+    values: Vec<PullRequest>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct PullRequest {
+    id: i32,
+    version: i32,
+    title: String, 
+    state: String, 
+    #[serde(rename(serialize = "createdDate", deserialize = "createdDate"))]
+    created_epoch: i128
+}
+
+#[get("/v1/metrics")]
+pub fn get_metrics() -> HttpResponse {
+    info!("get metrics");
+
+    let mut settings = config::Config::default();
+    settings
+        //.merge(config::File::with_name("settings")).unwrap()
+        // Add in settings from the environment (with a prefix of APP)
+        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+        .merge(config::Environment::with_prefix("APP")).unwrap();
+
+    println!("{} - {}", settings.get_str("username").unwrap(), settings.get_str("pwd").unwrap());
+    
+    let client =  Client::new();
+    //TODO
+    let url = format!("https://{}/rest/api/1.0/projects/PAA/repos/apis-catalog/pull-requests?state=OPEN&limit=1000", settings.get_str("stash_dns").unwrap());
+    let mut resp = client.get(url.as_str())
+        .basic_auth(settings.get_str("username").unwrap(), Some(settings.get_str("pwd").unwrap()))
+        .send().unwrap();
+
+    println!("HTTP Status {:?}", resp.status());
+
+    let pull_requests: PullRequests =  resp.json().unwrap();
+
+    debug!("body: {:?}", pull_requests);
+
+    HttpResponse::Ok().json(pull_requests.size)
+}
+
 
 /**
  * To server static pages
@@ -356,6 +411,7 @@ async fn main() {
             .service(list_all_apis)
             .service(create_env)
             .service(list_env)
+            .service(get_metrics)
             .route("/static", web::get().to(index))
             .service(Files::new("/", "/Users/omallassi/code/rust/apis-catalog-web/build").index_file("index.html"))  // tmp can be replaced with relative "./ui/", 
     })
