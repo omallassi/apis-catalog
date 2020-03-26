@@ -36,7 +36,7 @@ With the following principles in mind:
 
 This picture tries to depict a possible end state : 
 
-```
+```ditaa {cmd=true args=["-E"]}
                                                                                                                                       +----+
                                                                                                                            RUNTIME GOV    |
                                                                                                                                           |
@@ -91,6 +91,7 @@ This picture tries to depict a possible end state :
 made with http://asciiflow.com/
 
 Web UI is available here https://github.com/omallassi/apis-catalog-web
+
 
 ## About Governance
 
