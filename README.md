@@ -38,42 +38,32 @@ This picture tries to depict a [_possible state_](https://github.com/omallassi/a
 
 ![overview](https://raw.githubusercontent.com/wiki/omallassi/apis-catalog/assets/287a566176d137e603a1305388877384.png)
 
-## About Governance
-
-Governance is not a goal but a way to improve quality of our outcomes (w.r.t to policies you have defined)
-
-Yet, reviewing an API, discussing an API, co-building an API is key: it is key to define the concepts, their definition (ubquitous langage) their modelisation (_e.g._ UML or other...), how concepts relate to each other, their lifecycles (and the problem of the atomicity behind the scene), their performance (which quickly relate to the size of the payload), their potential evolutions. While tools like https://github.com/zalando/zally provide awesome support, this is the syntaxic validation. The semantic validation is another game that requires discussions. 
-
-
-I also believe that specifications (WSDL, Open API), while not having the same lifecycle than the business logic implementation, should be managed the same way as code. Source Control Software now support "Pull requests" mechanisms that could ease and support these discussions around the API and its "more formal approval or 4-eyes checking". 
-
 ## Getting Started
 
-Some commands 
+### Run  the REST Backend
+`RUST_LOG="info,apis_catalog_server=debug" ./target/debug/apis_catalog_server`
 
+### Run the CLI
+Some commands: 
 ```
 RUST_LOG=debug ./target/debug/catalog domains create --name domain1
 RUST_LOG=debug ./target/debug/catalog domains create --name domain2
 RUST_LOG=debug ./target/debug/catalog domains create --name domain3
 RUST_LOG=debug ./target/debug/catalog domains list
+
 RUST_LOG=debug ./target/debug/catalog apis create --domain-id f8e87f4c-953c-4330-b522-f7d5f883d7ab --name my_sampe_api --spec-ids 12
 RUST_LOG=debug ./target/debug/catalog apis create --domain-id f8e87f4c-953c-4330-b522-f7d5f883d7ab --name my_sampe_api_2 --spec-ids 12
 RUST_LOG=debug ./target/debug/catalog apis list
 
 RUST_LOG=debug ./target/debug/catalog env create --name xva.apac.murex.com --description "APAC env for xVA related solutions"
-
-RUST_LOG=debug ./target/debug/catalog deploy --api 160d9e73-3e6a-4387-87f4-a16e692d0d80 --env a3904f15-83ea-46b3-bca0-1e0df2337e90
-
 RUST_LOG=debug ./target/debug/catalog env list
 
+RUST_LOG=debug ./target/debug/catalog deploy --api 160d9e73-3e6a-4387-87f4-a16e692d0d80 --env a3904f15-83ea-46b3-bca0-1e0df2337e90
 RUST_LOG=debug ./target/debug/catalog deployments list --api 160d9e73-3e6a-4387-87f4-a16e692d0d80
-
 ```
 
-## Run the server
-`RUST_LOG="info,apis_catalog_server=debug" ./target/debug/apis_catalog_server`
+## Run the Web UI 
+Refer to [apis-catalog-web](https://github.com/omallassi/apis-catalog-web) for more details. 
 
-static page : http://127.0.0.1:8088 -> route to underlying folder to apis-catalog-web build folder
-
-## More 
-https://github.com/omallassi/apis-catalog/wiki (In particular (kind of) UML modelisation)
+## More Details
+available in the [wiki](https://github.com/omallassi/apis-catalog/wiki).
