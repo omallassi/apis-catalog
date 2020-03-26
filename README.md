@@ -34,7 +34,7 @@ With the following principles in mind:
 * do not be on the critical path of anything related to CI / CD pipeline, just keep track of things, and stay optional
 * accept to fail & have fun with `Rust` (ok, langage has nothing to do here but I tend to like Rust and would like to continue learning it)
 
-This picture tries to depict a _possible state_ : 
+This picture tries to depict a [_possible state_](https://github.com/omallassi/apis-catalog/wiki/overview) : 
 
 ![overview](https://raw.githubusercontent.com/wiki/omallassi/apis-catalog/assets/287a566176d137e603a1305388877384.png)
 
