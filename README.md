@@ -2,11 +2,8 @@
 
 [![Actions Status](https://github.com/omallassi/apis-catalog/workflows/Rust/badge.svg)](https://github.com/omallassi/apis-catalog/actions)
 
-# apis-catalog
-
+## Overview 
 > :warning: All of this is, at this stage ideas and POC
-
-## Overview
 
 In all companies that expose APIs (so in fact all companies in 2020), there is a need to ensure a proper level of quality and consistency of these APIs, as they reflect your product, its quality and its capabilities.
 
