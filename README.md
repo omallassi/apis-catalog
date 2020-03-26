@@ -34,64 +34,9 @@ With the following principles in mind:
 * do not be on the critical path of anything related to CI / CD pipeline, just keep track of things, and stay optional
 * accept to fail & have fun with `Rust` (ok, langage has nothing to do here but I tend to like Rust and would like to continue learning it)
 
-This picture tries to depict a possible end state : 
+This picture tries to depict a _possible state_ : 
 
-```ditaa {cmd=true args=["-E"]}
-                                                                                                                                      +----+
-                                                                                                                           RUNTIME GOV    |
-                                                                                                                                          |
-                                                                                                                                  +---+   |
-                                                                               +------------------+                         DEPLOYMENT|   |
-                                                               metrics         |                  |                                   |   |
-                                                                 +------------>+    Environment   |                                   |   |
-                                                                 |             |   (API gateway..)|                                   |   |
-                                                                 |             |                  |                                   |   |
-+----------------------------------------------------------+     |             +----+-------------+                                   |   |
-|         apis+catalog & apis+catalog+web                  |     |                  ^ deploy API Specs                            +---+   |
-|                                                          |     |                  |                                                     |
-|         +--------------+               +--------------+  |     |             +----+-------------+                                       |
-|         |              |               |              |  |     |             |                  |  get API Specs to deploy              |
-|         |    Web UI    |               |     CLI      |  |     |             |      CI/CD       +-+(commit+id / master)                 |
-|         |              |               |              |  |     |             |    pipeline      |               +                       |
-|         +-------+------+               +-+------------+  |     |             +-------+----------+               |                       |
-|                 |                        |               |     |                     |                          |                       |
-|                 |                        v               |     |                     |                          |                  +----+
-|                 |     +------------------+------         |     |                     |                          |
-|                 |     |                        +---------------+                     |                          |
-|                 +---->+       HTTP Backend     |         |        update "deployment"when API is deployed       |
-|                       |                        <-------------------------------------+                          |                  +----+
-|          +------------+                        |         |                                                      |        DESIGN TIME GOV|
-|          |            +-----+------------+-----+--------------------------------+                               |                       |
-|          |                  |            |               |    metrics           |                               |                       |
-|    +-----v---+  +-----------v---+    +---v------------+  |                   +--v---------------+               |              +---+    |
-|    | metrics |  |  metadata     |    | Open API specs |  |                   |   apis+catalog   |               |           DESIGN |    |
-|    | history |  | (env, apis,   |    | Async API specs|  |                   |   (git Repo)     +<--------------+                  |    |
-|    |         |  | domains...)   |    | (yml files)    |  |  git pull / push  |                  |                                  |    |
-|    |         |  |               |    |                +--------------------->+    (yml files)   |                                  |    |
-|    |         |  |               |    |                |  |                   |                  +----+                             |    |
-|    +---------+  +---------------+    +----------------+  |          +--------+---+-------^------+    |                             |    |
-|                                                          |          |            |       |           |                             |    |
-+----------------------------------------------------------+          |            |       +-----------+                             |    |
-                                                                      |            |           Pull Requests / API Review            |    |
-                                                                      |            |                                             +---+    |
-                                                                      |            | generate code (stubs, mock...)                       |
-                                                     +----------------v-+      +---v--------------+                              +---+    |
-                                                     |                  |      |                  |                           BUILD  |    |
-                                                     |   HTML API doc   |      |  Artifacts Repo  |                                  |    |
-                                                     |                  |      |    (Nexus...)    |                                  |    |
-                                                     |                  |      |                  |                                  |    |
-                                                     |                  |      |                  |                                  |    |
-                                                     +------------------+      +------------------+                                  |    |
-                                                                                                                                 +---+    |
-                                                                                                                                          |
-                                                                                                                                     +----+
-
-
-```
-made with http://asciiflow.com/
-
-Web UI is available here https://github.com/omallassi/apis-catalog-web
-
+![overview](https://raw.githubusercontent.com/wiki/omallassi/apis-catalog/assets/287a566176d137e603a1305388877384.png)
 
 ## About Governance
 
