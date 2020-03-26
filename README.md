@@ -6,20 +6,35 @@
 
 ## Overview
 
-In all companies that expose APIs, there is a need to ensure a proper level of quality of these APIs, as they reflect your product, its quality and its capabilities.
+In all companies that expose APIs (so in fact all companies in 2020), there is a need to ensure a proper level of quality and consistency of these APIs, as they reflect your product, its quality and its capabilities.
 
-This is not uncommon then to talk about `API Governance`. Outch! `Governance`! That's from another age. Well, I do not think even if I do believe it can fall into a trap of becoming a bottleneck for the rest of the organisation.
+This is then not uncommon then to talk about *API [Governance](#about-governance)*. Usually, when you talk about governance, you get this reaction: "_Outch! `Governance`! That's from another age_". Well, I do think governance is still needed even if I do believe this is complex balance and it can quickly fall into a trap of becoming a bottleneck for the rest of the organisation.
 
-Yet, reviewing an API, discussing an API, co-building an API is key: it is key to define the concepts, their definition (ubquitous langage) their modelisation (_e.g._ UML or other...), how concepts relate to each other, their lifecycles (and the problem of the atomicity behind the scene), their performance (which quickly relate to the size of the payload), their potential evolutions. While tools like https://github.com/zalando/zally provide awesome support, this is the syntaxic validation. The semantic validation is another game that requires discussions. 
+Talking about Governance, you can think about (at least) :
 
-I also believe that specifications (WSDL, Open API), while not having the same lifecycle than the business logic implementation, should be managed the same way as code. Source Control Software now support "Pull requests" mechanisms that could ease and support these discussions around the API and its "more formal approval or 4-eyes checking". 
+* _Design time Governance_ where we usually try to manage questions like : What are my APIs? how many versions of my specifications do I have? Are my APIs syntaxically correct? Are my APIs semantically correct (hum, this one will generate a lot more [discussions](#about-governance))? Are security and compliance policies followed? Is this evolution backward compatible (or not)? How frequent is an evolution on my APIs?
 
-Yet, this is not enough. You need to know how many versions you have, who owns them, in which envs are deployed the specifications, to which domain the API belongs to. This is where `apis-catalog` & `apis-catalog-web` (try to) fit in: 
+* _Runtime Governance_ where we usually try to manage questions like : Where are my APIs deployed (on which environments, which gateways...)? how many versions are deployed? is this API still used (or not) ?
 
-* It is not replicating the API specifications (Open API, AsyncAPI, WSDL...). It is built on top of a git repository that contains these specifications
-* It is not providing any validation workflow, letting you the freedom to define your own validation workflow
-* It is providing a way to manage domains, APIs, their versions, environments. 
-* It is providing a way to follow and know which specifications are deployed into which environments. For instance, it should be easy to know that this specification (_e.g_ this open api specification at this commit-id) is deployed in `pred-prod.my-company.com` and `prod.my-company.com`.
+A lot of great solutions exists in these spaces and the goal here is not to replace any of them. 
+
+## Ok cool...why this, what are the goals
+
+The goals are 
+
+* to ease keeping track of your endpoints and APIs (be thy OpenAPI, WSDL, AsyncAPI etc...) : from inception to production and end of life
+* to help you monitoring the efficiency of your governance process (whatever it is)
+
+With the following principles in mind: 
+
+* reuse and integrate with simple, massively used open source frameworks (like git, perforce, jenkins...)
+* reuse and integrate with existing specification formats (_e.g._ OpenAPI, AsyncAPI...)
+* Help organising your API specifications : in domains, with owners, in environments etc...
+* give as much freedom as possible with respect to "reviews or validation workflows". The best freedom being to not provide anything, any kind of workflow on this topic. 
+* do not be on the critical path of anything related to CI / CD pipeline, just keep track of things, and stay optional
+* accept to fail & have fun with `Rust`
+
+This picture tries to depict a possible end state : 
 
 ```
                                                                                                                                       +----+
@@ -76,6 +91,15 @@ Yet, this is not enough. You need to know how many versions you have, who owns t
 made with http://asciiflow.com/
 
 Web UI is available here https://github.com/omallassi/apis-catalog-web
+
+## About Governance
+
+Governance is not a goal but a way to improve quality of our outcomes (w.r.t to policies you have defined)
+
+Yet, reviewing an API, discussing an API, co-building an API is key: it is key to define the concepts, their definition (ubquitous langage) their modelisation (_e.g._ UML or other...), how concepts relate to each other, their lifecycles (and the problem of the atomicity behind the scene), their performance (which quickly relate to the size of the payload), their potential evolutions. While tools like https://github.com/zalando/zally provide awesome support, this is the syntaxic validation. The semantic validation is another game that requires discussions. 
+
+
+I also believe that specifications (WSDL, Open API), while not having the same lifecycle than the business logic implementation, should be managed the same way as code. Source Control Software now support "Pull requests" mechanisms that could ease and support these discussions around the API and its "more formal approval or 4-eyes checking". 
 
 ## Getting Started
 
