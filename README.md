@@ -32,7 +32,7 @@ With the following principles in mind:
 * Help organising your API specifications : in domains, with owners, in environments etc...
 * give as much freedom as possible with respect to "reviews or validation workflows". The best freedom being to not provide anything, any kind of workflow on this topic. 
 * do not be on the critical path of anything related to CI / CD pipeline, just keep track of things, and stay optional
-* accept to fail & have fun with `Rust`
+* accept to fail & have fun with `Rust` (ok, langage has nothing to do here but I tend to like Rust and would like to continue learning it)
 
 This picture tries to depict a possible end state : 
 
