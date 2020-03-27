@@ -1,4 +1,4 @@
-![logo](img/logo.png)
+![logo](https://raw.githubusercontent.com/wiki/omallassi/apis-catalog/assets/logo.png)
 
 [![Actions Status](https://github.com/omallassi/apis-catalog/workflows/Rust/badge.svg)](https://github.com/omallassi/apis-catalog/actions)
 
