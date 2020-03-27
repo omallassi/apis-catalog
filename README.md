@@ -1,4 +1,4 @@
-![logo](img/logo.png =250x250))
+![logo](img/logo.png =250x250)
 
 [![Actions Status](https://github.com/omallassi/apis-catalog/workflows/Rust/badge.svg)](https://github.com/omallassi/apis-catalog/actions)
 
