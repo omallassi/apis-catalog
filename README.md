@@ -1,6 +1,6 @@
 ![logo](https://raw.githubusercontent.com/wiki/omallassi/apis-catalog/assets/logo.png)
 
-[![Actions Status](https://github.com/omallassi/apis-catalog/workflows/Rust/badge.svg)](https://github.com/omallassi/apis-catalog/actions)
+[![Actions Status](https://github.com/omallassi/apis-catalog/workflows/Rust/badge.svg)](https://github.com/omallassi/apis-catalog/actions) [![Build Status](https://travis-ci.org/omallassi/apis-catalog.svg?branch=master)](https://travis-ci.org/omallassi/apis-catalog) [![Coverage Status](https://coveralls.io/repos/github/omallassi/apis-catalog/badge.svg?branch=master)](https://coveralls.io/github/omallassi/apis-catalog?branch=master)
 
 ## Overview 
 > :warning: All of this is, at this stage ideas and POC
