@@ -36,6 +36,12 @@ use repo_domains::{*};
 use repo_envs::{*};
 use repo_apis::{*};
 
+mod settings;
+use settings::Settings;
+
+#[macro_use]
+extern crate lazy_static;
+
 /**
  * 
  */
@@ -356,20 +362,11 @@ struct PullRequest {
 pub fn get_metrics() -> HttpResponse {
     info!("get metrics");
 
-    let mut settings = config::Config::default();
-    settings
-        //.merge(config::File::with_name("settings")).unwrap()
-        // Add in settings from the environment (with a prefix of APP)
-        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
-        .merge(config::Environment::with_prefix("APP")).unwrap();
-
-    println!("{} - {}", settings.get_str("username").unwrap(), settings.get_str("pwd").unwrap());
-    
     let client =  Client::new();
     //TODO
-    let url = format!("https://{}/rest/api/1.0/projects/PAA/repos/apis-catalog/pull-requests?state=OPEN&limit=1000", settings.get_str("stash_dns").unwrap());
+    let url = format!("https://{}/rest/api/1.0/projects/PAA/repos/apis-catalog/pull-requests?state=OPEN&limit=1000", SETTINGS.stash_config.dns);
     let mut resp = client.get(url.as_str())
-        .basic_auth(settings.get_str("username").unwrap(), Some(settings.get_str("pwd").unwrap()))
+        .basic_auth(SETTINGS.stash_config.user.clone(), Some(SETTINGS.stash_config.pwd.clone()))
         .send().unwrap();
 
     println!("HTTP Status {:?}", resp.status());
@@ -390,12 +387,18 @@ async fn index(req: HttpRequest) -> Result<NamedFile> {
     Ok(NamedFile::open(path)?)
 }
 
+lazy_static! {
+    static ref SETTINGS : settings::Settings = Settings::new().unwrap();
+}
+
 /**
  * 
  */
 #[actix_rt::main]
 async fn main() {
     env_logger::init();
+
+    println!("{} - {}", SETTINGS.catalog_path, SETTINGS.catalog_dir);
 
     HttpServer::new(|| {
         App::new()

@@ -40,7 +40,10 @@ This picture tries to depict a [_possible state_](https://github.com/omallassi/a
 ## Getting Started
 
 ### Run  the REST Backend
-`RUST_LOG="info,apis_catalog_server=debug" ./target/debug/apis_catalog_server`
+
+* Rename `server/config/sample.toml`into `server/config/local.toml`and upate the properties
+
+* Run `RUST_LOG="info,apis_catalog_server=debug" ./target/debug/apis_catalog_server`
 
 ### Run the CLI
 Some commands: 

@@ -2,3 +2,4 @@ target/
 .vscode/settings.json
 Cargo.lock
 server/settings.toml
+server/config/local.toml

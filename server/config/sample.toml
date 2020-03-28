@@ -1,0 +1,7 @@
+catalog_path = "/Users/omallassi/code/apis-catalog/"
+catalog_dir = "/Users/omallassi/code/apis-catalog/catalog/"
+
+[stash_config]
+dns = "mystash_dns"
+user = "my_username"
+pwd = "my_pwd!"
