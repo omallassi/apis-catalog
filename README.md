@@ -67,5 +67,12 @@ RUST_LOG=debug ./target/debug/catalog deployments list --api 160d9e73-3e6a-4387-
 ## Run the Web UI 
 Refer to [apis-catalog-web](https://github.com/omallassi/apis-catalog-web) for more details. 
 
+## To play with metrics
+
+```
+curl http://127.0.0.1:8088/v1/metrics
+curl -X POST  http://127.0.0.1:8088/v1/metrics/refresh
+```
+
 ## More Details
 available in the [wiki](https://github.com/omallassi/apis-catalog/wiki).

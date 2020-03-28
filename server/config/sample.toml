@@ -2,6 +2,6 @@ catalog_path = "/Users/omallassi/code/apis-catalog/"
 catalog_dir = "/Users/omallassi/code/apis-catalog/catalog/"
 
 [stash_config]
-dns = "mystash_dns"
+base_uri = "https://my_stash/rest/api/1.0/projects/my_proj/repos/my_repo"
 user = "my_username"
 pwd = "my_pwd!"

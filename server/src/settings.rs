@@ -10,7 +10,7 @@ use serde::{Deserialize};
 
 #[derive(Debug, Deserialize)]
 pub struct StashConfig {
-    pub dns: String, 
+    pub base_uri: String, 
     pub user: String, 
     pub pwd: String,
 }

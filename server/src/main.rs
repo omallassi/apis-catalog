@@ -370,7 +370,7 @@ pub fn refresh_metrics() -> HttpResponse {
 
     let client =  Client::new();
     //TODO
-    let url = format!("https://{}/rest/api/1.0/projects/PAA/repos/apis-catalog/pull-requests?state=OPEN&limit=1000", SETTINGS.stash_config.dns);
+    let url = format!("{}/pull-requests?state=OPEN&limit=1000", SETTINGS.stash_config.base_uri);
     let mut resp = client.get(url.as_str())
         .basic_auth(SETTINGS.stash_config.user.clone(), Some(SETTINGS.stash_config.pwd.clone()))
         .send().unwrap();
