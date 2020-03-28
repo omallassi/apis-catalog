@@ -3,27 +3,22 @@ extern crate rusqlite;
 extern crate time;
 extern crate uuid;
 
-use uuid::Uuid;
-
 use rusqlite::{params, Connection, Result};
 use rusqlite::{NO_PARAMS, named_params};
 
 //use rustbreak::{FileDatabase, deser::Ron};
 use log::{info, debug};
 
-pub fn release(api: String, env: String) -> Result<()> {
-    info!("hop {:?}", api);
+use super::super::settings::{*};
 
-    //let db = FileDatabase::<HashMap<String, String>, Ron>::from_path("/tmp/apis-catalog-store.ron", HashMap::new())?;
-    //db.load()?;
+pub fn release(config:  &super::super::settings::Database, api: String, env: String) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-store.db");
+    {
+        debug!("Releasing [{}] to env [{}] from Deployments_Database [{:?}]", api, env, db_path);
+    }
 
-    
-    //db.write(|db| {
-    //    db.insert(api, env);
-    //});
-    //db.save().unwrap();
-    debug!("Creating Schema");
-    let conn = Connection::open("/tmp/apis-catalog-store.db")?;
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS deployments (
             api TEXT NOT NULL,
             env TEXT NOT NULL
@@ -43,17 +38,15 @@ pub fn release(api: String, env: String) -> Result<()> {
     Ok(())
 }
 
-pub fn list_all_deployments() -> Result<Vec<(String, String)>> {
-    //let db = FileDatabase::<HashMap<String, String>, Ron>::from_path("/tmp/apis-catalog-store.ron", HashMap::new())?;
-    //db.load().unwrap();
+pub fn list_all_deployments(config:  &super::super::settings::Database) -> Result<Vec<(String, String)>> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-store.db");
+    {
+        debug!("Reading all deployments from Deployments_Database [{:?}]", db_path);
+    }
 
-    //db.read(|db| {
-    //    println!("Results:");
-    //    println!("{:#?}", db);
-    //})?;
+    let conn = Connection::open(db_path)?;
 
-    debug!("Reading from Database");
-    let conn = Connection::open("/tmp/apis-catalog-store.db")?;
     let mut stmt = conn.prepare("SELECT api, env FROM deployments")?;
     let mut rows = stmt.query(NO_PARAMS)?;
 
@@ -69,9 +62,15 @@ pub fn list_all_deployments() -> Result<Vec<(String, String)>> {
     Ok(tuples)
 }
 
-pub fn get_all_deployments_for_api(api: &str) -> Result<Vec<(String, String)>> {
-    debug!("Reading from Database");
-    let conn = Connection::open("/tmp/apis-catalog-store.db")?;
+pub fn get_all_deployments_for_api(config:  &super::super::settings::Database, api: &str) -> Result<Vec<(String, String)>> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-store.db");
+    {
+        debug!("Reading all deployments for api [{}] from Deployments_Database [{:?}]", api, db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
+
     let mut stmt = conn.prepare("SELECT api, env FROM deployments WHERE api = :api")?;
     let mut rows = stmt.query_named(named_params!{ ":api": api })?;
 

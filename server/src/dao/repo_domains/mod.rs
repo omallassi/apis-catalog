@@ -11,14 +11,21 @@ use rusqlite::{NO_PARAMS, named_params};
 //use rustbreak::{FileDatabase, deser::Ron};
 use log::{debug, info};
 
+use super::super::settings::{*};
+
 pub struct DomainItem{
     pub name: std::string::String,
     pub id: Uuid,
 }
 
-pub fn list_all_domains() -> Result<Vec<DomainItem>> {
-    debug!("Reading all domains from Domain_Database");
-    let conn = Connection::open("/tmp/apis-catalog-domains.db")?;
+pub fn list_all_domains(config:  &super::super::settings::Database) -> Result<Vec<DomainItem>> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-domains.db");
+    {
+        debug!("Reading all domains from Domain_Database [{:?}]", db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS domains (
             id UUID  NOT NULL UNIQUE,
             name TEXT NOT NULL
@@ -44,10 +51,14 @@ pub fn list_all_domains() -> Result<Vec<DomainItem>> {
     Ok(tuples)
 }
 
-pub fn add_domain(name: &str) -> Result<()> {
-    debug!("Creating domain [{}] into Domain_Database", name);
+pub fn add_domain(config:  &super::super::settings::Database, name: &str) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-domains.db");
+    {
+        debug!("Creating domain [{}] into Domain_Database [{:?}]", name, db_path);
+    }
 
-    let conn = Connection::open("/tmp/apis-catalog-domains.db")?;
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS domains (
             id UUID  NOT NULL UNIQUE,
             name TEXT NOT NULL
@@ -65,10 +76,14 @@ pub fn add_domain(name: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn get_domain(id: Uuid) -> Result<DomainItem> {
-    debug!("Get domain [{}] into Domain_Database", id);
+pub fn get_domain(config:  &super::super::settings::Database, id: Uuid) -> Result<DomainItem> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-domains.db");
+    {
+        debug!("Get domain [{}] into Domain_Database [{:?}]", id, db_path);
+    }
 
-    let conn = Connection::open("/tmp/apis-catalog-domains.db")?;
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS domains (
             id UUID  NOT NULL UNIQUE,
             name TEXT NOT NULL

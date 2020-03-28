@@ -11,15 +11,22 @@ use rusqlite::{NO_PARAMS, named_params};
 //use rustbreak::{FileDatabase, deser::Ron};
 use log::{debug, info};
 
+use super::super::settings::{*};
+
 pub struct EnvItem{
     pub id: Uuid, 
     pub name: String,
     pub description: String,
 }
 
-pub fn list_all_envs() -> Result<Vec<EnvItem>> {
-    debug!("Reading all envs from Env_Database");
-    let conn = Connection::open("/tmp/apis-catalog-envs.db")?;
+pub fn list_all_envs(config:  &super::super::settings::Database) -> Result<Vec<EnvItem>> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-envs.db");
+    {
+        debug!("Reading all envs from Env_Database [{:?}]", db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS envs (
             id UUID  NOT NULL UNIQUE,
             name TEXT NOT NULL UNIQUE,
@@ -47,10 +54,14 @@ pub fn list_all_envs() -> Result<Vec<EnvItem>> {
     Ok(tuples)
 }
 
-pub fn add_env(name: &str, description: &str) -> Result<()> {
-    debug!("Creating env [{}] [{}] into Env_Database", name, description);
+pub fn add_env(config:  &super::super::settings::Database, name: &str, description: &str) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-envs.db");
+    {
+        debug!("Creating env [{}] into Env_Database [{:?}]", name, db_path);
+    }
 
-    let conn = Connection::open("/tmp/apis-catalog-envs.db")?;
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS envs (
             id UUID  NOT NULL UNIQUE,
             name TEXT NOT NULL UNIQUE,

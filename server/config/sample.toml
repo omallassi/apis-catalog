@@ -5,3 +5,6 @@ catalog_dir = "/Users/omallassi/code/apis-catalog/catalog/"
 base_uri = "https://my_stash/rest/api/1.0/projects/my_proj/repos/my_repo"
 user = "my_username"
 pwd = "my_pwd!"
+
+[database]
+rusqlite_path = "/tmp"

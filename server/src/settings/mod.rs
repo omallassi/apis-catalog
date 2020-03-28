@@ -16,10 +16,16 @@ pub struct StashConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Database {
+    pub rusqlite_path: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Settings {
     pub catalog_path: String,
     pub catalog_dir: String,
     pub stash_config: StashConfig,
+    pub database: Database,
 }
 
 impl Settings {

@@ -130,7 +130,7 @@ struct Deployments {
 
 #[post("/v1/deployments")]
 fn add_deployment(deployment: Json<Deployment>) -> HttpResponse {
-    release(deployment.api.clone(), deployment.env.clone());
+    release(&SETTINGS.database, deployment.api.clone(), deployment.env.clone());
 
     HttpResponse::Ok().json("")
 }
@@ -141,7 +141,7 @@ fn get_deployments() -> HttpResponse {
         deployments : Vec::new(),
     };
 
-    let mut all_tuples: Vec<(String, String)> = match list_all_deployments() {
+    let mut all_tuples: Vec<(String, String)> = match list_all_deployments(&SETTINGS.database) {
         Ok(all_tuples) => all_tuples, 
         Err(why) => { 
             debug!("No Deployments found");
@@ -165,7 +165,7 @@ fn get_deployments_for_api(path: web::Path<(String,)>) -> HttpResponse {
         deployments : Vec::new(),
     };
 
-    let mut all_tuples: Vec<(String, String)> = match get_all_deployments_for_api(&path.0) {
+    let mut all_tuples: Vec<(String, String)> = match get_all_deployments_for_api(&SETTINGS.database, &path.0) {
         Ok(all_tuples) => all_tuples, 
         Err(why) => { 
             debug!("No Deployments found for api [{:?}]", &path.0);
@@ -198,7 +198,7 @@ pub struct Domains {
 #[get("/v1/domains")]
 pub fn get_domains() -> HttpResponse {
     info!("get domains");
-    let mut all_domains: Vec<DomainItem> = match list_all_domains() {
+    let mut all_domains: Vec<DomainItem> = match list_all_domains(&SETTINGS.database) {
         Ok(all_domains) => all_domains, 
         Err(why) => { 
             panic!("Unable to get domains: {}", why);
@@ -225,7 +225,7 @@ pub fn get_domains() -> HttpResponse {
 
 #[post("/v1/domains")]
 pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
-    add_domain(&domain.name);
+    add_domain(&SETTINGS.database, &domain.name);
     HttpResponse::Ok().json("")
 }
 
@@ -247,7 +247,7 @@ pub struct Apis {
 pub fn create_api(api: Json<Api>) -> HttpResponse {
     info!("create api [{:?}]", api);
 
-    repo_apis::add_api(&api.name, &api.domain_id);
+    repo_apis::add_api(&SETTINGS.database, &api.name, &api.domain_id);
 
     HttpResponse::Ok().json("")
 }
@@ -256,7 +256,7 @@ pub fn create_api(api: Json<Api>) -> HttpResponse {
 pub fn list_all_apis() -> HttpResponse {
     info!("list all apis");
 
-    let mut all_apis: Vec<ApiItem> = match repo_apis::list_all_apis() {
+    let mut all_apis: Vec<ApiItem> = match repo_apis::list_all_apis(&SETTINGS.database) {
         Ok(all_apis) => all_apis, 
         Err(why) => { 
             panic!("Unable to get apis: {}", why);
@@ -267,7 +267,7 @@ pub fn list_all_apis() -> HttpResponse {
 
     while let Some(api) = all_apis.pop() {
         //get domain related to this API
-        let domain = repo_domains::get_domain(api.domain_id).unwrap();
+        let domain = repo_domains::get_domain(&SETTINGS.database, api.domain_id).unwrap();
         //
         let api = Api {
             name: api.name,
@@ -302,7 +302,7 @@ pub struct Env {
 #[post("/v1/envs")]
 pub fn create_env(env: Json<Env>) -> HttpResponse {
     info!("create env [{:?}]", env);
-    add_env(&env.name, &env.description);
+    add_env(&SETTINGS.database, &env.name, &env.description);
 
     HttpResponse::Ok().json("")
 }
@@ -315,7 +315,7 @@ pub fn list_env() -> HttpResponse {
         envs: Vec::new(),
     };
 
-    let mut all_tuples: Vec<EnvItem> = match list_all_envs() {
+    let mut all_tuples: Vec<EnvItem> = match list_all_envs(&SETTINGS.database) {
         Ok(all_tuples) => all_tuples, 
         Err(why) => { 
             debug!("No env found [{:?}]", why);
@@ -358,7 +358,7 @@ struct PullRequest {
 pub fn get_all_metrics() -> HttpResponse {
     info!("get metrics");
 
-    let timeseries = repo_metrics::get_metrics_pull_requests_number();
+    let timeseries = repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database);
     println!("{:?}", timeseries);
 
     HttpResponse::Ok().json("")
@@ -382,7 +382,7 @@ pub fn refresh_metrics() -> HttpResponse {
     debug!("body: {:?}", pull_requests);
 
     let metrics = get_metrics_pull_requests_number(&pull_requests);
-    repo_metrics::save_metrics_pull_requests_number(metrics.0, metrics.1);
+    repo_metrics::save_metrics_pull_requests_number(&SETTINGS.database, metrics.0, metrics.1);
 
     HttpResponse::Ok().json(pull_requests.size)
 }
@@ -448,7 +448,7 @@ mod tests {
         let response = r#"{"size":2,"limit":2,"isLastPage":false,"values":[{"id":57,"version":14,"title":"XXX API for currencies.","description":"XXX (partial) API.\nOnly exposes currencies list","state":"OPEN","open":true,"closed":false,"createdDate":1582305198106,"updatedDate":1585062047626,"fromRef":{"id":"refs/heads/xxx","displayId":"xxx","latestCommit":"486e8c0b301114fcbfc53bdb4e4884765c7122db","repository":{"slug":"my_repo","id":4201,"name":"xxx","scmId":"git","state":"AVAILABLE","statusMessage":"Available","forkable":false,"project":{"key":"PAA","id":423,"name":"Arch.","description":"description .... ","public":false,"type":"NORMAL","links":{"self":[{"href":"https://stash_dns/projects/XYZ"}]}},"public":true,"links":{"clone":[{"href":"https://stash_dns/scm/xyz/xxx.git","name":"http"},{"href":"ssh://git@stash_dns:7999/xyz/xxx.git","name":"ssh"}],"self":[{"href":"https://stash_dns/projects/XYZ/repos/xxx/browse"}]}}},"toRef":{"id":"refs/heads/master","displayId":"master","latestCommit":"eb26e8472c9beb4da8779b9783a2bbb68f176af1","repository":{"slug":"my_repo","id":4201,"name":"xxx","scmId":"git","state":"AVAILABLE","statusMessage":"Available","forkable":false,"project":{"key":"PAA","id":423,"name":"Arch.","description":"description .... ","public":false,"type":"NORMAL","links":{"self":[{"href":"https://stash_dns/projects/XYZ"}]}},"public":true,"links":{"clone":[{"href":"https://stash_dns/scm/xyz/xxx.git","name":"http"},{"href":"ssh://git@stash_dns:7999/xyz/xxx.git","name":"ssh"}],"self":[{"href":"https://stash_dns/projects/XYZ/repos/xxx/browse"}]}}},"locked":false,"author":{"user":{"name":"","emailAddress":"...","id":2811,"displayName":"W","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"AUTHOR","approved":false,"status":"UNAPPROVED"},"reviewers":[{"user":{"name":"","emailAddress":"...","id":1504,"displayName":"L","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"....","id":2511,"displayName":"M","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"...","id":2083,"displayName":"M","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"-ci","emailAddress":".....","id":8003,"displayName":"jenkins-ci","active":true,"slug":"-ci","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"lastReviewedCommit":"486e8c0b301114fcbfc53bdb4e4884765c7122db","role":"REVIEWER","approved":true,"status":"APPROVED"},{"user":{"name":"","emailAddress":"....","id":1283,"displayName":"W","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":".....","id":4304,"displayName":"L","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"}],"participants":[],"properties":{"mergeResult":{"outcome":"CLEAN","current":true},"resolvedTaskCount":0,"commentCount":10,"openTaskCount":0},"links":{"self":[{"href":"https://stash_dns/projects/XYZ/repos/xxx/pull-requests/57"}]}},{"id":1,"version":93,"title":"Marketdata","description":"* Add 3 yamls about APIs for Service [MDS (w/ interpolation)] described under wiki https://my_wiki","state":"OPEN","open":true,"closed":false,"createdDate":1551955373000,"updatedDate":1582726600363,"fromRef":{"id":"refs/heads/marketdata","displayId":"marketdata","latestCommit":"3947e71bd4e152d6f1b93b63232b32d09fa5562e","repository":{"slug":"my_repo","id":4201,"name":"xxx","scmId":"git","state":"AVAILABLE","statusMessage":"Available","forkable":false,"project":{"key":"PAA","id":423,"name":"Arch.","description":"description .... ","public":false,"type":"NORMAL","links":{"self":[{"href":"https://stash_dns/projects/XYZ"}]}},"public":true,"links":{"clone":[{"href":"https://stash_dns/scm/xyz/xxx.git","name":"http"},{"href":"ssh://git@stash_dns:7999/xyz/xxx.git","name":"ssh"}],"self":[{"href":"https://stash_dns/projects/XYZ/repos/xxx/browse"}]}}},"toRef":{"id":"refs/heads/master","displayId":"master","latestCommit":"eb26e8472c9beb4da8779b9783a2bbb68f176af1","repository":{"slug":"my_repo","id":4201,"name":"xxx","scmId":"git","state":"AVAILABLE","statusMessage":"Available","forkable":false,"project":{"key":"PAA","id":423,"name":"Arch.","description":"description .... ","public":false,"type":"NORMAL","links":{"self":[{"href":"https://stash_dns/projects/XYZ"}]}},"public":true,"links":{"clone":[{"href":"https://stash_dns/scm/xyz/xxx.git","name":"http"},{"href":"ssh://git@stash_dns:7999/xyz/xxx.git","name":"ssh"}],"self":[{"href":"https://stash_dns/projects/XYZ/repos/xxx/browse"}]}}},"locked":false,"author":{"user":{"name":"","emailAddress":"...","id":4215,"displayName":"M","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"AUTHOR","approved":false,"status":"UNAPPROVED"},"reviewers":[{"user":{"name":"","emailAddress":"....","id":1283,"displayName":"W","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"...","id":435,"displayName":"B","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"lastReviewedCommit":"0fe3dff0f1a9415d35bddf0ffc004da155e5c26e","role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"...","id":4436,"displayName":"M","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"...","id":3070,"displayName":"S","active":true,"slug":"dsubtil","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"..","id":2511,"displayName":"M","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"lastReviewedCommit":"0fe3dff0f1a9415d35bddf0ffc004da155e5c26e","role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"..","id":2842,"displayName":"E","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"lastReviewedCommit":"6106a3ea81bd9fbbed4a7ccf694f572745040297","role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"d","emailAddress":"...","id":2083,"displayName":"M","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"lastReviewedCommit":"26d762f1c1242d3f2c29a328526154c13c923077","role":"REVIEWER","approved":false,"status":"UNAPPROVED"},{"user":{"name":"-ci","emailAddress":".....","id":8003,"displayName":"jenkins-ci","active":true,"slug":"-ci","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"lastReviewedCommit":"3947e71bd4e152d6f1b93b63232b32d09fa5562e","role":"REVIEWER","approved":true,"status":"APPROVED"}],"participants":[{"user":{"name":"","emailAddress":"...","id":1857,"displayName":"S","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"PARTICIPANT","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"J....","id":3941,"displayName":"C","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"PARTICIPANT","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"....","id":784,"displayName":"e","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/us"}]}},"role":"PARTICIPANT","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":"......","id":1483,"displayName":"S","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"PARTICIPANT","approved":false,"status":"UNAPPROVED"},{"user":{"name":"","emailAddress":".....","id":2862,"displayName":"S","active":true,"slug":"","type":"NORMAL","links":{"self":[{"href":"https://stash_dns/"}]}},"role":"PARTICIPANT","approved":false,"status":"UNAPPROVED"}],"properties":{"mergeResult":{"outcome":"CLEAN","current":true},"resolvedTaskCount":1,"commentCount":86,"openTaskCount":1},"links":{"self":[{"href":"https://stash_dns/projects/XYZ/repos/xxx/pull-requests/1"}]}}],"start":0,"nextPageStart":2}"#;
         let pull_requests : super::PullRequests = serde_json::from_str(response).unwrap();
 
-        let metrics = super::get_metrics_pull_requests_number(pull_requests);
+        let metrics = super::get_metrics_pull_requests_number(&pull_requests);
         assert_eq!(2, metrics.1);
     }
 }

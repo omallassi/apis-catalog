@@ -11,15 +11,22 @@ use rusqlite::{NO_PARAMS, named_params};
 //use rustbreak::{FileDatabase, deser::Ron};
 use log::{debug, info};
 
-pub struct ApiItem{
+use super::super::settings::{*};
+
+pub struct ApiItem {
     pub name: std::string::String,
     pub id: Uuid,
     pub domain_id: Uuid,
 }
 
-pub fn list_all_apis() -> Result<Vec<ApiItem>> {
-    debug!("Reading all apis from Api_Database");
-    let conn = Connection::open("/tmp/apis-catalog-apis.db")?;
+pub fn list_all_apis(config:  &super::super::settings::Database) -> Result<Vec<ApiItem>> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-apis.db");
+    {
+        debug!("Reading all apis from Api_Database [{:?}]", db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS apis (
             id UUID  NOT NULL UNIQUE,
             name TEXT NOT NULL, 
@@ -48,10 +55,14 @@ pub fn list_all_apis() -> Result<Vec<ApiItem>> {
     Ok(tuples)
 }
 
-pub fn add_api(name: &str, domain_id: &Uuid) -> Result<()> {
-    debug!("Creating api [{}] into Api_Database", name);
+pub fn add_api(config:  &super::super::settings::Database, name: &str, domain_id: &Uuid) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-apis.db");
+    {
+        debug!("Creating api [{}] into Api_Database [{:?}]", name, db_path);
+    }
 
-    let conn = Connection::open("/tmp/apis-catalog-apis.db")?;
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS apis (
             id UUID  NOT NULL UNIQUE,
             name TEXT NOT NULL, 

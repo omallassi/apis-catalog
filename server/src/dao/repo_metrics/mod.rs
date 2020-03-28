@@ -7,9 +7,16 @@ use rusqlite::{NO_PARAMS, named_params};
 
 use log::{debug, info};
 
-pub fn save_metrics_pull_requests_number(datetime: DateTime<Utc>, size: i32) -> Result<()> {
-    debug!("Saving metrics into Metrics_Database");
-    let conn = Connection::open("/tmp/apis-catalog-metrics.db")?;
+use super::super::settings::{*};
+
+pub fn save_metrics_pull_requests_number(config:  &super::super::settings::Database, datetime: DateTime<Utc>, size: i32) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-metrics.db");
+    {
+        debug!("Saving metrics into Metrics_Database [{:?}]", db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS metrics (
             date_time TEXT NOT NULL UNIQUE, 
             value INTEGER NOT NULL
@@ -30,10 +37,14 @@ pub struct TimeSeries {
     points : Vec<(DateTime<Utc>, i32)>,
 }
 
-pub fn get_metrics_pull_requests_number() -> Result<TimeSeries> {
-    debug!("Reading all [pull_requests_number] metrics into Metrics_Database");
+pub fn get_metrics_pull_requests_number(config:  &super::super::settings::Database) -> Result<TimeSeries> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-metrics.db");
+    {
+        debug!("Reading all [pull_requests_number] metrics into Metrics_Database [{:?}]", db_path);
+    }
 
-    let conn = Connection::open("/tmp/apis-catalog-metrics.db")?;
+    let conn = Connection::open(db_path)?;
     conn.execute("CREATE TABLE IF NOT EXISTS metrics (
             date_time TEXT NOT NULL UNIQUE, 
             value INTEGER NOT NULL
