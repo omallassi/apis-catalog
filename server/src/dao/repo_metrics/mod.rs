@@ -34,7 +34,7 @@ pub fn save_metrics_pull_requests_number(config:  &super::super::settings::Datab
 
 #[derive(Debug)]
 pub struct TimeSeries {
-    points : Vec<(DateTime<Utc>, i32)>,
+    pub points : Vec<(DateTime<Utc>, i32)>,
 }
 
 pub fn get_metrics_pull_requests_number(config:  &super::super::settings::Database) -> Result<TimeSeries> {

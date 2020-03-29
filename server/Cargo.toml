@@ -23,7 +23,7 @@ failure = "0.1.1"
 git2 = "0.10.1"
 lazy_static = "1.4.0"
 reqwest = "0.9.20"
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 config = "0.10.1"
 
 rusqlite = { version = "0.21.0", features = ["uuid", "chrono"] }

@@ -336,6 +336,29 @@ pub fn list_env() -> HttpResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Metrics {
+    pub pr_num: Vec<(DateTime<Utc>, i32)>,
+}
+
+#[get("/v1/metrics")]
+pub fn get_all_metrics() -> HttpResponse {
+    info!("get metrics");
+
+    let mut timeseries: TimeSeries = repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database).unwrap();
+    let mut data_points = Vec::new();
+
+    while let Some(tuple) = timeseries.points.pop() {
+        data_points.push(tuple);
+    }
+
+    let metrics = Metrics {
+        pr_num: data_points,
+    };
+
+    HttpResponse::Ok().json(metrics)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct PullRequests {
     size: i32,
     limit: i32,
@@ -352,16 +375,6 @@ struct PullRequest {
     state: String, 
     #[serde(rename(serialize = "createdDate", deserialize = "createdDate"))]
     created_epoch: i128
-}
-
-#[get("/v1/metrics")]
-pub fn get_all_metrics() -> HttpResponse {
-    info!("get metrics");
-
-    let timeseries = repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database);
-    println!("{:?}", timeseries);
-
-    HttpResponse::Ok().json("")
 }
 
 #[post("/v1/metrics/refresh")]
