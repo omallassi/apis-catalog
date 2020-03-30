@@ -37,6 +37,7 @@ use repo_domains::{*};
 use repo_envs::{*};
 use repo_apis::{*};
 use repo_metrics::{*};
+use catalog::{*};
 
 mod settings;
 use settings::Settings;
@@ -48,6 +49,7 @@ extern crate histogram;
 use histogram::Histogram;
 
 use std::convert::TryFrom;
+use std::iter::Sum;
 
 
 /**
@@ -410,6 +412,15 @@ pub fn refresh_metrics() -> HttpResponse {
         isize::try_from(metrics.3).unwrap(),
         isize::try_from(metrics.4).unwrap()
     );
+    //get # of endpoints
+    let all_specs : Vec<SpecItem> = catalog::list_specs(SETTINGS.catalog_path.as_str());
+    let len = &all_specs.len();
+    let metrics = get_metrics_endpoints_num(all_specs);
+    debug!("Got [{}] specifications and [{:?}] endpoints", len, &metrics);
+    //TODO to persist
+
+    //TODO to return for display
+
     //
     HttpResponse::Ok().json(pull_requests.size)
 }
@@ -440,6 +451,18 @@ fn get_metrics_pull_requests_ages(pull_requests: &PullRequests, current_epoch: u
     );
 
     (Utc::now(), histogram.percentile(0.0).unwrap(), histogram.percentile(50.0).unwrap(), histogram.percentile(100.0).unwrap(), histogram.mean().unwrap())
+}
+
+//TODO to test
+fn get_metrics_endpoints_num(all_specs : Vec<SpecItem>) -> (DateTime<Utc>, usize) {
+    let endpoints_per_spec : Vec<_> = all_specs.iter().map(|spec| {
+            spec.api_spec.paths.len()
+        }).collect();
+
+    let total = endpoints_per_spec.iter().sum::<usize>();
+    debug!("Got # of endpoints per spec [{:?}] - and total # of endpoints [{}]", &endpoints_per_spec, &total);
+
+    (Utc::now(), total)
 }
 
 
