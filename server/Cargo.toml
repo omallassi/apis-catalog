@@ -25,11 +25,11 @@ lazy_static = "1.4.0"
 reqwest = "0.9.20"
 chrono = { version = "0.4", features = ["serde"] }
 config = "0.10.1"
-
 rusqlite = { version = "0.21.0", features = ["uuid", "chrono"] }
 time = "0.1"
 uuid = { version = "0.8", features = ["serde", "v1", "v3", "v4","v5"] }
 # sqlite = "0.25.0"
+histogram = "0.6.9"
 
 # [dependencies.rustbreak]
 # version = "2.0.0-rc3"
