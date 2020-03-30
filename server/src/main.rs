@@ -47,6 +47,8 @@ extern crate lazy_static;
 extern crate histogram;
 use histogram::Histogram;
 
+use std::convert::TryFrom;
+
 
 /**
  * 
@@ -341,21 +343,19 @@ pub fn list_env() -> HttpResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Metrics {
     pub pr_num: Vec<(DateTime<Utc>, i32)>,
+    pub pr_ages: Vec<(DateTime<Utc>, i64, i64, i64, i64)>,
 }
 
 #[get("/v1/metrics")]
 pub fn get_all_metrics() -> HttpResponse {
-    info!("get metrics");
-
-    let mut timeseries: TimeSeries = repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database).unwrap();
-    let mut data_points = Vec::new();
-
-    while let Some(tuple) = timeseries.points.pop() {
-        data_points.push(tuple);
-    }
-
+    info!("get all metrics");
+    
+    let pr_num_timeseries: TimeSeries = repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database).unwrap();
+    let pr_ages_timeseries: TupleTimeSeries = repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database).unwrap();
+    //
     let metrics = Metrics {
-        pr_num: data_points,
+        pr_num: pr_num_timeseries.points,
+        pr_ages: pr_ages_timeseries.points,
     };
 
     HttpResponse::Ok().json(metrics)
@@ -397,17 +397,20 @@ pub fn refresh_metrics() -> HttpResponse {
 
     debug!("body: {:?}", pull_requests);
 
+    //keep metric pr_num
     let metrics = get_metrics_pull_requests_number(&pull_requests);
     repo_metrics::save_metrics_pull_requests_number(&SETTINGS.database, metrics.0, metrics.1);
-    //
+    //keep metric pr_age
     let current_epoch = std::time::SystemTime::now();
     let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
-    //
     let metrics = get_metrics_pull_requests_ages(&pull_requests, current_epoch.as_secs());
-    
-    //TODO SAVE (need to rework data modle + tags/metrics label) & return over HTTP
-    //repo_metrics::save_metrics_pull_requests_number(&SETTINGS.database, metrics.0, metrics.1);
-
+    repo_metrics::save_metrics_pull_requests_ages(&SETTINGS.database, metrics.0, 
+        isize::try_from(metrics.1).unwrap(), 
+        isize::try_from(metrics.2).unwrap(),
+        isize::try_from(metrics.3).unwrap(),
+        isize::try_from(metrics.4).unwrap()
+    );
+    //
     HttpResponse::Ok().json(pull_requests.size)
 }
 
