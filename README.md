@@ -54,8 +54,8 @@ RUST_LOG=debug ./target/debug/catalog domains create --name /domain3
 RUST_LOG=debug ./target/debug/catalog domains create --name /domain2/subdomain2.1/subdomain2.2 --description "This is a smaller part of your dreamed domain. smaller, but still enjoyable"
 RUST_LOG=debug ./target/debug/catalog domains list
 
-RUST_LOG=debug ./target/debug/catalog apis create --domain-id f8e87f4c-953c-4330-b522-f7d5f883d7ab --name my_sampe_api --spec-ids 12
-RUST_LOG=debug ./target/debug/catalog apis create --domain-id f8e87f4c-953c-4330-b522-f7d5f883d7ab --name my_sampe_api_2 --spec-ids 12
+RUST_LOG=debug ./target/debug/catalog apis create --name my_sampe_api --spec-ids 12 --domain-id 63c1cc54-3319-404b-ae41-1e105192d1ae
+RUST_LOG=debug ./target/debug/catalog apis create --name my_sampe_api_2 --spec-ids 12 --domain-id 23ecf86d-9ada-417a-aaca-976fe205f52b
 RUST_LOG=debug ./target/debug/catalog apis list
 
 RUST_LOG=debug ./target/debug/catalog env create --name xva.apac.murex.com --description "APAC env for xVA related solutions"
