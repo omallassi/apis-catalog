@@ -346,6 +346,7 @@ pub fn list_env() -> HttpResponse {
 pub struct Metrics {
     pub pr_num: Vec<(DateTime<Utc>, i32)>,
     pub pr_ages: Vec<(DateTime<Utc>, i64, i64, i64, i64)>,
+    pub endpoints_num: Vec<(DateTime<Utc>, i32)>,
 }
 
 #[get("/v1/metrics")]
@@ -354,10 +355,12 @@ pub fn get_all_metrics() -> HttpResponse {
     
     let pr_num_timeseries: TimeSeries = repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database).unwrap();
     let pr_ages_timeseries: TupleTimeSeries = repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database).unwrap();
+    let endpoints_number: TimeSeries = repo_metrics::get_metrics_endpoints_number(&SETTINGS.database).unwrap();
     //
     let metrics = Metrics {
         pr_num: pr_num_timeseries.points,
         pr_ages: pr_ages_timeseries.points,
+        endpoints_num : endpoints_number.points,
     };
 
     HttpResponse::Ok().json(metrics)
@@ -382,15 +385,38 @@ struct PullRequest {
     created_epoch: u64,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct Info {
+    username: Option<String>, 
+    password: Option<String>,
+}
+
 #[post("/v1/metrics/refresh")]
-pub fn refresh_metrics() -> HttpResponse {
+pub fn refresh_metrics(info: web::Query<Info>) -> HttpResponse {
     info!("refresh metrics");
+
+    let mut username = SETTINGS.stash_config.user.clone();
+    match &info.username  {
+        Some(name) => {
+            username = name.to_string();
+            debug!("Will use settings in url for username");
+        }, 
+        None => debug!("Will use settings in config for username"),
+    };
+    let mut pwd = SETTINGS.stash_config.pwd.clone();
+    match &info.password  {
+        Some(name) => {
+            pwd = name.to_string();
+            debug!("Will use settings in url for password");
+        }, 
+        None => debug!("Will use settings in config for password"),
+    };
 
     let client =  Client::new();
     
     let url = format!("{}/pull-requests?state=OPEN&limit=1000", SETTINGS.stash_config.base_uri);
     let mut resp = client.get(url.as_str())
-        .basic_auth(SETTINGS.stash_config.user.clone(), Some(SETTINGS.stash_config.pwd.clone()))
+        .basic_auth(username, Some(pwd))
         .send().unwrap();
 
     debug!("HTTP Status {:?}", resp.status());
@@ -417,10 +443,7 @@ pub fn refresh_metrics() -> HttpResponse {
     let len = &all_specs.len();
     let metrics = get_metrics_endpoints_num(all_specs);
     debug!("Got [{}] specifications and [{:?}] endpoints", len, &metrics);
-    //TODO to persist
-
-    //TODO to return for display
-
+    repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1);
     //
     HttpResponse::Ok().json(pull_requests.size)
 }
@@ -454,12 +477,12 @@ fn get_metrics_pull_requests_ages(pull_requests: &PullRequests, current_epoch: u
 }
 
 //TODO to test
-fn get_metrics_endpoints_num(all_specs : Vec<SpecItem>) -> (DateTime<Utc>, usize) {
+fn get_metrics_endpoints_num(all_specs : Vec<SpecItem>) -> (DateTime<Utc>, i32) {
     let endpoints_per_spec : Vec<_> = all_specs.iter().map(|spec| {
             spec.api_spec.paths.len()
         }).collect();
 
-    let total = endpoints_per_spec.iter().sum::<usize>();
+    let total: i32 = endpoints_per_spec.iter().sum::<usize>() as i32;
     debug!("Got # of endpoints per spec [{:?}] - and total # of endpoints [{}]", &endpoints_per_spec, &total);
 
     (Utc::now(), total)

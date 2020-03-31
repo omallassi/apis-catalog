@@ -133,3 +133,59 @@ pub fn get_metrics_pull_requests_ages(config:  &super::super::settings::Database
 
     Ok(timeseries)
 }
+
+pub fn save_metrics_endpoints_num(config:  &super::super::settings::Database, datetime: DateTime<Utc>, size: i32) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-metrics.db");
+    {
+        debug!("Saving metrics_endpoints_num into Metrics_Database [{:?}]", db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
+    conn.execute("CREATE TABLE IF NOT EXISTS metrics_endpoints_num (
+            date_time TEXT NOT NULL UNIQUE, 
+            value INTEGER NOT NULL
+        )", 
+        NO_PARAMS,
+    )?;
+
+    conn.execute(
+        "INSERT INTO metrics_endpoints_num (date_time, value) VALUES (?1, ?2)", 
+        params![datetime, size],
+    )?;
+
+    Ok(())
+}
+
+pub fn get_metrics_endpoints_number(config:  &super::super::settings::Database) -> Result<TimeSeries> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-metrics.db");
+    {
+        debug!("Reading all [metrics_endpoints_num] metrics into Metrics_Database [{:?}]", db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
+    conn.execute("CREATE TABLE IF NOT EXISTS metrics_endpoints_num (
+            date_time TEXT NOT NULL UNIQUE, 
+            value INTEGER NOT NULL
+        )", 
+        NO_PARAMS,
+    )?;
+
+    let mut stmt = conn.prepare("SELECT date_time, value FROM metrics_endpoints_num")?;
+    let mut rows = stmt.query(NO_PARAMS)?;
+
+    let mut points = Vec::new();
+    while let Some(row) = rows.next()? {
+        let time = row.get("date_time")?;
+        let val = row.get("value")?;
+
+        points.push((time, val));
+    }
+
+    let timeseries = TimeSeries {
+        points : points,
+    };
+
+    Ok(timeseries)
+}
