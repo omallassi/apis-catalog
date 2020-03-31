@@ -142,6 +142,7 @@ fn get_deployments(api: Option<&str>) -> Result<(), reqwest::Error> {
 struct Domain {
     name: String,
     id: Uuid,
+    description: String, 
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -168,12 +169,13 @@ fn get_domains() -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-fn create_domain(name: &str) -> Result<(), reqwest::Error> {
+fn create_domain(name: &str, description: &str) -> Result<(), reqwest::Error> {
     let client = Client::new();
 
     let domain = Domain {
         id: Uuid::nil(),
         name: name.to_string(), 
+        description: description.to_string(),
     };
     let resp = client.post("http://127.0.0.1:8088/v1/domains").json(&domain).send()?;
     debug!("body: {:?}", resp.status());
@@ -302,6 +304,12 @@ fn main() {
                         .takes_value(true)
                         .required(true)
                         .help("The name of the domain"))
+                    .arg(Arg::with_name("description")
+                        .short("d")
+                        .long("description")
+                        .takes_value(true)
+                        .required(false)
+                        .help("Some description, if you want to..."))
                 ),
         )
         .subcommand(
@@ -453,7 +461,12 @@ fn main() {
                 get_domains();
             }
             ("create", Some(matches)) => {
-                create_domain(matches.value_of("name").unwrap());
+                let description = match matches.value_of("description") {
+                    Some(description) => description,
+                    None => ""
+                };
+
+                create_domain(matches.value_of("name").unwrap(), description);
             }
             _ => unreachable!(),
         }

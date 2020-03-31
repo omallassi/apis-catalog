@@ -48,9 +48,10 @@ This picture tries to depict a [_possible state_](https://github.com/omallassi/a
 ### Run the CLI
 Some commands: 
 ```
-RUST_LOG=debug ./target/debug/catalog domains create --name domain1
-RUST_LOG=debug ./target/debug/catalog domains create --name domain2
-RUST_LOG=debug ./target/debug/catalog domains create --name domain3
+RUST_LOG=debug ./target/debug/catalog domains create --name /domain1
+RUST_LOG=debug ./target/debug/catalog domains create --name /domain2 --description "This domain owns........ all you have ever dreamed about. Do not think a lot. this is just the place to be...."
+RUST_LOG=debug ./target/debug/catalog domains create --name /domain3
+RUST_LOG=debug ./target/debug/catalog domains create --name /domain2/subdomain2.1/subdomain2.2 --description "This is a smaller part of your dreamed domain. smaller, but still enjoyable"
 RUST_LOG=debug ./target/debug/catalog domains list
 
 RUST_LOG=debug ./target/debug/catalog apis create --domain-id f8e87f4c-953c-4330-b522-f7d5f883d7ab --name my_sampe_api --spec-ids 12
