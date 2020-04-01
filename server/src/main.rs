@@ -529,7 +529,7 @@ async fn main() {
             .route("/", web::get().to(index))
             .route("/domains", web::get().to(index))
             .route("/apis", web::get().to(index))
-            .route("/env", web::get().to(index))
+            .route("/envs", web::get().to(index))
             .service(Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"))
     })
     .workers(4)
