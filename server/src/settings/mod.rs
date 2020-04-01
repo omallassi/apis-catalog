@@ -1,10 +1,10 @@
 extern crate log;
-use log::{debug,info};
+use log::{info};
 
 extern crate env_logger;
 
 extern crate config;
-use config::{ConfigError, Config, File, Environment};
+use config::{ConfigError};
 
 use serde::{Deserialize};
 
@@ -13,6 +13,12 @@ pub struct StashConfig {
     pub base_uri: String, 
     pub user: String, 
     pub pwd: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Server {
+    pub bind_adress: String,
+    pub static_resources_path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +32,7 @@ pub struct Settings {
     pub catalog_dir: String,
     pub stash_config: StashConfig,
     pub database: Database,
+    pub server: Server,
 }
 
 impl Settings {

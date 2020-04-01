@@ -49,7 +49,6 @@ extern crate histogram;
 use histogram::Histogram;
 
 use std::convert::TryFrom;
-use std::iter::Sum;
 
 
 /**
@@ -494,8 +493,9 @@ fn get_metrics_endpoints_num(all_specs : Vec<SpecItem>) -> (DateTime<Utc>, i32) 
 /**
  * To server static pages
  */
-async fn index(req: HttpRequest) -> Result<NamedFile> {
-    let path: PathBuf = PathBuf::from("./static/index.html");
+async fn index(_req: HttpRequest) -> Result<NamedFile> {
+    let mut path: PathBuf = PathBuf::from(&SETTINGS.server.static_resources_path);
+    path.push("index.html");
     Ok(NamedFile::open(path)?)
 }
 
@@ -509,9 +509,6 @@ lazy_static! {
 #[actix_rt::main]
 async fn main() {
     env_logger::init();
-
-    println!("{} - {}", SETTINGS.catalog_path, SETTINGS.catalog_dir);
-
     HttpServer::new(|| {
         App::new()
             .route("/v1/endpoints", web::get().to(get_endpoints))
@@ -529,10 +526,14 @@ async fn main() {
             .service(get_all_metrics)
             .service(refresh_metrics)
             .route("/static", web::get().to(index))
-            .service(Files::new("/", "/Users/omallassi/code/rust/apis-catalog-web/build").index_file("index.html"))  // tmp can be replaced with relative "./ui/", 
+            .route("/", web::get().to(index))
+            .route("/domains", web::get().to(index))
+            .route("/apis", web::get().to(index))
+            .route("/env", web::get().to(index))
+            .service(Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"))
     })
     .workers(4)
-    .bind("127.0.0.1:8088")
+    .bind(&SETTINGS.server.bind_adress)  
     .unwrap()
     .run()
     .await;
