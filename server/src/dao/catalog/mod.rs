@@ -22,7 +22,7 @@ pub fn list_specs(path: &str) -> Vec<SpecItem> {
     let mut specs = Vec::new();
     //get connection to git repo (should be cloned as prerequisite)
     if let Ok(repo) = get_git_repo(path) {
-        let pattern = format!("{}{}", path, "**/*.yaml");
+        let pattern = format!("{}{}", path, "/**/*.yaml"); //TODO fragile
         for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
             let path = entry.display().to_string();
             let file_path = Path::new(&path);
