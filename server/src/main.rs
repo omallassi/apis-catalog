@@ -3,7 +3,7 @@ extern crate env_logger;
 extern crate uuid;
 
 extern crate reqwest;
-use reqwest::{Client, Response};
+use reqwest::{Client};
 
 extern crate config;
 

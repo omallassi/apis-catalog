@@ -20,6 +20,12 @@ use uuid::Uuid;
 
 use std::iter::FromIterator;
 
+#[macro_use]
+extern crate lazy_static;
+
+mod settings;
+use settings::{*};
+
 //
 #[derive(Serialize, Deserialize, Debug)]
 struct Endpoints {
@@ -33,7 +39,7 @@ struct Endpoint {
 
 fn get_endpoints(api: &str) -> Result<(), reqwest::Error> {
     let client = Client::new();
-    let url = format!("http://127.0.0.1:8088/v1/endpoints/{api}" , api = &api);
+    let url = format!("http://{address}/v1/endpoints/{api}", address = &SETTINGS.server.address, api = &api);
     let mut resp = client.get(&url).send()?;
     debug!("body: {:?}", resp.status());
     let endpoints: Endpoints = resp.json()?;
@@ -65,7 +71,8 @@ struct Spec {
 
 fn get_specs() -> Result<(), reqwest::Error> {
     let client = Client::new();
-    let mut resp = client.get("http://127.0.0.1:8088/v1/specs").send()?;
+    let url = format!("http://{address}/v1/specs", address = &SETTINGS.server.address);
+    let mut resp = client.get(&url).send()?;  
     debug!("body: {:?}", resp.status());
     let specs: Specs = resp.json()?;
     //
@@ -101,7 +108,8 @@ fn deploy(api: &str, env: &str) -> Result<(), reqwest::Error> {
         api: api.to_string(), 
         env: env.to_string(),
     };
-    let resp = client.post("http://127.0.0.1:8088/v1/deployments").json(&deployment).send()?;
+    let url = format!("http://{address}/v1/deployments", address = &SETTINGS.server.address);
+    let resp = client.post(&url).json(&deployment).send()?;
     debug!("body: {:?}", resp.status());
 
     Ok(())
@@ -113,12 +121,13 @@ fn get_deployments(api: Option<&str>) -> Result<(), reqwest::Error> {
     let api_id = match api {
         Some(api_id) => {
             debug!("get deployments for specificied api {:?}", api_id);
-            let url = format!("http://127.0.0.1:8088/v1/deployments/{}", api_id);
+            let url = format!("http://{address}/v1/deployments/{api_id}", address = &SETTINGS.server.address, api_id = api_id);
             resp = client.get(&url).send()?;
         },
         None => {
             debug!("get all deployments");
-            resp = client.get("http://127.0.0.1:8088/v1/deployments").send()?;
+            let url = format!("http://{address}/v1/deployments", address = &SETTINGS.server.address);
+            resp = client.get(&url).send()?;
         },
     };
     
@@ -152,7 +161,8 @@ struct Domains {
 
 fn get_domains() -> Result<(), reqwest::Error> {
     let client = Client::new();
-    let mut resp = client.get("http://127.0.0.1:8088/v1/domains").send()?;
+    let url = format!("http://{address}/v1/domains", address = &SETTINGS.server.address);
+    let mut resp = client.get(&url).send()?;
     debug!("body: {:?}", resp.status());
     let domains: Domains = resp.json()?;
     //
@@ -177,7 +187,8 @@ fn create_domain(name: &str, description: &str) -> Result<(), reqwest::Error> {
         name: name.to_string(), 
         description: description.to_string(),
     };
-    let resp = client.post("http://127.0.0.1:8088/v1/domains").json(&domain).send()?;
+    let url = format!("http://{address}/v1/domains", address = &SETTINGS.server.address);
+    let resp = client.post(&url).json(&domain).send()?;
     debug!("body: {:?}", resp.status());
 
     Ok(())
@@ -212,7 +223,8 @@ fn create_api(name: &str, domain_id: &str, specs: Vec<&str> ) -> Result<(), reqw
         spec_ids: specs_as_string,
     };
 
-    let resp = client.post("http://127.0.0.1:8088/v1/apis").json(&api).send()?;
+    let url = format!("http://{address}/v1/apis", address = &SETTINGS.server.address);
+    let resp = client.post(&url).json(&api).send()?;
     debug!("body: {:?}", resp.status());
     
     Ok(())
@@ -221,7 +233,8 @@ fn create_api(name: &str, domain_id: &str, specs: Vec<&str> ) -> Result<(), reqw
 fn list_all_apis() -> Result<(), reqwest::Error> {
     let client =  Client::new();
 
-    let mut resp = client.get("http://127.0.0.1:8088/v1/apis").send()?;
+    let url = format!("http://{address}/v1/apis", address = &SETTINGS.server.address);
+    let mut resp = client.get(&url).send()?;
     debug!("body: {:?}", resp.status());
 
     let apis: Apis = resp.json()?;
@@ -253,7 +266,8 @@ pub struct Env {
 
 fn list_env() -> Result<(), reqwest::Error> {
     let client = Client::new();
-    let mut resp = client.get("http://127.0.0.1:8088/v1/envs").send()?;
+    let url = format!("http://{address}/v1/envs", address = &SETTINGS.server.address);
+    let mut resp = client.get(&url).send()?;
     debug!("body: {:?}", resp.status());
     let envs: Envs = resp.json()?;
     //
@@ -278,12 +292,16 @@ fn create_env(name: &str, description: &str) -> Result<(), reqwest::Error> {
         name: name.to_string(), 
         description: description.to_string(),
     };
-    let resp = client.post("http://127.0.0.1:8088/v1/envs").json(&env).send()?;
+    let url = format!("http://{address}/v1/envs", address = &SETTINGS.server.address);
+    let resp = client.post(&url).json(&env).send()?;
     debug!("body: {:?}", resp.status());
 
     Ok(())
 }
 
+lazy_static! {
+    static ref SETTINGS : settings::Settings = Settings::new().unwrap();
+}
 
 fn main() {
     env_logger::init();
