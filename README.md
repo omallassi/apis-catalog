@@ -61,7 +61,7 @@ RUST_LOG=debug ./target/debug/catalog apis list
 RUST_LOG=debug ./target/debug/catalog env create --name xva.apac.murex.com --description "APAC env for xVA related solutions"
 RUST_LOG=debug ./target/debug/catalog env list
 
-RUST_LOG=debug ./target/debug/catalog deploy --api 160d9e73-3e6a-4387-87f4-a16e692d0d80 --env a3904f15-83ea-46b3-bca0-1e0df2337e90
+RUST_LOG=debug ./target/debug/catalog deployments create --api 160d9e73-3e6a-4387-87f4-a16e692d0d80 --env a3904f15-83ea-46b3-bca0-1e0df2337e90
 RUST_LOG=debug ./target/debug/catalog deployments list --api 160d9e73-3e6a-4387-87f4-a16e692d0d80
 ```
 

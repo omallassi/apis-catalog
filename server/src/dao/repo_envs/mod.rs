@@ -54,6 +54,33 @@ pub fn list_all_envs(config:  &super::super::settings::Database) -> Result<Vec<E
     Ok(tuples)
 }
 
+pub fn get_env(config:  &super::super::settings::Database, id: Uuid) -> Result<EnvItem> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-envs.db");
+    {
+        debug!("Reading envs [{:?}] from Env_Database [{:?}]", id, db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
+    conn.execute("CREATE TABLE IF NOT EXISTS envs (
+            id UUID  NOT NULL UNIQUE,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT NOT NULL)", 
+        NO_PARAMS,
+    )?;
+
+    let mut stmt = conn.prepare("SELECT id, name, description FROM envs WHERE id = ?1")?;
+    let row = stmt.query_row(params![id], |row |{
+        Ok(EnvItem {
+            name: row.get(1)?,
+            id: row.get(0)?,
+            description: row.get(2)?,
+        })
+    })?;
+
+    Ok(row)
+}
+
 pub fn add_env(config:  &super::super::settings::Database, name: &str, description: &str) -> Result<()> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-envs.db");

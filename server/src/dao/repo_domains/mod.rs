@@ -98,7 +98,7 @@ pub fn get_domain(config:  &super::super::settings::Database, id: Uuid) -> Resul
     )?;
 
     let mut stmt = conn.prepare("SELECT id, name, description FROM domains WHERE id = ?1")?;
-    let mut row = stmt.query_row(params![id], |row |{
+    let row = stmt.query_row(params![id], |row |{
         Ok(DomainItem {
             name: row.get(1)?,
             id: row.get(0)?,

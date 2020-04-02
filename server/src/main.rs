@@ -316,6 +316,30 @@ pub fn create_env(env: Json<Env>) -> HttpResponse {
     HttpResponse::Ok().json("")
 }
 
+fn get_env(path: web::Path<(String,)>) -> HttpResponse {
+    let env_id = Uuid::parse_str(&path.0).unwrap();
+
+    let response = match repo_envs::get_env(&SETTINGS.database, env_id) {
+        Ok(env) => {
+            let returned_env = Env {
+                id : env.id,
+                name : env.name,
+                description: env.description,
+            };
+            debug!("Got Env [{:?}]", returned_env);
+
+            HttpResponse::Ok().json(returned_env)
+        }
+        Err(_) => {
+            debug!("No Env found for api [{:?}]", &path.0);
+
+            HttpResponse::NotFound().finish()
+        }
+    };
+
+    response
+}
+
 #[get("/v1/envs")]
 pub fn list_env() -> HttpResponse {
     info!("list envs");
@@ -421,11 +445,8 @@ pub fn refresh_metrics(info: web::Query<Info>) -> HttpResponse {
         .basic_auth(username, Some(pwd))
         .send().unwrap();
 
-    debug!("HTTP Status {:?}", resp.status());
-
+    debug!("Calling {} - got HTTP Status {:?}", url, resp.status());
     let pull_requests: PullRequests =  resp.json().unwrap();
-
-    debug!("body: {:?}", pull_requests);
 
     //keep metric pr_num
     let metrics = get_metrics_pull_requests_number(&pull_requests);
@@ -512,10 +533,10 @@ async fn main() {
     HttpServer::new(|| {
         App::new()
             .route("/v1/endpoints", web::get().to(get_endpoints))
-            .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))
+            .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))  //TODO rework url
             .service(add_deployment)
             .service(get_deployments)
-            .service(web::resource("/v1/deployments/{api}").route(web::get().to(get_deployments_for_api)))
+            .service(web::resource("/v1/deployments/{api}").route(web::get().to(get_deployments_for_api)))  //TODO rework url
             .service(get_domains)
             .service(create_domain)
             .service(get_all_specs)
@@ -523,6 +544,7 @@ async fn main() {
             .service(list_all_apis)
             .service(create_env)
             .service(list_env)
+            .service(web::resource("/v1/envs/{id}").route(web::get().to(get_env)))
             .service(get_all_metrics)
             .service(refresh_metrics)
             .route("/static", web::get().to(index))
