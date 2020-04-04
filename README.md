@@ -72,7 +72,7 @@ Refer to [apis-catalog-web](https://github.com/omallassi/apis-catalog-web) for m
 
 ```
 curl http://127.0.0.1:8088/v1/metrics
-curl -X POST  http://127.0.0.1:8088/v1/metrics/refresh
+curl -X POST  http://127.0.0.1:8088/v1/metrics/refresh -d user=fff -d pwd=sdf
 ```
 
 ## More Details
