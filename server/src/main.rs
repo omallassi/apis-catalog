@@ -418,31 +418,16 @@ pub struct Info {
 }
 
 #[post("/v1/metrics/refresh")]
-pub fn refresh_metrics(info: web::Query<Info>) -> HttpResponse {
+pub fn refresh_metrics(_info: web::Query<Info>) -> HttpResponse {
     info!("refresh metrics");
 
-    let mut username = SETTINGS.stash_config.user.clone();
-    match &info.username  {
-        Some(name) => {
-            username = name.to_string();
-            debug!("Will use settings in url for username");
-        }, 
-        None => debug!("Will use settings in config for username"),
-    };
-    let mut pwd = SETTINGS.stash_config.pwd.clone();
-    match &info.password  {
-        Some(name) => {
-            pwd = name.to_string();
-            debug!("Will use settings in url for password");
-        }, 
-        None => debug!("Will use settings in config for password"),
-    };
+    let mut access_token = SETTINGS.stash_config.access_token.clone();
 
     let client =  Client::new();
     
     let url = format!("{}/pull-requests?state=OPEN&limit=1000", SETTINGS.stash_config.base_uri);
     let mut resp = client.get(url.as_str())
-        .basic_auth(username, Some(pwd))
+        .header("Authorization", format!("Bearer {}", access_token))
         .send().unwrap();
 
     debug!("Calling {} - got HTTP Status {:?}", url, resp.status());

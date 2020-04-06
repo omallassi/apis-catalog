@@ -89,11 +89,7 @@ pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
             }
         }
     }
-    else {@@     
-
-
-
-        ffff
+    else {
             warn!("Unable to parse file [{}]", path);
     }
 
