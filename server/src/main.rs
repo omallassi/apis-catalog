@@ -526,9 +526,9 @@ async fn main() {
     env_logger::init();
 
     // Create a new scheduler for Utc
-    let mut scheduler = Scheduler::with_tz(chrono::Utc);
+    let mut scheduler = Scheduler::new();
     // Add some tasks to it
-    scheduler.every(Weekday).at("23:20").run(|| {
+    scheduler.every(Weekday).at("23:30").run(|| {
         let client =  Client::new();
         client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send();
     });
