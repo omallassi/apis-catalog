@@ -418,7 +418,7 @@ pub struct Info {
 }
 
 #[post("/v1/metrics/refresh")]
-pub fn refresh_metrics(_info: web::Query<Info>) -> HttpResponse {
+pub fn refresh_metrics() -> HttpResponse {
     info!("refresh metrics");
 
     let mut access_token = SETTINGS.stash_config.access_token.clone();
@@ -455,6 +455,7 @@ pub fn refresh_metrics(_info: web::Query<Info>) -> HttpResponse {
     //
     HttpResponse::Ok().json(pull_requests.size)
 }
+
 
 fn get_metrics_pull_requests_number(pull_requests: &PullRequests) -> (DateTime<Utc>, i32) {
     (Utc::now(), pull_requests.size)
@@ -509,12 +510,33 @@ lazy_static! {
     static ref SETTINGS : settings::Settings = Settings::new().unwrap();
 }
 
+
+// Scheduler, and trait for .seconds(), .minutes(), etc.
+use clokwerk::{Scheduler, TimeUnits};
+// Import week days and WeekDay
+use clokwerk::Interval::*;
+use std::thread;
+use std::time::Duration;
+
 /**
  * 
  */
 #[actix_rt::main]
 async fn main() {
     env_logger::init();
+
+    // Create a new scheduler for Utc
+    let mut scheduler = Scheduler::with_tz(chrono::Utc);
+    // Add some tasks to it
+    scheduler.every(Weekday).at("23:20").run(|| {
+        let client =  Client::new();
+        client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send();
+    });
+    
+let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
+
+
+    //start HTTP Server
     HttpServer::new(|| {
         App::new()
             .route("/v1/endpoints", web::get().to(get_endpoints))

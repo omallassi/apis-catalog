@@ -31,6 +31,7 @@ time = "0.1"
 uuid = { version = "0.8", features = ["serde", "v1", "v3", "v4","v5"] }
 # sqlite = "0.25.0"
 histogram = "0.6.9"
+clokwerk = "0.3.0"
 
 # [dependencies.rustbreak]
 # version = "2.0.0-rc3"
