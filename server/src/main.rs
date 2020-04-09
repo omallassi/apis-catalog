@@ -242,9 +242,15 @@ pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
 pub struct Api {
     pub id: Uuid,
     pub name: String, 
+    pub status: Status,
     pub domain_id: Uuid, 
     pub domain_name: String,
     pub spec_ids: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Status {
+    VALIDATED, DEPRECATED, RETIRED,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -281,6 +287,7 @@ pub fn list_all_apis() -> HttpResponse {
         let api = Api {
             name: api.name,
             id: api.id,
+            status: Status::VALIDATED,  //TODO
             domain_id: domain.id, 
             domain_name: domain.name,
             spec_ids: Vec::new(), //TODO
@@ -528,7 +535,7 @@ async fn main() {
     // Create a new scheduler for Utc
     let mut scheduler = Scheduler::new();
     // Add some tasks to it
-    scheduler.every(Weekday).at("23:30").run(|| {
+    scheduler.every(Weekday).at("23:30").run(|| {  //TODO config? 
         let client =  Client::new();
         client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send();
     });

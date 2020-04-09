@@ -198,9 +198,15 @@ fn create_domain(name: &str, description: &str) -> Result<(), reqwest::Error> {
 pub struct Api {
     pub id: Uuid,
     pub name: String, 
+    pub status: Status,
     pub domain_id: Uuid, 
     pub domain_name: String,
     pub spec_ids: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Status {
+    VALIDATED, DEPRECATED, RETIRED,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -218,6 +224,7 @@ fn create_api(name: &str, domain_id: &str, specs: Vec<&str> ) -> Result<(), reqw
     let api = Api {
         id: Uuid::nil(),
         name: name.to_string(),
+        status: Status::VALIDATED,  
         domain_id: Uuid::parse_str(domain_id).unwrap(),
         domain_name: String::from(""),
         spec_ids: specs_as_string,
@@ -248,6 +255,32 @@ fn list_all_apis() -> Result<(), reqwest::Error> {
     // Print the table to stdout
     table.printstd();
     
+    Ok(())
+}
+
+fn update_api_status(api: &str, value: &str) -> Result<(), reqwest::Error> {
+    let client = Client::new();
+    let url = format!("http://{address}/v1/apis/{id}", address = &SETTINGS.server.address, id = api);
+
+    let status = match value {
+        "validated" => Status::VALIDATED,
+        "deprecated" => Status::DEPRECATED,
+        "retired" => Status::RETIRED,
+        _ => panic!("Unable to get Status for {}", value),
+    };
+
+    let api = Api {
+        id: Uuid::nil(),
+        name: String::new(),
+        status: Status::VALIDATED,
+        domain_id: Uuid::nil(),
+        domain_name: String::new(),
+        spec_ids: Vec::new(),
+    };
+
+    let mut resp = client.patch(&url).json(&api).send()?;
+    debug!("body: {:?}", resp.status());
+
     Ok(())
 }
 
@@ -364,6 +397,22 @@ fn main() {
                             .min_values(1)
                             .help("The id(s) of the spec(s) to add to the api"))
                 )
+                .subcommand(SubCommand::with_name("status")
+                    .about("set the status of the api")
+                    .arg(Arg::with_name("value")
+                        .short("v")
+                        .long("value")
+                        .takes_value(true)
+                        .possible_values(&["validated", "deprecated", "retired"])
+                        .required(true)
+                    )
+                    .arg(Arg::with_name("api")
+                        .short("a")
+                        .long("api")
+                        .takes_value(true)
+                        .required(true)
+                )
+            )
         )
         .subcommand(SubCommand::with_name("endpoints")
                     .about("Give access to list of items")
@@ -478,7 +527,7 @@ fn main() {
             _ => unreachable!(),
         }
         ("env", Some(deployments)) => match deployments.subcommand() {
-            ("list", Some(matches)) => {
+            ("list", Some(_matches)) => {
                 list_env();
             }
             ("create", Some(matches)) => {
@@ -494,9 +543,13 @@ fn main() {
     
                 create_api(name, domain_id, specs).unwrap();
             }
-            ("list", Some(matches)) => {
+            ("list", Some(_matches)) => {
                 list_all_apis().unwrap();
             }
+            ("status", Some(matches)) => {
+                update_api_status(matches.value_of("api").unwrap(), matches.value_of("value").unwrap());
+            }
+
             _ => unreachable!(),
         }
 
