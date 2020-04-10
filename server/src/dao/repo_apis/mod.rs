@@ -82,3 +82,32 @@ pub fn add_api(config:  &super::super::settings::Database, name: &str, domain_id
     Ok(())
 }
 
+pub fn get_api_by_id(config:  &super::super::settings::Database, api: Uuid) -> Result<ApiItem> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-apis.db");
+    {
+        debug!("Getting api [{}] into Api_Database [{:?}]", api, db_path);
+    }
+
+    let conn = Connection::open(db_path)?;
+    conn.execute("CREATE TABLE IF NOT EXISTS apis (
+            id UUID  NOT NULL UNIQUE,
+            name TEXT NOT NULL, 
+            domain_id UUID NOT NULL
+        )", 
+        NO_PARAMS,
+    )?;
+
+    let mut stmt = conn.prepare("SELECT id, name, domain_id FROM apis WHERE id = ?1")?;
+    let row = stmt.query_row(params![api], |row |{
+        Ok(ApiItem {
+            name: row.get(1)?,
+            id: row.get(0)?,
+            domain_id: row.get(2)?,
+        })
+    })?;
+
+    Ok(row)
+}
+
+

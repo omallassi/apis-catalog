@@ -302,6 +302,26 @@ pub fn list_all_apis() -> HttpResponse {
     HttpResponse::Ok().json(apis_obj)
 }
 
+fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
+    info!("getting api for id [{:?}]", &path.0);
+    let api = Uuid::parse_str(&path.0).unwrap();
+
+    let api = repo_apis::get_api_by_id(&SETTINGS.database, api).unwrap();
+    let domain = repo_domains::get_domain(&SETTINGS.database, api.domain_id).unwrap();
+
+    let api = Api {
+        id: api.id, 
+        name: api.name,
+        status: Status::VALIDATED,  //TODO
+        domain_id: domain.id,
+        domain_name: domain.name, 
+        spec_ids: Vec::new(), //TODO
+    };
+
+
+    HttpResponse::Ok().json(api)
+}
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Envs {
@@ -556,6 +576,7 @@ let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
             .service(get_all_specs)
             .service(create_api)
             .service(list_all_apis)
+            .service(web::resource("/v1/apis/{api}").route(web::get().to(get_api_by_id)))
             .service(create_env)
             .service(list_env)
             .service(web::resource("/v1/envs/{id}").route(web::get().to(get_env)))
