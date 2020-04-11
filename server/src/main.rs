@@ -448,7 +448,9 @@ pub struct Info {
 pub fn refresh_metrics() -> HttpResponse {
     info!("refresh metrics");
 
-    let mut access_token = SETTINGS.stash_config.access_token.clone();
+    catalog::refresh_git_repo(&SETTINGS.catalog_path);
+
+    let access_token = SETTINGS.stash_config.access_token.clone();
 
     let client =  Client::new();
     

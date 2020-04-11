@@ -11,6 +11,8 @@ use git2::{Repository, Oid, Blob};
 use serde_yaml;
 use openapiv3::OpenAPI;
 
+use cmd_lib::{run_cmd, CmdResult};
+
 //
 pub struct SpecItem{
     pub name: std::string::String,
@@ -103,3 +105,9 @@ fn get_git_repo(path: &str) -> Result<Repository, git2::Error> {
 
     Ok(repo)
 }
+
+pub fn refresh_git_repo(path: &str)  {
+    run_cmd!("cd {}; git pull", path);
+    info!("Refresh Git Repo with result [{:?}]", "result");
+}
+
