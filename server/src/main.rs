@@ -350,6 +350,8 @@ fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
     HttpResponse::Ok().json(api)
 }
 
+
+//TODO change url to POST /apis/{api}/status with start_date_time
 fn update_api_by_id(api: Json<Api>) -> HttpResponse {
     info!("updating api for id [{:?}] - api [{:?}]", api.id, api);
 

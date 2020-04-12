@@ -163,7 +163,12 @@ pub fn update_api_status(config : &super::super::settings::Database, api: ApiIte
     let conn = Connection::open(db_path)?;
 
 
-    //TODO manage the insert or update
+    //At this stage, start_date_time / end_date_time is not managed so we can delete then insert
+    conn.execute(
+        "DELETE FROM status WHERE api_id = ?1",
+        params![api.id],
+    )?;
+
     conn.execute(
         "INSERT INTO status (api_id, status, start_date_time) VALUES (?1, ?2, ?3)",
         params![api.id, api.status.to_uppercase(), Utc::now()],
