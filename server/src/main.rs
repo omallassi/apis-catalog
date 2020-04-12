@@ -50,6 +50,12 @@ use histogram::Histogram;
 
 use std::convert::TryFrom;
 
+// Scheduler, and trait for .seconds(), .minutes(), etc.
+use clokwerk::{Scheduler};
+// Import week days and WeekDay
+use clokwerk::Interval::*;
+use std::time::Duration;
+
 
 /**
  * 
@@ -248,9 +254,30 @@ pub struct Api {
     pub spec_ids: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Status {
-    VALIDATED, DEPRECATED, RETIRED,
+    VALIDATED, DEPRECATED, RETIRED, NONE
+}
+
+//TODO I should be able to store the enum in DB but cannot figure out how - so back to basis
+impl Status {
+    fn as_str(&self) -> String {
+        match *self {
+            Status::VALIDATED => String::from("VALIDATED"),
+            Status::DEPRECATED => String::from("DEPRECATED"),
+            Status::RETIRED => String::from("RETIRED"),
+            _ => String::from("NONE"),
+        }
+    }
+
+    fn from_str(val: String) -> Status {
+        match val.as_str() {
+            "VALIDATED" => Status::VALIDATED,
+            "DEPRECATED" => Status::DEPRECATED,
+            "RETIRED" => Status::RETIRED,
+            _ => Status::NONE,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -287,7 +314,7 @@ pub fn list_all_apis() -> HttpResponse {
         let api = Api {
             name: api.name,
             id: api.id,
-            status: Status::VALIDATED,  //TODO
+            status: Status::from_str(api.status),
             domain_id: domain.id, 
             domain_name: domain.name,
             spec_ids: Vec::new(), //TODO
@@ -307,12 +334,13 @@ fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
     let api = Uuid::parse_str(&path.0).unwrap();
 
     let api = repo_apis::get_api_by_id(&SETTINGS.database, api).unwrap();
+
     let domain = repo_domains::get_domain(&SETTINGS.database, api.domain_id).unwrap();
 
     let api = Api {
         id: api.id, 
         name: api.name,
-        status: Status::VALIDATED,  //TODO
+        status: Status::from_str(api.status),
         domain_id: domain.id,
         domain_name: domain.name, 
         spec_ids: Vec::new(), //TODO
@@ -320,6 +348,21 @@ fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
 
 
     HttpResponse::Ok().json(api)
+}
+
+fn update_api_by_id(api: Json<Api>) -> HttpResponse {
+    info!("updating api for id [{:?}] - api [{:?}]", api.id, api);
+
+    let api_item = ApiItem {
+        id: api.id,
+        domain_id: api.domain_id, 
+        name: String::from(&api.name),
+        status: api.status.as_str(),
+    };
+
+    repo_apis::update_api_status(&SETTINGS.database, api_item).unwrap();
+
+    HttpResponse::Ok().json("")
 }
 
 
@@ -498,7 +541,7 @@ fn get_metrics_pull_requests_ages(pull_requests: &PullRequests, current_epoch: u
         if current_epoch < created_epoch_in_sec { //val.created_epoch is in ms
             error!("Cannot compute epoch elapse as current epoch [{}] < obtained epoch [{}]", current_epoch, val.created_epoch);
         }
-        let delta : u64 = (current_epoch - created_epoch_in_sec);
+        let delta : u64 = current_epoch - created_epoch_in_sec;
         histogram.increment(delta / 86400); //keep values in days
 
         delta
@@ -539,14 +582,6 @@ lazy_static! {
     static ref SETTINGS : settings::Settings = Settings::new().unwrap();
 }
 
-
-// Scheduler, and trait for .seconds(), .minutes(), etc.
-use clokwerk::{Scheduler, TimeUnits};
-// Import week days and WeekDay
-use clokwerk::Interval::*;
-use std::thread;
-use std::time::Duration;
-
 /**
  * 
  */
@@ -559,7 +594,7 @@ async fn main() {
     // Add some tasks to it
     scheduler.every(Weekday).at("23:30").run(|| {  //TODO config? 
         let client =  Client::new();
-        client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send();
+        client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send().unwrap();
     });
     
 let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
@@ -578,7 +613,10 @@ let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
             .service(get_all_specs)
             .service(create_api)
             .service(list_all_apis)
-            .service(web::resource("/v1/apis/{api}").route(web::get().to(get_api_by_id)))
+            .service(web::resource("/v1/apis/{api}")
+                .route(web::get().to(get_api_by_id))
+                .route(web::put().to(update_api_by_id))
+            )
             .service(create_env)
             .service(list_env)
             .service(web::resource("/v1/envs/{id}").route(web::get().to(get_env)))

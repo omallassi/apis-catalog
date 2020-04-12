@@ -26,7 +26,7 @@ lazy_static = "1.4.0"
 reqwest = "0.9.20"
 chrono = { version = "0.4", features = ["serde"] }
 config = "0.10.1"
-rusqlite = { version = "0.21.0", features = ["bundled", "uuid", "chrono"] }
+rusqlite = { version = "0.22.0", features = ["bundled", "uuid", "chrono", "trace"] }
 time = "0.1"
 uuid = { version = "0.8", features = ["serde", "v1", "v3", "v4","v5"] }
 # sqlite = "0.25.0"

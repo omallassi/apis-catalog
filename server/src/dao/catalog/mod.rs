@@ -11,7 +11,7 @@ use git2::{Repository, Oid, Blob};
 use serde_yaml;
 use openapiv3::OpenAPI;
 
-use cmd_lib::{run_cmd, CmdResult};
+use cmd_lib::{run_cmd};
 
 //
 pub struct SpecItem{
@@ -107,6 +107,7 @@ fn get_git_repo(path: &str) -> Result<Repository, git2::Error> {
 }
 
 pub fn refresh_git_repo(path: &str)  {
+    //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
     run_cmd!("cd {}; git pull", path);
     info!("Refresh Git Repo with result [{:?}]", "result");
 }

@@ -206,7 +206,7 @@ pub struct Api {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Status {
-    VALIDATED, DEPRECATED, RETIRED,
+    VALIDATED, DEPRECATED, RETIRED, NONE
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -224,7 +224,7 @@ fn create_api(name: &str, domain_id: &str, specs: Vec<&str> ) -> Result<(), reqw
     let api = Api {
         id: Uuid::nil(),
         name: name.to_string(),
-        status: Status::VALIDATED,  
+        status: Status::NONE,  
         domain_id: Uuid::parse_str(domain_id).unwrap(),
         domain_name: String::from(""),
         spec_ids: specs_as_string,
@@ -266,19 +266,25 @@ fn update_api_status(api: &str, value: &str) -> Result<(), reqwest::Error> {
         "validated" => Status::VALIDATED,
         "deprecated" => Status::DEPRECATED,
         "retired" => Status::RETIRED,
-        _ => panic!("Unable to get Status for {}", value),
+        _ => Status::NONE
     };
 
-    let api = Api {
-        id: Uuid::nil(),
-        name: String::new(),
-        status: Status::VALIDATED,
-        domain_id: Uuid::nil(),
-        domain_name: String::new(),
-        spec_ids: Vec::new(),
+    // get Api from server
+    let mut resp= client.get(&url).send()?;
+    debug!("body: {:?}", resp.status());
+    let api: Api = resp.json()?;
+
+    let udpated_api = Api {
+        id: api.id,
+        name: api.name,
+        status: status,
+        domain_id: api.domain_id,
+        domain_name: api.domain_name,
+        spec_ids: api.spec_ids,
     };
 
-    let mut resp = client.patch(&url).json(&api).send()?;
+    //update and send it and updated version back
+    let mut resp = client.put(&url).json(&udpated_api).send()?;
     debug!("body: {:?}", resp.status());
 
     Ok(())
