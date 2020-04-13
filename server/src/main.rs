@@ -14,7 +14,7 @@ use log::{debug,info, error};
 use std::vec::Vec;
 use openapiv3::OpenAPI;
 
-use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_web::{web, App, HttpResponse, HttpServer, middleware::Logger};
 use actix_web::{get, post};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
@@ -351,18 +351,17 @@ fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
 }
 
 
-//TODO change url to POST /apis/{api}/status with start_date_time
-fn update_api_by_id(api: Json<Api>) -> HttpResponse {
-    info!("updating api for id [{:?}] - api [{:?}]", api.id, api);
+pub fn update_api_status_by_id(path: web::Path<(String,)>, status: Json<Status>) -> HttpResponse {
+    //path: web::Path<(String,)>, 
+    //&path.0
+    info!("updating api for id [{:?}]", &path.0);
 
-    let api_item = ApiItem {
-        id: api.id,
-        domain_id: api.domain_id, 
-        name: String::from(&api.name),
-        status: api.status.as_str(),
+    let status_item = StatusItem {
+      api_id: Uuid::parse_str(&path.0).unwrap(),
+      status: status.as_str(),
     };
 
-    repo_apis::update_api_status(&SETTINGS.database, api_item).unwrap();
+    repo_apis::update_api_status(&SETTINGS.database, status_item).unwrap();
 
     HttpResponse::Ok().json("")
 }
@@ -589,6 +588,7 @@ lazy_static! {
  */
 #[actix_rt::main]
 async fn main() {
+    //TODO std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
     // Create a new scheduler for Utc
@@ -599,12 +599,13 @@ async fn main() {
         client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send().unwrap();
     });
     
-let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
+    let _thread_handle = scheduler.watch_thread(Duration::from_millis(100));
 
 
     //start HTTP Server
     HttpServer::new(|| {
         App::new()
+            .wrap(Logger::default())
             .route("/v1/endpoints", web::get().to(get_endpoints))
             .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))  //TODO rework url
             .service(add_deployment)
@@ -615,9 +616,14 @@ let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
             .service(get_all_specs)
             .service(create_api)
             .service(list_all_apis)
-            .service(web::resource("/v1/apis/{api}")
-                .route(web::get().to(get_api_by_id))
-                .route(web::put().to(update_api_by_id))
+            .service(
+                web::scope("/v1/apis")
+                    .service(
+                        web::resource("/{api}").route(web::get().to(get_api_by_id))
+                    )
+                    .service(
+                        web::resource("/{api}/status").route(web::post().to(update_api_status_by_id))
+                    )
             )
             .service(create_env)
             .service(list_env)
@@ -635,7 +641,8 @@ let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
     .bind(&SETTINGS.server.bind_adress)  
     .unwrap()
     .run()
-    .await;
+    .await
+    .unwrap();
 }
 
 #[cfg(test)]

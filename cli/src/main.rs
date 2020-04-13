@@ -260,7 +260,6 @@ fn list_all_apis() -> Result<(), reqwest::Error> {
 
 fn update_api_status(api: &str, value: &str) -> Result<(), reqwest::Error> {
     let client = Client::new();
-    let url = format!("http://{address}/v1/apis/{id}", address = &SETTINGS.server.address, id = api);
 
     let status = match value {
         "validated" => Status::VALIDATED,
@@ -269,23 +268,10 @@ fn update_api_status(api: &str, value: &str) -> Result<(), reqwest::Error> {
         _ => Status::NONE
     };
 
-    // get Api from server
-    let mut resp= client.get(&url).send()?;
-    debug!("body: {:?}", resp.status());
-    let api: Api = resp.json()?;
-
-    let udpated_api = Api {
-        id: api.id,
-        name: api.name,
-        status: status,
-        domain_id: api.domain_id,
-        domain_name: api.domain_name,
-        spec_ids: api.spec_ids,
-    };
-
+    let url = format!("http://{address}/v1/apis/{id}/status", address = &SETTINGS.server.address, id = api);
     //update and send it and updated version back
-    let mut resp = client.put(&url).json(&udpated_api).send()?;
-    debug!("body: {:?}", resp.status());
+    let mut resp = client.post(&url).json(&status).send()?;
+    debug!("response: {:?}", resp.status());
 
     Ok(())
 }

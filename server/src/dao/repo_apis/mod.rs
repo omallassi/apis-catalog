@@ -23,9 +23,9 @@ pub struct ApiItem {
 }
 
 #[derive(Debug)]
-struct StatusItem {
-    api_id: Uuid, 
-    status: String
+pub struct StatusItem {
+    pub api_id: Uuid, 
+    pub status: String
 }
 
 static INIT_DB : Once = Once::new();
@@ -157,21 +157,19 @@ pub fn get_api_by_id(config:  &super::super::settings::Database, api: Uuid) -> R
     Ok(row)
 }
 
-//TODO put StatusItem as input + api_id
-pub fn update_api_status(config : &super::super::settings::Database, api: ApiItem) -> Result<()> {
+pub fn update_api_status(config : &super::super::settings::Database, status: StatusItem) -> Result<()> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
-
 
     //At this stage, start_date_time / end_date_time is not managed so we can delete then insert
     conn.execute(
         "DELETE FROM status WHERE api_id = ?1",
-        params![api.id],
+        params![status.api_id],
     )?;
 
     conn.execute(
         "INSERT INTO status (api_id, status, start_date_time) VALUES (?1, ?2, ?3)",
-        params![api.id, api.status.to_uppercase(), Utc::now()],
+        params![status.api_id, status.status.to_uppercase(), Utc::now()],
     )?;
 
     conn.close().unwrap();
