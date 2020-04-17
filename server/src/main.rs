@@ -51,10 +51,11 @@ use histogram::Histogram;
 use std::convert::TryFrom;
 
 // Scheduler, and trait for .seconds(), .minutes(), etc.
-use clokwerk::{Scheduler};
+use clokwerk::{Scheduler, TimeUnits};
 // Import week days and WeekDay
 use clokwerk::Interval::*;
 use std::time::Duration;
+use std::thread;
 
 
 /**
@@ -592,14 +593,16 @@ async fn main() {
     env_logger::init();
 
     // Create a new scheduler for Utc
-    let mut scheduler = Scheduler::new();
-    // Add some tasks to it
-    scheduler.every(Weekday).at("23:30").run(|| {  //TODO config? 
-        let client =  Client::new();
-        client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send().unwrap();
-    });
+    // let mut scheduler = Scheduler::new(); 
+    // // Add some tasks to it
+    // scheduler.every(Weekday).at("23:30").run(|| {  
+    //     let client =  Client::new();
+    //     client.post(format!("http://{}/v1/metrics/refresh", &SETTINGS.server.bind_adress).as_str()).send().unwrap();
+    // });
+
+    // scheduler.every(10.seconds()).run(|| println!("Periodic task"));
     
-    let _thread_handle = scheduler.watch_thread(Duration::from_millis(100));
+    // let _thread_handle = scheduler.watch_thread(Duration::from_millis(100));
 
 
     //start HTTP Server
