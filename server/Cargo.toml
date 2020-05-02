@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 error-chain = "0.12.1"
 log = "0.4.8"
+fern = { version = "0.6.0", features = ["colored"] }
 env_logger = "0.7.0"
 actix-web = "2.0.0"
 actix-rt = "1.0"

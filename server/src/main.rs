@@ -590,7 +590,29 @@ lazy_static! {
 #[actix_rt::main]
 async fn main() {
     //TODO std::env::set_var("RUST_LOG", "actix_web=info");
-    env_logger::init();
+    //env_logger::init();
+
+    // let colors = fern::colors::ColoredLevelConfig::new()
+    //     .debug(fern::colors::Color::Blue)
+    //     .info(fern::colors::Color::Green)
+    //     .warn(fern::colors::Color::Yellow)
+    //     .error(fern::colors::Color::Red);
+
+    fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "[{}] - [{}] - [{}] - {}",
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                record.target(),
+                //colors.color(record.level()),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Debug)
+        .chain(std::io::stdout())
+        .chain(fern::log_file("logs.log").unwrap())
+        .apply().unwrap();
 
     // Create a new scheduler for Utc
     // let mut scheduler = Scheduler::new(); 
@@ -609,6 +631,7 @@ async fn main() {
     HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
+            .wrap(Logger::new("%a %{User-Agent}i"))
             .route("/v1/endpoints", web::get().to(get_endpoints))
             .service(web::resource("/v1/endpoints/{api}").route(web::get().to(get_endpoints)))  //TODO rework url
             .service(add_deployment)

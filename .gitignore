@@ -3,3 +3,4 @@ target/
 Cargo.lock
 server/settings.toml
 server/config/local.toml
+logs.log
