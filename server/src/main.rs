@@ -509,7 +509,7 @@ pub fn refresh_metrics() -> HttpResponse {
 
     //keep metric pr_num
     let metrics = get_metrics_pull_requests_number(&pull_requests);
-    repo_metrics::save_metrics_pull_requests_number(&SETTINGS.database, metrics.0, metrics.1);
+    repo_metrics::save_metrics_pull_requests_number(&SETTINGS.database, metrics.0, metrics.1).unwrap();
     //keep metric pr_age
     let current_epoch = std::time::SystemTime::now();
     let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
@@ -519,13 +519,13 @@ pub fn refresh_metrics() -> HttpResponse {
         isize::try_from(metrics.2).unwrap(),
         isize::try_from(metrics.3).unwrap(),
         isize::try_from(metrics.4).unwrap()
-    );
+    ).unwrap();
     //get # of endpoints
     let all_specs : Vec<SpecItem> = catalog::list_specs(SETTINGS.catalog_path.as_str());
     let len = &all_specs.len();
     let metrics = get_metrics_endpoints_num(all_specs);
     debug!("Got [{}] specifications and [{:?}] endpoints", len, &metrics);
-    repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1);
+    repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1).unwrap();
     //
     HttpResponse::Ok().json(pull_requests.size)
 }
