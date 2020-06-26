@@ -1,16 +1,16 @@
 extern crate log;
-use log::{info};
+use log::info;
 
-extern crate env_logger;
+//extern crate env_logger;
 
 extern crate config;
-use config::{ConfigError};
+use config::ConfigError;
 
-use serde::{Deserialize};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct StashConfig {
-    pub base_uri: String, 
+    pub base_uri: String,
     pub access_token: String,
 }
 
@@ -38,12 +38,14 @@ impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
         //TODO find a way to inject this config file
         let mut settings = config::Config::default();
-    
+
         settings
-            .merge(config::File::with_name("server/config/local")).unwrap()
+            .merge(config::File::with_name("server/config/local"))
+            .unwrap()
             // Add in settings from the environment (with a prefix of API)
             // Eg.. `API_DEBUG=1 ./target/app` would set the `debug` key
-            .merge(config::Environment::with_prefix("API")).unwrap();
+            .merge(config::Environment::with_prefix("API"))
+            .unwrap();
 
         info!("Configuration has been loaded - [{:?}]", settings);
         settings.try_into()

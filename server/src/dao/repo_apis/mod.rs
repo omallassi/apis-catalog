@@ -3,11 +3,11 @@ extern crate rusqlite;
 extern crate time;
 extern crate uuid;
 
+use chrono::Utc;
 use uuid::Uuid;
-use chrono::{Utc};
 
+use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
-use rusqlite::{NO_PARAMS};
 
 //use rustbreak::{FileDatabase, deser::Ron};
 use log::{debug, info, warn};
@@ -24,43 +24,49 @@ pub struct ApiItem {
 
 #[derive(Debug)]
 pub struct StatusItem {
-    pub api_id: Uuid, 
-    pub status: String
+    pub api_id: Uuid,
+    pub status: String,
 }
 
-static INIT_DB : Once = Once::new();
+static INIT_DB: Once = Once::new();
 
 fn get_init_db(rusqlite: &String) -> Result<String> {
     let mut db_path = String::from(rusqlite);
     db_path.push_str("/apis-catalog-apis.db");
 
-    INIT_DB.call_once( || {
-        {debug!("Init Api_Database [{:?}]", db_path);}
-        
+    INIT_DB.call_once(|| {
+        {
+            debug!("Init Api_Database [{:?}]", db_path);
+        }
+
         let conn = Connection::open(&db_path).unwrap();
-        conn.execute("CREATE TABLE IF NOT EXISTS apis (
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS apis (
                 id UUID  NOT NULL UNIQUE,
                 name TEXT NOT NULL, 
                 domain_id UUID NOT NULL
-            )", 
+            )",
             NO_PARAMS,
-        ).unwrap();
+        )
+        .unwrap();
         //
-        conn.execute("CREATE TABLE IF NOT EXISTS status(
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS status(
                 api_id UUID NOT NULL,
                 status TEXT NOT NULL,
                 start_date_time TEXT NOT NULL, 
                 end_date_time TEXT
             )",
-            NO_PARAMS
-        ).unwrap();
+            NO_PARAMS,
+        )
+        .unwrap();
     });
     // debug!("Api_Database [{:?}] already initialized", db_path);
 
     Ok(String::from(&db_path))
 }
 
-pub fn list_all_apis(config:  &super::super::settings::Database) -> Result<Vec<ApiItem>> {
+pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<ApiItem>> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
@@ -74,16 +80,14 @@ pub fn list_all_apis(config:  &super::super::settings::Database) -> Result<Vec<A
         let domain_id = row.get("domain_id")?;
         //get last status
         let status = match get_last_status(config, id) {
-            Ok(val) => {
-                val.status
-            },
+            Ok(val) => val.status,
             Err(why) => {
                 warn!("Unable to get status for api [{:?}] - [{:?}]", id, why);
-                String::from("NONE")    //TODO - reuse enum
+                String::from("NONE") //TODO - reuse enum
             }
         };
         //
-        let domain = ApiItem{
+        let domain = ApiItem {
             id: id,
             name: name,
             domain_id: domain_id,
@@ -96,12 +100,12 @@ pub fn list_all_apis(config:  &super::super::settings::Database) -> Result<Vec<A
     Ok(tuples)
 }
 
-fn get_last_status(config:  &super::super::settings::Database, api_id: Uuid) -> Result<StatusItem> {
+fn get_last_status(config: &super::super::settings::Database, api_id: Uuid) -> Result<StatusItem> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
     let mut stmt = conn.prepare("SELECT api_id, status FROM status WHERE api_id = ?1")?; //ORDER BY end_date_time DESC limit 1 //start_date_time, end_date_time
-    let row = stmt.query_row(params![api_id], |row |{
+    let row = stmt.query_row(params![api_id], |row| {
         Ok(StatusItem {
             api_id: row.get(0)?,
             status: row.get(1)?,
@@ -111,7 +115,11 @@ fn get_last_status(config:  &super::super::settings::Database, api_id: Uuid) -> 
     Ok(row)
 }
 
-pub fn add_api(config:  &super::super::settings::Database, name: &str, domain_id: &Uuid) -> Result<()> {
+pub fn add_api(
+    config: &super::super::settings::Database,
+    name: &str,
+    domain_id: &Uuid,
+) -> Result<()> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
@@ -124,25 +132,23 @@ pub fn add_api(config:  &super::super::settings::Database, name: &str, domain_id
     //TODO manage status
 
     conn.close().unwrap();
-    
+
     Ok(())
 }
 
-pub fn get_api_by_id(config:  &super::super::settings::Database, api: Uuid) -> Result<ApiItem> {
+pub fn get_api_by_id(config: &super::super::settings::Database, api: Uuid) -> Result<ApiItem> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
     let mut stmt = conn.prepare("SELECT id, name, domain_id FROM apis WHERE id = ?1")?;
-    let row = stmt.query_row(params![api], |row |{
+    let row = stmt.query_row(params![api], |row| {
         let id = row.get(0)?;
         //get last status
         let status = match get_last_status(config, id) {
-            Ok(val) => {
-                val.status
-            },
+            Ok(val) => val.status,
             Err(why) => {
                 warn!("Unable to get status for api [{:?}] - [{:?}]", id, why);
-                String::from("NONE")    //TODO - reuse enum
+                String::from("NONE") //TODO - reuse enum
             }
         };
 
@@ -157,7 +163,10 @@ pub fn get_api_by_id(config:  &super::super::settings::Database, api: Uuid) -> R
     Ok(row)
 }
 
-pub fn update_api_status(config : &super::super::settings::Database, status: StatusItem) -> Result<()> {
+pub fn update_api_status(
+    config: &super::super::settings::Database,
+    status: StatusItem,
+) -> Result<()> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
