@@ -1,6 +1,6 @@
 extern crate glob;
 use glob::glob;
-use log::{info, warn};
+use log::{debug, info, warn};
 
 use std::path::Path;
 use std::vec::Vec;
@@ -15,6 +15,8 @@ use cmd_lib::run_cmd;
 
 extern crate regex;
 use regex::Regex;
+
+use std::fs;
 
 //
 pub struct SpecItem {
@@ -47,7 +49,9 @@ pub fn list_specs(path: &str) -> Vec<SpecItem> {
             };
 
             if let Ok(openapi) = serde_yaml::from_reader(blob.content()) {
-                let audience = match get_audience_from_spec(&openapi) {
+                //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
+                //TODO this whole thing has to be reworked
+                let audience = match get_audience_from_spec(&file_path) {
                     Some(aud) => aud,
                     None => String::from("N/A"),
                 };
@@ -70,15 +74,17 @@ pub fn list_specs(path: &str) -> Vec<SpecItem> {
     specs
 }
 
-fn get_audience_from_spec(spec: &OpenAPI) -> Option<String> {
+fn get_audience_from_spec(spec: &Path) -> Option<String> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(x-audience)(\s*:)(.+)").unwrap();
     }
-    if let Some(cap) = RE.captures(spec.openapi.as_str()) {
-        info!("found x-audience [{}]", cap[3].to_string());
+    let spec_content = fs::read_to_string(spec).unwrap_or_default();
+
+    if let Some(cap) = RE.captures(spec_content.as_str()) {
+        debug!("found x-audience [{}]", cap[3].to_string());
         Some(cap[3].to_string())
     } else {
-        info!("Unable to x-audience from [{}]", spec.info.title);
+        debug!("Unable to x-audience from [{:?}]", spec);
         None
     }
 }
@@ -98,7 +104,9 @@ pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
             };
 
             if let Ok(openapi) = serde_yaml::from_reader(blob.content()) {
-                let audience = match get_audience_from_spec(&openapi) {
+                //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
+                //TODO this whole thing has to be reworked
+                let audience = match get_audience_from_spec(Path::new(path)) {
                     Some(aud) => aud,
                     None => String::from("N/A"),
                 };
