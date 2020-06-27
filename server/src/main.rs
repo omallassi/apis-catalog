@@ -255,9 +255,55 @@ pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Tier {
+    pub name: String,
+    pub id: Uuid,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Tiers {
+    pub tiers: Vec<Tier>,
+}
+
+#[get("/v1/tiers")]
+pub fn get_tiers() -> HttpResponse {
+    info!("get tiers");
+    let mut all_tiers: Vec<TierItem> = match list_all_tiers(&SETTINGS.database) {
+        Ok(all_tiers) => all_tiers,
+        Err(why) => {
+            panic!("Unable to get domains: {}", why);
+        }
+    };
+
+    let mut tiers = Vec::new();
+
+    while let Some(tier) = all_tiers.pop() {
+        let tier = Tier {
+            name: tier.name,
+            id: tier.id,
+        };
+        tiers.push(tier);
+    }
+
+    let tiers_obj = Tiers { tiers: tiers };
+
+    HttpResponse::Ok().json(tiers_obj)
+}
+
+#[post("/v1/tiers")]
+pub fn create_tier(tier: Json<Tier>) -> HttpResponse {
+    let uuid = add_tier(&SETTINGS.database, &tier.name).unwrap();
+
+    HttpResponse::Created()
+        .header("Location", format!("/v1/tiers/{}", uuid))
+        .finish()
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Api {
     pub id: Uuid,
     pub name: String,
+    pub tier: String,
     pub status: Status,
     pub domain_id: Uuid,
     pub domain_name: String,
@@ -327,6 +373,7 @@ pub fn list_all_apis() -> HttpResponse {
         let api = Api {
             name: api.name,
             id: api.id,
+            tier: api.tier.name,
             status: Status::from_str(api.status),
             domain_id: domain.id,
             domain_name: domain.name,
@@ -351,6 +398,7 @@ fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
     let api = Api {
         id: api.id,
         name: api.name,
+        tier: api.tier.name,
         status: Status::from_str(api.status),
         domain_id: domain.id,
         domain_name: domain.name,
@@ -694,6 +742,8 @@ async fn main() {
             )
             .service(create_env)
             .service(list_env)
+            .service(create_tier)
+            .service(get_tiers)
             .service(web::resource("/v1/envs/{id}").route(web::get().to(get_env)))
             .service(get_all_metrics)
             .service(refresh_metrics)

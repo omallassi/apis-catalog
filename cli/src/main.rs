@@ -219,6 +219,57 @@ fn create_domain(name: &str, description: &str) -> Result<(), reqwest::Error> {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Tier {
+    pub name: String,
+    pub id: Uuid,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Tiers {
+    tiers: Vec<Tier>,
+}
+
+fn create_tier(name: &str) -> Result<(), reqwest::Error> {
+    let client = Client::new();
+
+    let tier = Tier {
+        id: Uuid::nil(),
+        name: name.to_string(),
+    };
+    let url = format!(
+        "http://{address}/v1/tiers",
+        address = &SETTINGS.server.address
+    );
+    let resp = client.post(&url).json(&tier).send()?;
+    debug!("body: {:?}", resp.status());
+
+    Ok(())
+}
+
+fn get_tiers() -> Result<(), reqwest::Error> {
+    let client = Client::new();
+    let url = format!(
+        "http://{address}/v1/tiers",
+        address = &SETTINGS.server.address
+    );
+    let mut resp = client.get(&url).send()?;
+    debug!("body: {:?}", resp.status());
+    let tiers: Tiers = resp.json()?;
+    //
+    let mut table = Table::new();
+    table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    table.set_titles(row![b -> "Id", b -> "Name"]);
+    for tier in tiers.tiers {
+        table.add_row(row![tier.id, tier.name]);
+    }
+
+    // Print the table to stdout
+    table.printstd();
+
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Api {
     pub id: Uuid,
     pub name: String,
@@ -418,6 +469,24 @@ fn main() {
                 .subcommand(SubCommand::with_name("list").about("List All the Specs")),
         )
         .subcommand(
+            App::new("tiers")
+                .about("Manage Tiers and Layers")
+                .setting(AppSettings::SubcommandRequiredElseHelp)
+                .subcommand(
+                    SubCommand::with_name("create")
+                        .about("Create a new Tier")
+                        .arg(
+                            Arg::with_name("name")
+                                .short("n")
+                                .long("name")
+                                .takes_value(true)
+                                .required(true)
+                                .help("The name of the tier"),
+                        ),
+                )
+                .subcommand(SubCommand::with_name("list").about("List All the Tiers")),
+        )
+        .subcommand(
             App::new("apis")
                 .about("Manage APIs")
                 .setting(AppSettings::SubcommandRequiredElseHelp)
@@ -568,6 +637,15 @@ fn main() {
                 };
 
                 create_domain(matches.value_of("name").unwrap(), description);
+            }
+            _ => unreachable!(),
+        },
+        ("tiers", Some(tiers_matches)) => match tiers_matches.subcommand() {
+            ("create", Some(matches)) => {
+                create_tier(matches.value_of("name").unwrap());
+            }
+            ("list", Some(_matches)) => {
+                get_tiers();
             }
             _ => unreachable!(),
         },

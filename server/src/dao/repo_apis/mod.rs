@@ -20,6 +20,13 @@ pub struct ApiItem {
     pub id: Uuid,
     pub domain_id: Uuid,
     pub status: String, //TODO use the enum
+    pub tier: TierItem,
+}
+
+#[derive(Debug)]
+pub struct TierItem {
+    pub id: Uuid,
+    pub name: String,
 }
 
 #[derive(Debug)]
@@ -49,6 +56,9 @@ fn get_init_db(rusqlite: &String) -> Result<String> {
             NO_PARAMS,
         )
         .unwrap();
+        conn.execute("ALTER TABLE apis ADD COLUMN tier_id UUID", NO_PARAMS)
+            .unwrap_or_default();
+
         //
         conn.execute(
             "CREATE TABLE IF NOT EXISTS status(
@@ -56,6 +66,15 @@ fn get_init_db(rusqlite: &String) -> Result<String> {
                 status TEXT NOT NULL,
                 start_date_time TEXT NOT NULL, 
                 end_date_time TEXT
+            )",
+            NO_PARAMS,
+        )
+        .unwrap();
+        //
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS tiers (
+                id UUID NOT NULL,
+                name TEXT NOT NULL
             )",
             NO_PARAMS,
         )
@@ -92,6 +111,10 @@ pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<Ap
             name: name,
             domain_id: domain_id,
             status: status,
+            tier: TierItem {
+                id: Uuid::new_v4(),
+                name: String::from("Application"),
+            },
         };
 
         tuples.push(domain);
@@ -155,6 +178,10 @@ pub fn get_api_by_id(config: &super::super::settings::Database, api: Uuid) -> Re
         Ok(ApiItem {
             name: row.get(1)?,
             id: id,
+            tier: TierItem {
+                id: Uuid::new_v4(),
+                name: String::from("Application"),
+            },
             domain_id: row.get(2)?,
             status: status,
         })
@@ -184,4 +211,39 @@ pub fn update_api_status(
     conn.close().unwrap();
 
     Ok(())
+}
+
+pub fn add_tier(config: &super::super::settings::Database, name: &str) -> Result<Uuid> {
+    let db_path = get_init_db(&config.rusqlite_path).unwrap();
+    let conn = Connection::open(db_path)?;
+
+    let id = Uuid::new_v4();
+    conn.execute(
+        "INSERT INTO tiers (id, name) VALUES (?1, ?2)",
+        params![id, name],
+    )?;
+
+    conn.close().unwrap();
+
+    Ok(id)
+}
+
+pub fn list_all_tiers(config: &super::super::settings::Database) -> Result<Vec<TierItem>> {
+    let db_path = get_init_db(&config.rusqlite_path).unwrap();
+    let conn = Connection::open(db_path)?;
+
+    let mut stmt = conn.prepare("SELECT id, name FROM tiers")?;
+    let mut rows = stmt.query(NO_PARAMS)?;
+
+    let mut tuples = Vec::new();
+    while let Some(row) = rows.next()? {
+        let id = row.get("id")?;
+        let name = row.get("name")?;
+        //
+        let tier = TierItem { id: id, name: name };
+
+        tuples.push(tier);
+    }
+
+    Ok(tuples)
 }
