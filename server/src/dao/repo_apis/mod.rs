@@ -89,7 +89,7 @@ pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<Ap
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
-    let mut stmt = conn.prepare("SELECT id, name, domain_id FROM apis")?;
+    let mut stmt = conn.prepare("SELECT id, name, domain_id, tier_id FROM apis")?;
     let mut rows = stmt.query(NO_PARAMS)?;
 
     let mut tuples = Vec::new();
@@ -97,6 +97,7 @@ pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<Ap
         let id = row.get("id")?;
         let name = row.get("name")?;
         let domain_id = row.get("domain_id")?;
+        let tier_id = row.get("tier_id")?;
         //get last status
         let status = match get_last_status(config, id) {
             Ok(val) => val.status,
@@ -105,22 +106,44 @@ pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<Ap
                 String::from("NONE") //TODO - reuse enum
             }
         };
+        let tier = match get_related_tier(config, tier_id) {
+            Ok(val) => val,
+            Err(why) => {
+                warn!("Unable to get tier for api [{:?}] - [{:?}]", id, why);
+                TierItem {
+                    id: Uuid::nil(),
+                    name: String::from("N/A"),
+                }
+            }
+        };
         //
         let domain = ApiItem {
             id: id,
             name: name,
             domain_id: domain_id,
             status: status,
-            tier: TierItem {
-                id: Uuid::new_v4(),
-                name: String::from("Application"),
-            },
+            tier: tier,
         };
 
         tuples.push(domain);
     }
 
     Ok(tuples)
+}
+
+fn get_related_tier(config: &super::super::settings::Database, tier_id: Uuid) -> Result<TierItem> {
+    let db_path = get_init_db(&config.rusqlite_path).unwrap();
+    let conn = Connection::open(db_path)?;
+
+    let mut stmt = conn.prepare("SELECT id, name FROM tiers WHERE id = ?1")?; //ORDER BY end_date_time DESC limit 1 //start_date_time, end_date_time
+    let row = stmt.query_row(params![tier_id], |row| {
+        Ok(TierItem {
+            id: row.get(0)?,
+            name: row.get(1)?,
+        })
+    })?;
+
+    Ok(row)
 }
 
 fn get_last_status(config: &super::super::settings::Database, api_id: Uuid) -> Result<StatusItem> {
@@ -163,9 +186,10 @@ pub fn get_api_by_id(config: &super::super::settings::Database, api: Uuid) -> Re
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
-    let mut stmt = conn.prepare("SELECT id, name, domain_id FROM apis WHERE id = ?1")?;
+    let mut stmt = conn.prepare("SELECT id, name, domain_id, tier_id FROM apis WHERE id = ?1")?;
     let row = stmt.query_row(params![api], |row| {
         let id = row.get(0)?;
+        let tier_id = row.get(3)?;
         //get last status
         let status = match get_last_status(config, id) {
             Ok(val) => val.status,
@@ -174,14 +198,21 @@ pub fn get_api_by_id(config: &super::super::settings::Database, api: Uuid) -> Re
                 String::from("NONE") //TODO - reuse enum
             }
         };
+        let tier = match get_related_tier(config, tier_id) {
+            Ok(val) => val,
+            Err(why) => {
+                warn!("Unable to get tier for api [{:?}] - [{:?}]", id, why);
+                TierItem {
+                    id: Uuid::nil(),
+                    name: String::from("N/A"),
+                }
+            }
+        };
 
         Ok(ApiItem {
             name: row.get(1)?,
             id: id,
-            tier: TierItem {
-                id: Uuid::new_v4(),
-                name: String::from("Application"),
-            },
+            tier: tier,
             domain_id: row.get(2)?,
             status: status,
         })
@@ -206,6 +237,25 @@ pub fn update_api_status(
     conn.execute(
         "INSERT INTO status (api_id, status, start_date_time) VALUES (?1, ?2, ?3)",
         params![status.api_id, status.status.to_uppercase(), Utc::now()],
+    )?;
+
+    conn.close().unwrap();
+
+    Ok(())
+}
+
+pub fn update_api_tier(
+    config: &super::super::settings::Database,
+    api_id: Uuid,
+    tier_id: Uuid,
+) -> Result<()> {
+    let db_path = get_init_db(&config.rusqlite_path).unwrap();
+    let conn = Connection::open(db_path)?;
+
+    //At this stage, start_date_time / end_date_time is not managed so we can delete then insert
+    conn.execute(
+        "UPDATE apis SET tier_id = ?1 WHERE id = ?2",
+        params![tier_id, api_id],
     )?;
 
     conn.close().unwrap();

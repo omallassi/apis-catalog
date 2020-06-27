@@ -273,6 +273,7 @@ fn get_tiers() -> Result<(), reqwest::Error> {
 pub struct Api {
     pub id: Uuid,
     pub name: String,
+    pub tier: String,
     pub status: Status,
     pub domain_id: Uuid,
     pub domain_name: String,
@@ -309,6 +310,7 @@ fn create_api(name: &str, domain_id: &str, specs: Vec<&str>) -> Result<(), reqwe
         domain_id: Uuid::parse_str(domain_id).unwrap(),
         domain_name: String::from(""),
         spec_ids: specs_as_string,
+        tier: String::new(),
     };
 
     let url = format!(
@@ -334,11 +336,14 @@ fn list_all_apis() -> Result<(), reqwest::Error> {
     let apis: Apis = resp.json()?;
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row![b -> "Id", b -> "Name", b -> "Domain", b -> "Domain", b -> "Specs"]);
+    table.set_titles(
+        row![b -> "Id", b -> "Name", b -> "Tier", b -> "Domain", b -> "Domain", b -> "Specs"],
+    );
     for api in apis.apis {
         table.add_row(row![
             api.id,
             api.name,
+            api.tier,
             api.domain_id,
             api.domain_name,
             format!("{:?}", api.spec_ids)
@@ -368,6 +373,21 @@ fn update_api_status(api: &str, value: &str) -> Result<(), reqwest::Error> {
     );
     //update and send it and updated version back
     let mut resp = client.post(&url).json(&status).send()?;
+    debug!("response: {:?}", resp.status());
+
+    Ok(())
+}
+
+fn update_api_tier(api: &str, tier: &str) -> Result<(), reqwest::Error> {
+    let client = Client::new();
+
+    let url = format!(
+        "http://{address}/v1/apis/{id}/tier",
+        address = &SETTINGS.server.address,
+        id = api
+    );
+    //update and send it and updated version back
+    let mut resp = client.post(&url).json(&tier).send()?;
     debug!("response: {:?}", resp.status());
 
     Ok(())
@@ -540,6 +560,24 @@ fn main() {
                                 .takes_value(true)
                                 .required(true),
                         ),
+                )
+                .subcommand(
+                    SubCommand::with_name("tier")
+                        .about("set the tier of the api")
+                        .arg(
+                            Arg::with_name("tier")
+                                .short("t")
+                                .long("tier")
+                                .takes_value(true)
+                                .required(true),
+                        )
+                        .arg(
+                            Arg::with_name("api")
+                                .short("a")
+                                .long("api")
+                                .takes_value(true)
+                                .required(true),
+                        ),
                 ),
         )
         .subcommand(
@@ -699,6 +737,12 @@ fn main() {
                 update_api_status(
                     matches.value_of("api").unwrap(),
                     matches.value_of("value").unwrap(),
+                );
+            }
+            ("tier", Some(matches)) => {
+                update_api_tier(
+                    matches.value_of("api").unwrap(),
+                    matches.value_of("tier").unwrap(),
                 );
             }
 

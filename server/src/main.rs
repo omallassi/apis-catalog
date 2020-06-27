@@ -423,6 +423,19 @@ pub fn update_api_status_by_id(path: web::Path<(String,)>, status: Json<Status>)
     HttpResponse::Ok().json("")
 }
 
+pub fn update_api_tier_by_id(path: web::Path<(String,)>, tier: Json<String>) -> HttpResponse {
+    //path: web::Path<(String,)>,
+    //&path.0
+    info!("updating api for id [{:?}] and tier [{}]", &path.0, tier);
+
+    let api_id = Uuid::parse_str(&path.0).unwrap();
+    let tier_id = Uuid::parse_str(tier.as_str()).unwrap();
+
+    repo_apis::update_api_tier(&SETTINGS.database, api_id, tier_id);
+
+    HttpResponse::Ok().json("")
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Envs {
     pub envs: Vec<Env>,
@@ -738,6 +751,9 @@ async fn main() {
                     .service(
                         web::resource("/{api}/status")
                             .route(web::post().to(update_api_status_by_id)),
+                    )
+                    .service(
+                        web::resource("/{api}/tier").route(web::post().to(update_api_tier_by_id)),
                     ),
             )
             .service(create_env)
