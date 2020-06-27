@@ -51,14 +51,12 @@ fn get_init_db(rusqlite: &String) -> Result<String> {
             "CREATE TABLE IF NOT EXISTS apis (
                 id UUID  NOT NULL UNIQUE,
                 name TEXT NOT NULL, 
-                domain_id UUID NOT NULL
+                domain_id UUID NOT NULL, 
+                tier_id UUID NOT NULL
             )",
             NO_PARAMS,
         )
         .unwrap();
-        conn.execute("ALTER TABLE apis ADD COLUMN tier_id UUID", NO_PARAMS)
-            .unwrap_or_default();
-
         //
         conn.execute(
             "CREATE TABLE IF NOT EXISTS status(
@@ -91,13 +89,13 @@ pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<Ap
 
     let mut stmt = conn.prepare("SELECT id, name, domain_id, tier_id FROM apis")?;
     let mut rows = stmt.query(NO_PARAMS)?;
-
     let mut tuples = Vec::new();
     while let Some(row) = rows.next()? {
         let id = row.get("id")?;
         let name = row.get("name")?;
         let domain_id = row.get("domain_id")?;
         let tier_id = row.get("tier_id")?;
+
         //get last status
         let status = match get_last_status(config, id) {
             Ok(val) => val.status,
@@ -171,8 +169,8 @@ pub fn add_api(
 
     let id = Uuid::new_v4();
     conn.execute(
-        "INSERT INTO apis (id, name, domain_id) VALUES (?1, ?2, ?3)",
-        params![id, name, domain_id],
+        "INSERT INTO apis (id, name, domain_id, tier_id) VALUES (?1, ?2, ?3, ?4)",
+        params![id, name, domain_id, Uuid::nil()],
     )?;
 
     //TODO manage status

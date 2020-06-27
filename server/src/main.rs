@@ -360,7 +360,8 @@ pub fn list_all_apis() -> HttpResponse {
     let mut all_apis: Vec<ApiItem> = match repo_apis::list_all_apis(&SETTINGS.database) {
         Ok(all_apis) => all_apis,
         Err(why) => {
-            panic!("Unable to get apis: {}", why);
+            error!("Unable to get apis: {}", why);
+            panic!();
         }
     };
 
