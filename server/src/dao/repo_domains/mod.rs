@@ -11,8 +11,6 @@ use rusqlite::{params, Connection, Result};
 //use rustbreak::{FileDatabase, deser::Ron};
 use log::debug;
 
-use super::super::settings::*;
-
 pub struct DomainItem {
     pub name: std::string::String,
     pub id: Uuid,
@@ -21,20 +19,20 @@ pub struct DomainItem {
 
 pub fn list_all_domains(config: &super::super::settings::Database) -> Result<Vec<DomainItem>> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-domains.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!("Reading all domains from Domain_Database [{:?}]", db_path);
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS domains (
-            id UUID  NOT NULL UNIQUE,
-            name TEXT NOT NULL, 
-            description TEXT
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS domains (
+    //         id UUID  NOT NULL UNIQUE,
+    //         name TEXT NOT NULL,
+    //         description TEXT
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     let mut stmt = conn.prepare("SELECT id, name, description FROM domains")?;
     let mut rows = stmt.query(NO_PARAMS)?;
@@ -62,7 +60,7 @@ pub fn add_domain(
     description: &str,
 ) -> Result<Uuid> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-domains.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Creating domain [{}] into Domain_Database [{:?}]",
@@ -71,14 +69,14 @@ pub fn add_domain(
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS domains (
-            id UUID  NOT NULL UNIQUE,
-            name TEXT NOT NULL,
-            description TEXT
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS domains (
+    //         id UUID  NOT NULL UNIQUE,
+    //         name TEXT NOT NULL,
+    //         description TEXT
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     let id = Uuid::new_v4();
     conn.execute(
@@ -92,20 +90,20 @@ pub fn add_domain(
 
 pub fn get_domain(config: &super::super::settings::Database, id: Uuid) -> Result<DomainItem> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-domains.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!("Get domain [{}] into Domain_Database [{:?}]", id, db_path);
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS domains (
-            id UUID  NOT NULL UNIQUE,
-            name TEXT NOT NULL,
-            description TEXT
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS domains (
+    //         id UUID  NOT NULL UNIQUE,
+    //         name TEXT NOT NULL,
+    //         description TEXT
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     let mut stmt = conn.prepare("SELECT id, name, description FROM domains WHERE id = ?1")?;
     let row = stmt.query_row(params![id], |row| {

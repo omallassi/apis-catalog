@@ -7,13 +7,11 @@ use rusqlite::{named_params, NO_PARAMS};
 use rusqlite::{params, Connection, Result};
 
 //use rustbreak::{FileDatabase, deser::Ron};
-use log::{debug, info};
-
-use super::super::settings::*;
+use log::debug;
 
 pub fn release(config: &super::super::settings::Database, api: String, env: String) -> Result<()> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-store.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Releasing [{}] to env [{}] from Deployments_Database [{:?}]",
@@ -22,13 +20,13 @@ pub fn release(config: &super::super::settings::Database, api: String, env: Stri
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS deployments (
-            api TEXT NOT NULL,
-            env TEXT NOT NULL
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS deployments (
+    //         api TEXT NOT NULL,
+    //         env TEXT NOT NULL
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     debug!("Writing to Database");
     conn.execute(
@@ -46,7 +44,7 @@ pub fn list_all_deployments(
     config: &super::super::settings::Database,
 ) -> Result<Vec<(String, String)>> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-store.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Reading all deployments from Deployments_Database [{:?}]",
@@ -76,7 +74,7 @@ pub fn get_all_deployments_for_api(
     api: &str,
 ) -> Result<Vec<(String, String)>> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-store.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Reading all deployments for api [{}] from Deployments_Database [{:?}]",

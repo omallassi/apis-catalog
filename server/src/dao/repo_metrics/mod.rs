@@ -2,12 +2,10 @@ extern crate rusqlite;
 
 use chrono::{DateTime, Utc};
 
-use rusqlite::{named_params, NO_PARAMS};
+use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
-use log::{debug, info};
-
-use super::super::settings::*;
+use log::debug;
 
 pub fn save_metrics_pull_requests_number(
     config: &super::super::settings::Database,
@@ -15,7 +13,7 @@ pub fn save_metrics_pull_requests_number(
     size: i32,
 ) -> Result<()> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-metrics.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Saving metrics_pr_num into Metrics_Database [{:?}]",
@@ -24,13 +22,13 @@ pub fn save_metrics_pull_requests_number(
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS metrics_pr_num (
-            date_time TEXT NOT NULL UNIQUE, 
-            value INTEGER NOT NULL
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS metrics_pr_num (
+    //         date_time TEXT NOT NULL UNIQUE,
+    //         value INTEGER NOT NULL
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     conn.execute(
         "INSERT INTO metrics_pr_num (date_time, value) VALUES (?1, ?2)",
@@ -49,7 +47,7 @@ pub fn get_metrics_pull_requests_number(
     config: &super::super::settings::Database,
 ) -> Result<TimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-metrics.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Reading all [pull_requests_number] metrics into Metrics_Database [{:?}]",
@@ -58,13 +56,13 @@ pub fn get_metrics_pull_requests_number(
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS metrics_pr_num (
-            date_time TEXT NOT NULL UNIQUE, 
-            value INTEGER NOT NULL
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS metrics_pr_num (
+    //         date_time TEXT NOT NULL UNIQUE,
+    //         value INTEGER NOT NULL
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     let mut stmt = conn.prepare("SELECT date_time, value FROM metrics_pr_num")?;
     let mut rows = stmt.query(NO_PARAMS)?;
@@ -91,7 +89,7 @@ pub fn save_metrics_pull_requests_ages(
     mean: isize,
 ) -> Result<()> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-metrics.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Saving metrics_pr_ages into Metrics_Database [{:?}]",
@@ -100,16 +98,16 @@ pub fn save_metrics_pull_requests_ages(
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS metrics_pr_ages (
-            date_time TEXT NOT NULL UNIQUE, 
-            p0 INTEGER NOT NULL, 
-            p50 INTEGER NOT NULL, 
-            p100 INTEGER NOT NULL, 
-            mean INTEGER NOT NULL
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS metrics_pr_ages (
+    //         date_time TEXT NOT NULL UNIQUE,
+    //         p0 INTEGER NOT NULL,
+    //         p50 INTEGER NOT NULL,
+    //         p100 INTEGER NOT NULL,
+    //         mean INTEGER NOT NULL
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     conn.execute(
         "INSERT INTO metrics_pr_ages (date_time, p0, p50, p100, mean) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -128,7 +126,7 @@ pub fn get_metrics_pull_requests_ages(
     config: &super::super::settings::Database,
 ) -> Result<TupleTimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-metrics.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Reading all [pull_requests_ages] metrics into Metrics_Database [{:?}]",
@@ -137,16 +135,16 @@ pub fn get_metrics_pull_requests_ages(
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS metrics_pr_ages (
-            date_time TEXT NOT NULL UNIQUE, 
-            p0 INTEGER NOT NULL, 
-            p50 INTEGER NOT NULL, 
-            p100 INTEGER NOT NULL, 
-            mean INTEGER NOT NULL
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS metrics_pr_ages (
+    //         date_time TEXT NOT NULL UNIQUE,
+    //         p0 INTEGER NOT NULL,
+    //         p50 INTEGER NOT NULL,
+    //         p100 INTEGER NOT NULL,
+    //         mean INTEGER NOT NULL
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     let mut stmt = conn.prepare("SELECT date_time, p0, p50, p100, mean FROM metrics_pr_ages")?;
     let mut rows = stmt.query(NO_PARAMS)?;
@@ -173,7 +171,7 @@ pub fn save_metrics_endpoints_num(
     size: i32,
 ) -> Result<()> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-metrics.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Saving metrics_endpoints_num into Metrics_Database [{:?}]",
@@ -182,13 +180,13 @@ pub fn save_metrics_endpoints_num(
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS metrics_endpoints_num (
-            date_time TEXT NOT NULL UNIQUE, 
-            value INTEGER NOT NULL
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS metrics_endpoints_num (
+    //         date_time TEXT NOT NULL UNIQUE,
+    //         value INTEGER NOT NULL
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     conn.execute(
         "INSERT INTO metrics_endpoints_num (date_time, value) VALUES (?1, ?2)",
@@ -202,7 +200,7 @@ pub fn get_metrics_endpoints_number(
     config: &super::super::settings::Database,
 ) -> Result<TimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-metrics.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!(
             "Reading all [metrics_endpoints_num] metrics into Metrics_Database [{:?}]",
@@ -211,13 +209,13 @@ pub fn get_metrics_endpoints_number(
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS metrics_endpoints_num (
-            date_time TEXT NOT NULL UNIQUE, 
-            value INTEGER NOT NULL
-        )",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS metrics_endpoints_num (
+    //         date_time TEXT NOT NULL UNIQUE,
+    //         value INTEGER NOT NULL
+    //     )",
+    //     NO_PARAMS,
+    // )?;
 
     let mut stmt = conn.prepare("SELECT date_time, value FROM metrics_endpoints_num")?;
     let mut rows = stmt.query(NO_PARAMS)?;

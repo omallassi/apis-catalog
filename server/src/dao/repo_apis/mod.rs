@@ -39,46 +39,49 @@ static INIT_DB: Once = Once::new();
 
 fn get_init_db(rusqlite: &String) -> Result<String> {
     let mut db_path = String::from(rusqlite);
-    db_path.push_str("/apis-catalog-apis.db");
+    db_path.push_str("/apis-catalog-all.db");
 
-    INIT_DB.call_once(|| {
-        {
-            debug!("Init Api_Database [{:?}]", db_path);
-        }
+    // INIT_DB.call_once(|| {
+    //     {
+    //         debug!("Init Api_Database [{:?}]", db_path);
+    //     }
 
-        let conn = Connection::open(&db_path).unwrap();
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS apis (
-                id UUID  NOT NULL UNIQUE,
-                name TEXT NOT NULL, 
-                domain_id UUID NOT NULL, 
-                tier_id UUID NOT NULL
-            )",
-            NO_PARAMS,
-        )
-        .unwrap();
-        //
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS status(
-                api_id UUID NOT NULL,
-                status TEXT NOT NULL,
-                start_date_time TEXT NOT NULL, 
-                end_date_time TEXT
-            )",
-            NO_PARAMS,
-        )
-        .unwrap();
-        //
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS tiers (
-                id UUID NOT NULL,
-                name TEXT NOT NULL
-            )",
-            NO_PARAMS,
-        )
-        .unwrap();
-    });
-    // debug!("Api_Database [{:?}] already initialized", db_path);
+    //     let conn = Connection::open(&db_path).unwrap();
+    //     conn.execute(
+    //         "CREATE TABLE IF NOT EXISTS apis (
+    //             id UUID  NOT NULL UNIQUE,
+    //             name TEXT NOT NULL,
+    //             domain_id UUID NOT NULL,
+    //             tier_id UUID NOT NULL
+    //         )",
+    //         NO_PARAMS,
+    //     )
+    //     .unwrap();
+    //     //
+    //     conn.execute(
+    //         "CREATE TABLE IF NOT EXISTS status(
+    //             api_id UUID NOT NULL,
+    //             status TEXT NOT NULL,
+    //             start_date_time TEXT NOT NULL,
+    //             end_date_time TEXT
+    //         )",
+    //         NO_PARAMS,
+    //     )
+    //     .unwrap();
+    //     //
+    //     conn.execute(
+    //         "CREATE TABLE IF NOT EXISTS tiers (
+    //             id UUID NOT NULL,
+    //             name TEXT NOT NULL
+    //         )",
+    //         NO_PARAMS,
+    //     )
+    //     .unwrap();
+    // });
+    info!(
+        "Api_Database [{:?}] already TO BE CHANGED initialized",
+        db_path
+    );
 
     Ok(String::from(&db_path))
 }

@@ -39,6 +39,13 @@ This picture tries to depict a [_possible state_](https://github.com/omallassi/a
 
 ## Getting Started
 
+### Prepare the DB 
+
+There are two modes : 
+
+* based on sqlite. For more details about using sqlite, please [refer to this page](https://github.com/omallassi/apis-catalog/wiki/installation).
+* based on mysql (not yet supported).
+
 ### Run  the REST Backend
 
 * Rename `server/config/sample.toml`into `server/config/local.toml`and upate the properties
@@ -48,24 +55,78 @@ This picture tries to depict a [_possible state_](https://github.com/omallassi/a
 ### Run the CLI
 Some commands: 
 ```
+[omallassi@sup-sachs apis-catalog]$./target/debug/catalog tiers create --name "API Gateway"
+[omallassi@sup-sachs apis-catalog]$./target/debug/catalog tiers create --name "Application Layer"
+[omallassi@sup-sachs apis-catalog]$./target/debug/catalog tiers create --name "Business Layer"
+
+[omallassi@sup-sachs apis-catalog]$./target/debug/catalog tiers list
+ Id                                   | Name 
+--------------------------------------+-------------------
+ cbd81ed2-09e0-424b-a0d8-6e7bf939d50f | Business Layer 
+ 542cb0ce-8c89-431a-b6cb-0b18c6c439e2 | Application Layer 
+ 79a0effb-a755-466b-a4d5-da87159b2149 | API Gateway 
+
+
+
 RUST_LOG=debug ./target/debug/catalog domains create --name /domain1
 RUST_LOG=debug ./target/debug/catalog domains create --name /domain2 --description "This domain owns........ all you have ever dreamed about. Do not think a lot. this is just the place to be...."
 RUST_LOG=debug ./target/debug/catalog domains create --name /domain3
 RUST_LOG=debug ./target/debug/catalog domains create --name /domain2/subdomain2.1/subdomain2.2 --description "This is a smaller part of your dreamed domain. smaller, but still enjoyable"
 RUST_LOG=debug ./target/debug/catalog domains list
 
-RUST_LOG=debug ./target/debug/catalog apis create --name my_sampe_api --spec-ids 12 --domain-id 63c1cc54-3319-404b-ae41-1e105192d1ae
-RUST_LOG=debug ./target/debug/catalog apis create --name my_sampe_api_2 --spec-ids 12 --domain-id 23ecf86d-9ada-417a-aaca-976fe205f52b
-RUST_LOG=debug ./target/debug/catalog apis list
+Id                                   | Domain Name 
+--------------------------------------+------------------------------------
+ f503f8e3-0e35-4e75-b9dd-3d8a549b85f3 | /domain2/subdomain2.1/subdomain2.2 
+ 0f9c652c-291b-4b4b-840e-d5b32627db60 | /domain3 
+ d2046e28-cee3-413b-ac81-d4405d0e375e | /domain2 
+ c6cceac2-0905-4fe8-9b06-b8f45c373c90 | /domain1 
 
-RUST_LOG=debug ./target/debug/catalog env create --name xva.apac.murex.com --description "APAC env for xVA related solutions"
+
+RUST_LOG=debug ./target/debug/catalog env create --name pre-prod.apac.my-corp.com --description "APAC preprod env for my solutions"
+RUST_LOG=debug ./target/debug/catalog env create --name apac.my-corp.com --description "APAC env for my solutions"
 RUST_LOG=debug ./target/debug/catalog env list
 
-RUST_LOG=debug ./target/debug/catalog deployments create --api 160d9e73-3e6a-4387-87f4-a16e692d0d80 --env a3904f15-83ea-46b3-bca0-1e0df2337e90
-RUST_LOG=debug ./target/debug/catalog deployments list --api 160d9e73-3e6a-4387-87f4-a16e692d0d80
 
-./target/debug/catalog tiers create --name "Application"
-./target/debug/catalog tiers list
+Id                                   | Env Name                  | Description 
+--------------------------------------+---------------------------+-----------------------------------
+ f7346d04-44f6-417e-84ba-bc623086d9fd | apac.my-corp.com          | APAC env for my solutions 
+ 06cf9312-11e2-4d49-818f-332827e5a24a | pre-prod.apac.my-corp.com | APAC preprod env for my solutions 
+
+
+
+
+
+RUST_LOG=debug ./target/debug/catalog apis create --name my_api_1 --spec-ids 12 --domain-id c6cceac2-0905-4fe8-9b06-b8f45c373c90
+RUST_LOG=debug ./target/debug/catalog apis create --name my_api_2 --spec-ids 12 --domain-id c6cceac2-0905-4fe8-9b06-b8f45c373c90
+RUST_LOG=debug ./target/debug/catalog apis list
+
+
+Id                                   | Name     | Tier | Domain                               | Domain   | Specs 
+--------------------------------------+----------+------+--------------------------------------+----------+-------
+ afebabf3-a55c-4915-8ff9-663ef98f260e | my_api_2 | N/A  | c6cceac2-0905-4fe8-9b06-b8f45c373c90 | /domain1 | [] 
+ 47588986-8102-49d6-ab1b-ee96a5b964a4 | my_api_1 | N/A  | c6cceac2-0905-4fe8-9b06-b8f45c373c90 | /domain1 | [] 
+
+
+
+
+RUST_LOG=debug ./target/debug/catalog deployments create --api 47588986-8102-49d6-ab1b-ee96a5b964a4 --env 06cf9312-11e2-4d49-818f-332827e5a24a
+
+RUST_LOG=debug ./target/debug/catalog deployments list
+
+Apis                                 | Env 
+--------------------------------------+--------------------------------------
+ 47588986-8102-49d6-ab1b-ee96a5b964a4 | 06cf9312-11e2-4d49-818f-332827e5a24a 
+
+
+same command as: 
+
+RUST_LOG=debug ./target/debug/catalog deployments list --api 47588986-8102-49d6-ab1b-ee96a5b964a4
+
+
+RUST_LOG=debug ./target/debug/catalog apis tier --api 47588986-8102-49d6-ab1b-ee96a5b964a4 --tier 542cb0ce-8c89-431a-b6cb-0b18c6c439e2
+
+RUST_LOG=debug ./target/debug/catalog apis status --api 47588986-8102-49d6-ab1b-ee96a5b964a4 --value validated
+
 ```
 
 ## Run the Web UI 

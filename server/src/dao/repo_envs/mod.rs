@@ -5,13 +5,11 @@ extern crate uuid;
 
 use uuid::Uuid;
 
-use rusqlite::{named_params, NO_PARAMS};
+use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
 //use rustbreak::{FileDatabase, deser::Ron};
-use log::{debug, info};
-
-use super::super::settings::*;
+use log::debug;
 
 pub struct EnvItem {
     pub id: Uuid,
@@ -21,19 +19,19 @@ pub struct EnvItem {
 
 pub fn list_all_envs(config: &super::super::settings::Database) -> Result<Vec<EnvItem>> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-envs.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!("Reading all envs from Env_Database [{:?}]", db_path);
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS envs (
-            id UUID  NOT NULL UNIQUE,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT NOT NULL)",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS envs (
+    //         id UUID  NOT NULL UNIQUE,
+    //         name TEXT NOT NULL UNIQUE,
+    //         description TEXT NOT NULL)",
+    //     NO_PARAMS,
+    // )?;
 
     let mut stmt = conn.prepare("SELECT id, name, description FROM envs")?;
     let mut rows = stmt.query(NO_PARAMS)?;
@@ -57,19 +55,19 @@ pub fn list_all_envs(config: &super::super::settings::Database) -> Result<Vec<En
 
 pub fn get_env(config: &super::super::settings::Database, id: Uuid) -> Result<EnvItem> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-envs.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!("Reading envs [{:?}] from Env_Database [{:?}]", id, db_path);
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS envs (
-            id UUID  NOT NULL UNIQUE,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT NOT NULL)",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS envs (
+    //         id UUID  NOT NULL UNIQUE,
+    //         name TEXT NOT NULL UNIQUE,
+    //         description TEXT NOT NULL)",
+    //     NO_PARAMS,
+    // )?;
 
     let mut stmt = conn.prepare("SELECT id, name, description FROM envs WHERE id = ?1")?;
     let row = stmt.query_row(params![id], |row| {
@@ -89,19 +87,19 @@ pub fn add_env(
     description: &str,
 ) -> Result<()> {
     let mut db_path = String::from(&config.rusqlite_path);
-    db_path.push_str("/apis-catalog-envs.db");
+    db_path.push_str("/apis-catalog-all.db");
     {
         debug!("Creating env [{}] into Env_Database [{:?}]", name, db_path);
     }
 
     let conn = Connection::open(db_path)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS envs (
-            id UUID  NOT NULL UNIQUE,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT NOT NULL)",
-        NO_PARAMS,
-    )?;
+    // conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS envs (
+    //         id UUID  NOT NULL UNIQUE,
+    //         name TEXT NOT NULL UNIQUE,
+    //         description TEXT NOT NULL)",
+    //     NO_PARAMS,
+    // )?;
 
     let id = Uuid::new_v4();
     conn.execute(

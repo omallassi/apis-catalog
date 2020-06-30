@@ -28,9 +28,10 @@ reqwest = "0.9.20"
 chrono = { version = "0.4", features = ["serde"] }
 config = "0.10.1"
 rusqlite = { version = "0.22.0", features = ["bundled", "uuid", "chrono", "trace"] }
+diesel = { version = "1.4.4", features = ["sqlite"] }
+dotenv = "0.15.0"
 time = "0.1"
 uuid = { version = "0.8", features = ["serde", "v1", "v3", "v4","v5"] }
-# sqlite = "0.25.0"
 histogram = "0.6.9"
 clokwerk = "0.3.0"
 cmd_lib = "0.7.8"
