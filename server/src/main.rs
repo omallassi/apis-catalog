@@ -512,6 +512,7 @@ pub struct Metrics {
     pub pr_num: Vec<(DateTime<Utc>, i32)>,
     pub pr_ages: Vec<(DateTime<Utc>, i64, i64, i64, i64)>,
     pub endpoints_num: Vec<(DateTime<Utc>, i32)>,
+    pub zally_violations: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)>,
 }
 
 #[get("/v1/metrics")]
@@ -524,11 +525,26 @@ pub fn get_all_metrics() -> HttpResponse {
         repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database).unwrap();
     let endpoints_number: TimeSeries =
         repo_metrics::get_metrics_endpoints_number(&SETTINGS.database).unwrap();
+
+    let mut zally_violations = Vec::new();
+    let dt = Utc::now();
+    let mut values = std::collections::HashMap::new();
+    values.insert(134i64, 134);
+    values.insert(120i64, 120);
+    zally_violations.push((dt, values));
+
+    let dt2 = Utc::now();
+    values = std::collections::HashMap::new();
+    values.insert(135i64, 135);
+    values.insert(134i64, 100);
+    values.insert(120i64, 120);
+    zally_violations.push((dt2, values));
     //
     let metrics = Metrics {
         pr_num: pr_num_timeseries.points,
         pr_ages: pr_ages_timeseries.points,
         endpoints_num: endpoints_number.points,
+        zally_violations: zally_violations,
     };
 
     HttpResponse::Ok().json(metrics)
