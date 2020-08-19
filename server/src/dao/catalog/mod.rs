@@ -2,6 +2,11 @@ extern crate glob;
 use glob::glob;
 use log::{debug, info, warn};
 
+extern crate yaml_rust;
+use yaml_rust::{Yaml, YamlLoader};
+
+use std::collections::HashMap;
+
 use std::path::Path;
 use std::vec::Vec;
 
@@ -20,7 +25,7 @@ use std::fs;
 
 //
 pub struct SpecItem {
-    pub name: std::string::String,
+    pub path: std::string::String,
     pub id: std::string::String,
     pub api_spec: OpenAPI,
     pub audience: std::string::String,
@@ -57,7 +62,7 @@ pub fn list_specs(path: &str) -> Vec<SpecItem> {
                 };
                 //create the API Item and add it to the returned value
                 let spec = SpecItem {
-                    name: path,
+                    path: path,
                     id: format!("{:?}", oid),
                     api_spec: openapi,
                     audience: audience,
@@ -112,7 +117,7 @@ pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
                 };
                 //create the API Item and add it to the returned value
                 let spec = SpecItem {
-                    name: path.to_string(),
+                    path: path.to_string(),
                     id: format!("{:?}", oid),
                     api_spec: openapi,
                     audience: audience,
@@ -144,4 +149,247 @@ pub fn refresh_git_repo(path: &str) {
     //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
     run_cmd!("cd {}; git pull", path);
     info!("Refresh Git Repo with result [{:?}]", "result");
+}
+
+pub fn get_zally_ignore(path: &str) -> std::collections::HashMap<i64, usize> {
+    let mut merged_stats = std::collections::HashMap::new();
+
+    let specs = list_specs(path);
+    for spec in specs.iter() {
+        //need to load the yaml file as OpenAPI crate will remove the x-zally-ignore...
+        let yaml_spec_as_string = std::fs::read_to_string(spec.path.as_str()).unwrap();
+        let stats = get_zally_ignore_metrics(yaml_spec_as_string.as_str(), spec.path.as_str());
+
+        //some the maps
+        for (key, val) in stats.iter() {
+            match merged_stats.get(key) {
+                Some(known_val) => {
+                    merged_stats.insert(*key, val + known_val);
+                }
+                None => {
+                    merged_stats.insert(*key, *val);
+                }
+            }
+        }
+    }
+    merged_stats
+}
+
+fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::HashMap<i64, usize> {
+    debug!(
+        "get_zally_ignore_metrics is called for spec {:?}",
+        spec_name
+    );
+
+    let docs = match YamlLoader::load_from_str(spec) {
+        Ok(docs) => docs,
+        Err(why) => {
+            panic!("Error while parsing spec {} - :{:?}", spec, why);
+        }
+    }; // Result<Vec<Yaml>, ScanError>
+    let doc = docs[0].as_hash().unwrap(); //Option<&Hash> et LinkedHashMap<Yaml, Yaml>;
+
+    // let iter = doc.iter();
+    // for item in iter {
+    //     println!("---------");
+    //     println!("{:?}", &item);
+    //     println!("---------");
+    // }
+    let mut stats = std::collections::HashMap::new();
+    //get global zally-ignore
+    {
+        match doc.get(&Yaml::String(String::from("x-zally-ignore"))) {
+            Some(val) => {
+                //println!("x-zally-ignore {:?}", val);
+
+                let paths = doc
+                    .get(&Yaml::String(String::from("paths")))
+                    .unwrap()
+                    .as_hash()
+                    .unwrap();
+
+                for elt in val.as_vec().unwrap() {
+                    stats.insert(elt.as_i64().unwrap(), paths.len());
+                    // println!(
+                    //     "x-zally-ignore {:?} {:?}",
+                    //     elt.as_i64(),
+                    //     elt.as_i64().unwrap()
+                    // );
+                    // println!("path len {:?}", paths.len());
+                }
+            }
+            None => info!("no global zally-ignore for spec {:?}", spec_name),
+        };
+    }
+
+    //get zally-ignore per path
+    let mut stats_per_path: HashMap<i64, usize> = std::collections::HashMap::new();
+    {
+        let paths = doc
+            .get(&Yaml::String(String::from("paths")))
+            .unwrap()
+            .as_hash()
+            .unwrap();
+
+        for path in paths.iter() {
+            // println!("{:?}", path.0);
+            // println!("{:?}", path.1);
+            let zally = path
+                .1
+                .as_hash()
+                .unwrap()
+                .get(&Yaml::String(String::from("x-zally-ignore")));
+
+            match zally {
+                Some(val) => {
+                    debug!("Got Zally Ignore {:?} for path {:?}", zally, path);
+
+                    for elt in val.as_vec().unwrap() {
+                        let elt = match elt.as_i64() {
+                            Some(val) => val,
+                            None => {
+                                warn!("Got zally-ignore {:?}", elt);
+                                -1
+                            }
+                        };
+                        let stat = stats_per_path.get(&elt).cloned();
+                        match stat {
+                            Some(val) => {
+                                stats_per_path.insert(elt, val + 1);
+                            }
+                            None => {
+                                stats_per_path.insert(elt, 1);
+                            }
+                        }
+                        // println!(
+                        //     "x-zally-ignore {:?} {:?}",
+                        //     elt.as_i64(),
+                        //     elt.as_i64().unwrap()
+                        // );
+                    }
+                }
+                None => {
+                    info!(
+                        "no zally-ignore on paths for spec {:?} and path {:?}",
+                        spec_name, path.0
+                    );
+                }
+            }
+        }
+        // println!("stats_per_path {:?}", stats_per_path);
+        // println!("len {:?}", paths.len());
+    }
+
+    //merge both maps
+    for stat in stats_per_path.iter() {
+        //check if stat already exist in global, if not add it to stats
+        if stats.contains_key(stat.0) {
+            debug!("stats {:?} already in global stats", stat.0);
+        } else {
+            stats.insert(*stat.0, *stat.1);
+        }
+    }
+
+    stats
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_get_zally_ignore_metrics_1() {
+        let spec = "
+        openapi: \"3.0.0\"
+        info:
+          version: 1.0.0
+          title: an API ...
+        x-zally-ignore:
+          - 134
+          - 120 # Rest maturity evolving
+        
+        paths:
+          /v1/a/b:
+            get:
+              description: get ...
+              responses:
+                '200':
+                  description: returns...
+
+          /v2/a/b:
+            x-zally-ignore:
+              - 164
+            get:
+              description: get ...
+              responses:
+                '200':
+                  description: returns...
+                    
+          /a/b:
+            x-zally-ignore:
+              - 164 # Rest maturity evolving
+              - 134
+            post:
+              parameters:
+                - name: chunk
+                  in: query
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                    minimum: 1
+              responses:
+                200:
+                  description: ...     
+        ";
+
+        let results = super::get_zally_ignore_metrics(spec, "name");
+
+        println!("*** results : {:?}", results);
+
+        assert_eq!(results.get(&134i64).unwrap(), &3usize);
+        assert_eq!(results.get(&120i64).unwrap(), &3usize);
+        assert_eq!(results.get(&164i64).unwrap(), &2usize);
+    }
+
+    #[test]
+    fn test_get_zally_ignore_metrics_2() {
+        let spec = "
+        openapi: \"3.0.0\"
+        info:
+          version: 1.0.0
+          title: an API ...
+        
+        paths:
+          /v1/a/b:
+            get:
+              description: get ...
+              responses:
+                '200':
+                  description: returns...
+                    
+          /a/b:
+            x-zally-ignore:
+              - M10
+              - 164 
+            post:
+              parameters:
+                - name: chunk
+                  in: query
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                    minimum: 1
+              responses:
+                200:
+                  description: ...       
+        ";
+
+        let results = super::get_zally_ignore_metrics(spec, "name");
+
+        println!("*** results : {:?}", results);
+
+        assert_eq!(results.get(&164i64).unwrap(), &1usize);
+        assert_eq!(results.get(&-1i64).unwrap(), &1usize);
+    }
 }

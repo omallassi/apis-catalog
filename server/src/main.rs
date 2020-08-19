@@ -79,7 +79,7 @@ fn get_endpoints(info: web::Path<(String,)>) -> HttpResponse {
     let mut all_apis = catalog::get_spec(SETTINGS.catalog_path.as_str(), &info.0);
 
     while let Some(api) = all_apis.pop() {
-        info!("Analysing file [{:?}]", api.name);
+        info!("Analysing file [{:?}]", api.path);
 
         let openapi: OpenAPI = api.api_spec;
         for val in openapi.paths.keys() {
@@ -117,8 +117,8 @@ fn get_all_specs() -> HttpResponse {
 
     let mut all_specs = catalog::list_specs(SETTINGS.catalog_path.as_str());
     while let Some(spec) = all_specs.pop() {
-        info!("Analysing file [{:?}]", spec.name);
-        let short_path = &spec.name[SETTINGS.catalog_dir.as_str().len()..spec.name.len()];
+        info!("Analysing file [{:?}]", spec.path);
+        let short_path = &spec.path[SETTINGS.catalog_dir.as_str().len()..spec.path.len()];
         let spec = Spec {
             name: String::from(short_path),
             id: spec.id,
@@ -526,25 +526,14 @@ pub fn get_all_metrics() -> HttpResponse {
     let endpoints_number: TimeSeries =
         repo_metrics::get_metrics_endpoints_number(&SETTINGS.database).unwrap();
 
-    let mut zally_violations = Vec::new();
-    let dt = Utc::now();
-    let mut values = std::collections::HashMap::new();
-    values.insert(134i64, 134);
-    values.insert(120i64, 120);
-    zally_violations.push((dt, values));
-
-    let dt2 = Utc::now();
-    values = std::collections::HashMap::new();
-    values.insert(135i64, 135);
-    values.insert(134i64, 100);
-    values.insert(120i64, 120);
-    zally_violations.push((dt2, values));
+    let returned_stats: ZallyTimeSeries =
+        repo_metrics::get_metrics_zally_ignore(&SETTINGS.database).unwrap();
     //
     let metrics = Metrics {
         pr_num: pr_num_timeseries.points,
         pr_ages: pr_ages_timeseries.points,
         endpoints_num: endpoints_number.points,
-        zally_violations: zally_violations,
+        zally_violations: returned_stats.points,
     };
 
     HttpResponse::Ok().json(metrics)
@@ -624,6 +613,10 @@ pub fn refresh_metrics() -> HttpResponse {
         len, &metrics
     );
     repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1).unwrap();
+
+    //save metrics zally_ignore
+    let stats = catalog::get_zally_ignore(SETTINGS.catalog_path.as_str());
+    repo_metrics::save_metrics_zally_ignore(&SETTINGS.database, Utc::now(), stats).unwrap();
     //
     HttpResponse::Ok().json(pull_requests.size)
 }

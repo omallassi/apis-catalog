@@ -1,7 +1,4 @@
 extern crate rusqlite;
-extern crate yaml_rust;
-
-use yaml_rust::{Yaml, YamlLoader};
 
 use std::collections::HashMap;
 
@@ -193,10 +190,10 @@ pub fn save_metrics_endpoints_num(
     //     NO_PARAMS,
     // )?;
 
-    conn.execute(
-        "INSERT INTO metrics_endpoints_num (date_time, value) VALUES (?1, ?2)",
-        params![datetime, size],
-    )?;
+    // conn.execute(
+    //     "INSERT INTO metrics_endpoints_num (date_time, value) VALUES (?1, ?2)",
+    //     params![datetime, size],
+    // )?;
 
     Ok(())
 }
@@ -238,202 +235,65 @@ pub fn get_metrics_endpoints_number(
     Ok(timeseries)
 }
 
-pub fn get_zally_ignore_metrics(spec: &str) -> Result<std::collections::HashMap<i64, usize>> {
-    debug!("get_zally_ignore_metrics is called");
-
-    let docs = match YamlLoader::load_from_str(spec) {
-        Ok(docs) => docs,
-        Err(why) => {
-            panic!("Error while parsing spec {} - :{:?}", spec, why);
-        }
-    }; // Result<Vec<Yaml>, ScanError>
-    let doc = docs[0].as_hash().unwrap(); //Option<&Hash> et LinkedHashMap<Yaml, Yaml>;
-
-    // let iter = doc.iter();
-    // for item in iter {
-    //     println!("---------");
-    //     println!("{:?}", &item);
-    //     println!("---------");
-    // }
-    let mut stats = std::collections::HashMap::new();
-    //get global zally-ignore
+pub fn save_metrics_zally_ignore(
+    config: &super::super::settings::Database,
+    datetime: DateTime<Utc>,
+    stats: std::collections::HashMap<i64, usize>,
+) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-all.db");
     {
-        match doc.get(&Yaml::String(String::from("x-zally-ignore"))) {
-            Some(val) => {
-                println!("x-zally-ignore {:?}", val);
-
-                let paths = doc
-                    .get(&Yaml::String(String::from("paths")))
-                    .unwrap()
-                    .as_hash()
-                    .unwrap();
-
-                for elt in val.as_vec().unwrap() {
-                    stats.insert(elt.as_i64().unwrap(), paths.len());
-                    // println!(
-                    //     "x-zally-ignore {:?} {:?}",
-                    //     elt.as_i64(),
-                    //     elt.as_i64().unwrap()
-                    // );
-                    // println!("path len {:?}", paths.len());
-                }
-            }
-            None => info!("no global zally-ignore for spec {:?}", spec),
-        };
+        debug!(
+            "Saving [metrics_zally_ignore] metrics into Metrics_Database [{:?}]",
+            db_path
+        );
     }
 
-    //get zally-ignore per path
-    let mut stats_per_path: HashMap<i64, usize> = std::collections::HashMap::new();
-    {
-        let paths = doc
-            .get(&Yaml::String(String::from("paths")))
-            .unwrap()
-            .as_hash()
-            .unwrap();
+    let conn = Connection::open(db_path)?;
 
-        for path in paths.iter() {
-            // println!("{:?}", path.0);
-            // println!("{:?}", path.1);
-            let zally = path
-                .1
-                .as_hash()
-                .unwrap()
-                .get(&Yaml::String(String::from("x-zally-ignore")));
-
-            match zally {
-                Some(val) => {
-                    for elt in val.as_vec().unwrap() {
-                        let stat = stats_per_path.get(&elt.as_i64().unwrap()).cloned();
-                        match stat {
-                            Some(val) => {
-                                stats_per_path.insert(elt.as_i64().unwrap(), val + 1);
-                            }
-                            None => {
-                                stats_per_path.insert(elt.as_i64().unwrap(), 1);
-                            }
-                        }
-                        // println!(
-                        //     "x-zally-ignore {:?} {:?}",
-                        //     elt.as_i64(),
-                        //     elt.as_i64().unwrap()
-                        // );
-                    }
-                }
-                None => {}
-            }
-        }
-        // println!("stats_per_path {:?}", stats_per_path);
-        // println!("len {:?}", paths.len());
-    }
-
-    //merge both maps
-    for stat in stats_per_path.iter() {
-        //check if stat already exist in global, if not add it to stats
-        if stats.contains_key(stat.0) {
-            debug!("stats {:?} already in global stats", stat.0);
-        } else {
-            stats.insert(*stat.0, *stat.1);
-        }
-    }
-
-    Ok(stats)
+    let stats_as_yaml = serde_yaml::to_string(&stats)
+        .unwrap_or(String::from("Error: Unable to get yaml from stats"));
+    debug!("Saving stats {:?}", stats_as_yaml);
+    conn.execute(
+        "INSERT INTO metrics_zally_ignore (date_time, data_points) VALUES (?1, ?2)",
+        params![datetime, stats_as_yaml],
+    )?;
+    Ok(())
 }
 
-#[cfg(test)]
-mod tests {
+#[derive(Debug)]
+pub struct ZallyTimeSeries {
+    pub points: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)>,
+}
 
-    #[test]
-    fn test_get_zally_ignore_metrics_1() {
-        let spec = "
-        openapi: \"3.0.0\"
-        info:
-          version: 1.0.0
-          title: an API ...
-        x-zally-ignore:
-          - 134
-          - 120 # Rest maturity evolving
-        
-        paths:
-          /v1/a/b:
-            get:
-              description: get ...
-              responses:
-                '200':
-                  description: returns...
-
-          /v2/a/b:
-            x-zally-ignore:
-              - 164
-            get:
-              description: get ...
-              responses:
-                '200':
-                  description: returns...
-                    
-          /a/b:
-            x-zally-ignore:
-              - 164 # Rest maturity evolving
-              - 134
-            post:
-              parameters:
-                - name: chunk
-                  in: query
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-                    minimum: 1
-              responses:
-                200:
-                  description: ...     
-        ";
-
-        let results = super::get_zally_ignore_metrics(spec).unwrap();
-
-        println!("*** results : {:?}", results);
-
-        assert_eq!(results.get(&134i64).unwrap(), &3usize);
-        assert_eq!(results.get(&120i64).unwrap(), &3usize);
-        assert_eq!(results.get(&164i64).unwrap(), &2usize);
+pub fn get_metrics_zally_ignore(
+    config: &super::super::settings::Database,
+) -> Result<ZallyTimeSeries> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-all.db");
+    {
+        debug!(
+            "Reading all [metrics_zally_ignore] metrics from Metrics_Database [{:?}]",
+            db_path
+        );
     }
 
-    #[test]
-    fn test_get_zally_ignore_metrics_2() {
-        let spec = "
-        openapi: \"3.0.0\"
-        info:
-          version: 1.0.0
-          title: an API ...
-        
-        paths:
-          /v1/a/b:
-            get:
-              description: get ...
-              responses:
-                '200':
-                  description: returns...
-                    
-          /a/b:
-            x-zally-ignore:
-              - 164 # Rest maturity evolving
-            post:
-              parameters:
-                - name: chunk
-                  in: query
-                  required: true
-                  schema:
-                    type: integer
-                    format: int32
-                    minimum: 1
-              responses:
-                200:
-                  description: ...       
-        ";
+    let conn = Connection::open(db_path)?;
 
-        let results = super::get_zally_ignore_metrics(spec).unwrap();
+    let mut stmt = conn.prepare("SELECT date_time, data_points FROM metrics_zally_ignore")?;
+    let mut rows = stmt.query(NO_PARAMS)?;
 
-        println!("*** results : {:?}", results);
-
-        assert_eq!(results.get(&164i64).unwrap(), &1usize);
+    let mut points = Vec::new();
+    while let Some(row) = rows.next()? {
+        let time = row.get("date_time")?;
+        let val: String = row.get("data_points")?;
+        points.push((
+            time,
+            serde_yaml::from_str(val.as_str()).unwrap_or(std::collections::HashMap::new()),
+        ));
     }
+
+    let timeseries = ZallyTimeSeries { points: points };
+
+    Ok(timeseries)
 }
