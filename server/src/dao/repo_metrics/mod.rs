@@ -190,10 +190,10 @@ pub fn save_metrics_endpoints_num(
     //     NO_PARAMS,
     // )?;
 
-    // conn.execute(
-    //     "INSERT INTO metrics_endpoints_num (date_time, value) VALUES (?1, ?2)",
-    //     params![datetime, size],
-    // )?;
+    conn.execute(
+        "INSERT INTO metrics_endpoints_num (date_time, value) VALUES (?1, ?2)",
+        params![datetime, size],
+    )?;
 
     Ok(())
 }
