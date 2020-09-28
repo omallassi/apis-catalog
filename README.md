@@ -39,6 +39,10 @@ This picture tries to depict a [_possible state_](https://github.com/omallassi/a
 
 ## Getting Started
 
+### Available Statistics
+
+Refer to [this page](https://github.com/omallassi/apis-catalog/wiki/stats-overview) to get a list of available statistics and their definitions. 
+
 ### Prepare the DB 
 
 There are two modes : 
