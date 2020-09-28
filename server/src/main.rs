@@ -513,6 +513,7 @@ pub struct Metrics {
     pub pr_ages: Vec<(DateTime<Utc>, i64, i64, i64, i64)>,
     pub endpoints_num: Vec<(DateTime<Utc>, i32)>,
     pub zally_violations: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)>,
+    pub endpoints_num_per_audience: Vec<(DateTime<Utc>, std::collections::HashMap<String, usize>)>,
 }
 
 #[get("/v1/metrics")]
@@ -526,13 +527,17 @@ pub fn get_all_metrics() -> HttpResponse {
     let endpoints_number: TimeSeries =
         repo_metrics::get_metrics_endpoints_number(&SETTINGS.database).unwrap();
 
-    let returned_stats: ZallyTimeSeries =
+    let returned_stats: i64BasedTimeSeries =
         repo_metrics::get_metrics_zally_ignore(&SETTINGS.database).unwrap();
+
+    let endpoints_audience_number: StringBasedTimeSeries =
+        repo_metrics::get_metrics_endpoints_per_audience(&SETTINGS.database).unwrap();
     //
     let metrics = Metrics {
         pr_num: pr_num_timeseries.points,
         pr_ages: pr_ages_timeseries.points,
         endpoints_num: endpoints_number.points,
+        endpoints_num_per_audience: endpoints_audience_number.points,
         zally_violations: returned_stats.points,
     };
 
@@ -617,6 +622,11 @@ pub fn refresh_metrics() -> HttpResponse {
     //save metrics zally_ignore
     let stats = catalog::get_zally_ignore(SETTINGS.catalog_path.as_str());
     repo_metrics::save_metrics_zally_ignore(&SETTINGS.database, Utc::now(), stats).unwrap();
+
+    //save metrics endpoints_num_per audience
+    let stats = catalog::get_endpoints_num_per_audience(SETTINGS.catalog_path.as_str());
+    repo_metrics::save_metrics_endpoints_num_per_audience(&SETTINGS.database, Utc::now(), stats)
+        .unwrap();
     //
     HttpResponse::Ok().json(pull_requests.size)
 }

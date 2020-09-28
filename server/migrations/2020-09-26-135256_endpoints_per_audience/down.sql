@@ -1,0 +1,1 @@
+drop table if exists metrics_endpoints_per_audience;

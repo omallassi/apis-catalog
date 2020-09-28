@@ -293,6 +293,87 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
     stats
 }
 
+pub fn get_endpoints_num_per_audience(path: &str) -> std::collections::HashMap<String, usize> {
+    let mut merged_stats = std::collections::HashMap::new();
+
+    let specs = list_specs(path);
+    for spec in specs.iter() {
+        //need to load the yaml file as OpenAPI crate will remove the x-zally-ignore...
+        let yaml_spec_as_string = std::fs::read_to_string(spec.path.as_str()).unwrap();
+        let stats = get_endpoints_num_per_audience_metrics(
+            yaml_spec_as_string.as_str(),
+            spec.path.as_str(),
+        );
+
+        //sum the maps
+        for (key, val) in stats.iter() {
+            match merged_stats.get(key) {
+                Some(known_val) => {
+                    merged_stats.insert(key.clone(), val + known_val);
+                }
+                None => {
+                    merged_stats.insert(key.clone(), *val);
+                }
+            }
+        }
+    }
+    merged_stats
+}
+
+fn get_endpoints_num_per_audience_metrics(
+    spec: &str,
+    spec_name: &str,
+) -> std::collections::HashMap<String, usize> {
+    debug!(
+        "get_endpoints_num_per_audience_metrics is called for spec {:?}",
+        spec_name
+    );
+
+    let docs = match YamlLoader::load_from_str(spec) {
+        Ok(docs) => docs,
+        Err(why) => {
+            panic!("Error while parsing spec {} - :{:?}", spec, why);
+        }
+    }; // Result<Vec<Yaml>, ScanError>
+    let doc = docs[0].as_hash().unwrap(); //Option<&Hash> et LinkedHashMap<Yaml, Yaml>;
+    let doc_info_tag = doc
+        .get(&Yaml::String(String::from("info")))
+        .unwrap()
+        .as_hash()
+        .unwrap(); //Option<&Hash> et LinkedHashMap<Yaml, Yaml>;
+
+    let paths = doc
+        .get(&Yaml::String(String::from("paths")))
+        .unwrap()
+        .as_hash()
+        .unwrap();
+    let num_of_endpoints = paths.len();
+
+    let mut stats = std::collections::HashMap::new();
+    {
+        match doc_info_tag.get(&Yaml::String(String::from("x-audience"))) {
+            Some(val) => {
+                info!("found audience [{:?}] for spec [{:?}]", val, spec);
+                let audience_name = String::from(val.as_str().unwrap());
+                match stats.get(&audience_name) {
+                    Some(val) => {
+                        stats.insert(audience_name, val + num_of_endpoints);
+                    }
+                    None => {
+                        stats.insert(audience_name, num_of_endpoints);
+                    }
+                };
+            }
+            None => {
+                info!("no audience for spec {:?}", spec_name);
+                stats.insert(String::from("no audience"), num_of_endpoints);
+            }
+        };
+    };
+
+    stats
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -391,5 +472,35 @@ mod tests {
 
         assert_eq!(results.get(&164i64).unwrap(), &1usize);
         assert_eq!(results.get(&-1i64).unwrap(), &1usize);
+    }
+
+    #[test]
+    fn test_get_endpoints_num_per_audience_ignore_metrics_1() {
+        let spec = "
+        openapi: \"3.0.0\"
+        info:
+          version: 1.0.0
+          title: an API ...
+          x-audience: an audience
+        
+        paths:
+          /v1/a/b:
+            get:
+              description: get ...
+              responses:
+                '200':
+                  description: returns...
+
+          /v2/a/b:
+            get:
+              description: get ...
+              responses:
+                '200':
+                  description: returns...  
+        ";
+
+        let results = super::get_endpoints_num_per_audience_metrics(spec, "name");
+
+        assert_eq!(results.get("an audience").unwrap(), &2usize);
     }
 }

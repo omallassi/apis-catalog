@@ -261,14 +261,40 @@ pub fn save_metrics_zally_ignore(
     Ok(())
 }
 
+pub fn save_metrics_endpoints_num_per_audience(
+    config: &super::super::settings::Database,
+    datetime: DateTime<Utc>,
+    stats: std::collections::HashMap<String, usize>,
+) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-all.db");
+    {
+        debug!(
+            "Saving [metrics_endpoints_per_audience] metrics into Metrics_Database [{:?}]",
+            db_path
+        );
+    }
+
+    let conn = Connection::open(db_path)?;
+
+    let stats_as_yaml = serde_yaml::to_string(&stats)
+        .unwrap_or(String::from("Error: Unable to get yaml from stats"));
+    debug!("Saving stats {:?}", stats_as_yaml);
+    conn.execute(
+        "INSERT INTO metrics_endpoints_per_audience (date_time, data_points) VALUES (?1, ?2)",
+        params![datetime, stats_as_yaml],
+    )?;
+    Ok(())
+}
+
 #[derive(Debug)]
-pub struct ZallyTimeSeries {
+pub struct i64BasedTimeSeries {
     pub points: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)>,
 }
 
 pub fn get_metrics_zally_ignore(
     config: &super::super::settings::Database,
-) -> Result<ZallyTimeSeries> {
+) -> Result<i64BasedTimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
     {
@@ -293,7 +319,45 @@ pub fn get_metrics_zally_ignore(
         ));
     }
 
-    let timeseries = ZallyTimeSeries { points: points };
+    let timeseries = i64BasedTimeSeries { points: points };
+
+    Ok(timeseries)
+}
+
+#[derive(Debug)]
+pub struct StringBasedTimeSeries {
+    pub points: Vec<(DateTime<Utc>, std::collections::HashMap<String, usize>)>,
+}
+
+pub fn get_metrics_endpoints_per_audience(
+    config: &super::super::settings::Database,
+) -> Result<StringBasedTimeSeries> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-all.db");
+    {
+        debug!(
+            "Reading all [metrics_endpoints_per_audience] metrics from Metrics_Database [{:?}]",
+            db_path
+        );
+    }
+
+    let conn = Connection::open(db_path)?;
+    //TODO - code mutualization w/ get_metrics_zally_ignore
+    let mut stmt =
+        conn.prepare("SELECT date_time, data_points FROM metrics_endpoints_per_audience")?;
+    let mut rows = stmt.query(NO_PARAMS)?;
+
+    let mut points = Vec::new();
+    while let Some(row) = rows.next()? {
+        let time = row.get("date_time")?;
+        let val: String = row.get("data_points")?;
+        points.push((
+            time,
+            serde_yaml::from_str(val.as_str()).unwrap_or(std::collections::HashMap::new()),
+        ));
+    }
+
+    let timeseries = StringBasedTimeSeries { points: points };
 
     Ok(timeseries)
 }
