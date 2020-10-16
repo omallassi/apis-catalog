@@ -219,6 +219,62 @@ pub struct Domains {
     pub domains: Vec<Domain>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Node {
+    pub name: String,
+    pub parent: String,
+    pub value: i32,
+}
+
+#[get("/v1/domains/stats")]
+pub fn get_domains_stats() -> HttpResponse {
+    info!("get domains stats");
+
+    let all_specs: Vec<SpecItem> = catalog::list_specs(SETTINGS.catalog_path.as_str());
+
+    let data: std::collections::HashMap<String, usize> =
+        catalog::get_endpoints_num_per_subdomain(all_specs);
+
+    //at this stage the  data structure contains
+    //{"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
+    //and we should map it to
+    //[
+    //    ['Location','Parent','Resources Number (num)'],
+    //    ['All', null, 0],
+    //    ['iam', 'All', 0],
+    //    ['xva-management', 'All', 0],
+    //    ['authn', 'iam', 11],
+    //    ['authz', 'iam', 52],
+    //]
+
+    let mut response: Vec<Node> = Vec::new();
+    for (k, v) in data {
+        let domains: Vec<&str> = k.split("/").collect();
+        let domains_size = domains.len();
+        let mut parent = String::from("");
+        let mut index = 1;
+        for domain_item in domains {
+            if !domain_item.is_empty() {
+                let mut value = 0;
+                if index == domains_size {
+                    value = v;
+                }
+                let node = Node {
+                    name: String::from(domain_item),
+                    parent: String::from(parent),
+                    value: value as i32,
+                };
+
+                response.push(node);
+                parent = String::from(domain_item);
+            }
+            index = index + 1;
+        }
+    }
+
+    HttpResponse::Ok().json(response)
+}
+
 #[get("/v1/domains")]
 pub fn get_domains() -> HttpResponse {
     info!("get domains");
@@ -620,10 +676,12 @@ pub fn refresh_metrics() -> HttpResponse {
     repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1).unwrap();
 
     //save metrics zally_ignore
+    //TODO Inject specs to the method
     let stats = catalog::get_zally_ignore(SETTINGS.catalog_path.as_str());
     repo_metrics::save_metrics_zally_ignore(&SETTINGS.database, Utc::now(), stats).unwrap();
 
     //save metrics endpoints_num_per audience
+    //TODO Inject specs to the method
     let stats = catalog::get_endpoints_num_per_audience(SETTINGS.catalog_path.as_str());
     repo_metrics::save_metrics_endpoints_num_per_audience(&SETTINGS.database, Utc::now(), stats)
         .unwrap();
@@ -677,6 +735,7 @@ fn get_metrics_pull_requests_ages(
     )
 }
 
+//TODO move this method into catalog/mod.rs
 fn get_metrics_endpoints_num(all_specs: Vec<SpecItem>) -> (DateTime<Utc>, i32) {
     let endpoints_per_spec: Vec<_> = all_specs
         .iter()
@@ -761,6 +820,7 @@ async fn main() {
                     .route(web::get().to(get_deployments_for_api)),
             ) //TODO rework url
             .service(get_domains)
+            .service(get_domains_stats)
             .service(create_domain)
             .service(get_all_specs)
             .service(create_api)

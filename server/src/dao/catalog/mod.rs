@@ -24,6 +24,7 @@ use regex::Regex;
 use std::fs;
 
 //
+#[derive(Debug)]
 pub struct SpecItem {
     pub path: std::string::String,
     pub id: std::string::String,
@@ -147,6 +148,7 @@ fn get_git_repo(path: &str) -> Result<Repository, git2::Error> {
 
 pub fn refresh_git_repo(path: &str) {
     //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
+    //TODO be more proper on error management here.typical case: credentials to git pull are no longer working...
     run_cmd!("cd {}; git pull", path);
     info!("Refresh Git Repo with result [{:?}]", "result");
 }
@@ -374,8 +376,114 @@ fn get_endpoints_num_per_audience_metrics(
     stats
 }
 
+pub fn get_endpoints_num_per_subdomain(all_specs: Vec<SpecItem>) -> HashMap<String, usize> {
+    let mut data: HashMap<String, usize> = HashMap::new();
+    for spec in all_specs {
+        debug!(
+            "get_endpoints_num_per_subdomain - parsing spec [{:?}]",
+            spec.path
+        );
+        let base_url = match &spec.api_spec.servers.is_empty() {
+            true => "NA - servers attribute not specified",
+            false => &spec.api_spec.servers[0].url, //TODO can do better
+        };
+        let num = spec.api_spec.paths.len();
+
+        *data.entry(base_url.to_string()).or_insert(0) += num;
+    }
+
+    debug!("endpoints per subdomain [{:?}]", data);
+
+    data
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn test_get_endpoints_num_per_subdomain() {
+        let mut specs = Vec::new();
+        let spec = "
+        openapi: 3.0.0
+        info:
+          version: 1.0.0
+          title: sample
+        servers: 
+          - url: /v1/a/b
+        paths:
+          /resource_1:
+            get:
+              responses:
+                '206':
+                  description: Partial Content
+        ";
+
+        let spec_item = super::SpecItem {
+            path: String::from("std::string::String"),
+            id: String::from("std::string::String"),
+            api_spec: serde_yaml::from_str(spec).unwrap(),
+            audience: String::from("std::string::String"),
+        };
+
+        specs.push(spec_item);
+
+        let spec = "
+        openapi: 3.0.0
+        info:
+          version: 1.0.0
+          title: sample
+        servers: 
+          - url: /v1/a/c
+        paths:
+          /resource_1:
+            get:
+              responses:
+                '206':
+                  description: Partial Content
+                  /resource_1:
+            post:
+              responses:
+                '206':
+                  description: Partial Content
+        ";
+
+        let spec_item = super::SpecItem {
+            path: String::from("std::string::String"),
+            id: String::from("std::string::String"),
+            api_spec: serde_yaml::from_str(spec).unwrap(),
+            audience: String::from("std::string::String"),
+        };
+
+        specs.push(spec_item);
+
+        let spec = "
+        openapi: 3.0.0
+        info:
+          version: 1.0.0
+          title: sample
+        paths:
+          /resource_1:
+            get:
+              responses:
+                '206':
+                  description: Partial Content
+        ";
+
+        let spec_item = super::SpecItem {
+            path: String::from("std::string::String"),
+            id: String::from("std::string::String"),
+            api_spec: serde_yaml::from_str(spec).unwrap(),
+            audience: String::from("std::string::String"),
+        };
+
+        specs.push(spec_item);
+
+        let data = super::get_endpoints_num_per_subdomain(specs);
+
+        assert_eq!(data.get("/v1/a/c").unwrap(), &1usize);
+        assert_eq!(data.get("/v1/a/b").unwrap(), &1usize);
+        assert_eq!(data.get("N/A - servers not specified").unwrap(), &1usize);
+    }
 
     #[test]
     fn test_get_zally_ignore_metrics_1() {
