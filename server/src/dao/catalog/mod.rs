@@ -24,7 +24,7 @@ use regex::Regex;
 use std::fs;
 
 //
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpecItem {
     pub path: std::string::String,
     pub id: std::string::String,
@@ -401,7 +401,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: Vec<SpecItem>) -> HashMap<Stri
 mod tests {
 
     #[test]
-    fn test_get_endpoints_num_per_subdomain() {
+    fn test_get_endpoints_num_per_subdomain_1() {
         let mut specs = Vec::new();
         let spec = "
         openapi: 3.0.0
@@ -482,7 +482,10 @@ mod tests {
 
         assert_eq!(data.get("/v1/a/c").unwrap(), &1usize);
         assert_eq!(data.get("/v1/a/b").unwrap(), &1usize);
-        assert_eq!(data.get("N/A - servers not specified").unwrap(), &1usize);
+        assert_eq!(
+            data.get("NA - servers attribute not specified").unwrap(),
+            &1usize
+        );
     }
 
     #[test]

@@ -20,6 +20,7 @@ use actix_web::{get, post};
 use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer};
 use actix_web::{HttpRequest, Result};
 use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 
 use uuid::Uuid;
@@ -221,9 +222,26 @@ pub struct Domains {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Node {
+    pub level: usize,
     pub name: String,
     pub parent: String,
     pub value: i32,
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Node) -> bool {
+        self.name == other.name && self.parent == other.parent
+    }
+}
+
+impl Eq for Node {}
+
+impl Hash for Node {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut name = self.name.to_string();
+        let key = name.push_str(self.parent.as_str());
+        key.hash(state);
+    }
 }
 
 #[get("/v1/domains/stats")]
@@ -237,42 +255,61 @@ pub fn get_domains_stats() -> HttpResponse {
 
     //at this stage the  data structure contains
     //{"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
-    //and we should map it to
-    //[
-    //    ['Location','Parent','Resources Number (num)'],
-    //    ['All', null, 0],
-    //    ['iam', 'All', 0],
-    //    ['xva-management', 'All', 0],
-    //    ['authn', 'iam', 11],
-    //    ['authz', 'iam', 52],
-    //]
+    //and
 
-    let mut response: Vec<Node> = Vec::new();
+    let mut response: std::collections::HashSet<Node> = std::collections::HashSet::new();
+    //name of the node must be unique, so we might add an id to ensure this unicity
+    let mut already_used_names: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
+
     for (k, v) in data {
+        //
         let domains: Vec<&str> = k.split("/").collect();
         let domains_size = domains.len();
-        let mut parent = String::from("");
+        let mut parent = String::from("Global");
         let mut index = 1;
         for domain_item in domains {
-            if !domain_item.is_empty() {
-                let mut value = 0;
-                if index == domains_size {
-                    value = v;
-                }
-                let node = Node {
-                    name: String::from(domain_item),
-                    parent: String::from(parent),
-                    value: value as i32,
-                };
+            if !domain_item.eq_ignore_ascii_case("v1") {
+                if !domain_item.is_empty() {
+                    let mut value = 0;
+                    if index == domains_size {
+                        value = v;
+                    }
+                    //need to ensure name / parent are unique - so we happen an ID
+                    //https://developers.google.com/chart/interactive/docs/gallery/treemap
+                    let name_str = String::from(domain_item);
+                    let name_str = format!("{} - {}", domain_item, rand::random::<u8>());
+                    // let name_str = {
+                    //     let mut name_str = String::from(domain_item);
+                    //     if already_used_names.contains_key(&name_str) {
+                    //         let curr_val = already_used_names.get(&name_str).unwrap();
+                    //         let curr_val = curr_val + 1;
+                    //         name_str = format!("{} - {}", &name_str, curr_val);
+                    //         already_used_names.insert(name_str.to_string(), curr_val);
+                    //     } else {
+                    //         already_used_names.insert(name_str.to_string(), 0);
+                    //     }
 
-                response.push(node);
-                parent = String::from(domain_item);
+                    //     name_str
+                    // };
+                    //let parent_str = format!("{:?} - {}", key_index, parent);
+                    let node = Node {
+                        level: index,
+                        name: String::from(&name_str),
+                        parent: parent,
+                        value: value as i32,
+                    };
+
+                    response.insert(node);
+                    parent = String::from(&name_str);
+                }
             }
             index = index + 1;
         }
     }
 
-    HttpResponse::Ok().json(response)
+    let response_as_vec: Vec<Node> = response.into_iter().collect();
+    HttpResponse::Ok().json(response_as_vec)
 }
 
 #[get("/v1/domains")]
