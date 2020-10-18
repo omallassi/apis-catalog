@@ -230,7 +230,7 @@ pub struct Node {
 
 impl PartialEq for Node {
     fn eq(&self, other: &Node) -> bool {
-        self.name == other.name && self.parent == other.parent
+        self.name == other.name && self.parent == other.parent && self.level == other.level
     }
 }
 
@@ -239,7 +239,7 @@ impl Eq for Node {}
 impl Hash for Node {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let mut name = self.name.to_string();
-        let key = name.push_str(self.parent.as_str());
+        let mut key = name.push_str(self.parent.as_str());
         key.hash(state);
     }
 }
@@ -259,52 +259,62 @@ pub fn get_domains_stats() -> HttpResponse {
 
     let mut response: std::collections::HashSet<Node> = std::collections::HashSet::new();
     //name of the node must be unique, so we might add an id to ensure this unicity
-    let mut already_used_names: std::collections::HashMap<String, usize> =
+    let mut already_used_names: std::collections::HashMap<String, String> =
         std::collections::HashMap::new();
 
     for (k, v) in data {
-        //
         let domains: Vec<&str> = k.split("/").collect();
         let domains_size = domains.len();
+        //
         let mut parent = String::from("Global");
-        let mut index = 1;
+        let mut level: usize = 1;
         for domain_item in domains {
-            if !domain_item.eq_ignore_ascii_case("v1") {
-                if !domain_item.is_empty() {
-                    let mut value = 0;
-                    if index == domains_size {
-                        value = v;
-                    }
-                    //need to ensure name / parent are unique - so we happen an ID
-                    //https://developers.google.com/chart/interactive/docs/gallery/treemap
-                    let name_str = String::from(domain_item);
-                    let name_str = format!("{} - {}", domain_item, rand::random::<u8>());
-                    // let name_str = {
-                    //     let mut name_str = String::from(domain_item);
-                    //     if already_used_names.contains_key(&name_str) {
-                    //         let curr_val = already_used_names.get(&name_str).unwrap();
-                    //         let curr_val = curr_val + 1;
-                    //         name_str = format!("{} - {}", &name_str, curr_val);
-                    //         already_used_names.insert(name_str.to_string(), curr_val);
-                    //     } else {
-                    //         already_used_names.insert(name_str.to_string(), 0);
-                    //     }
-
-                    //     name_str
-                    // };
-                    //let parent_str = format!("{:?} - {}", key_index, parent);
-                    let node = Node {
-                        level: index,
-                        name: String::from(&name_str),
-                        parent: parent,
-                        value: value as i32,
-                    };
-
-                    response.insert(node);
-                    parent = String::from(&name_str);
+            // if !domain_item.eq_ignore_ascii_case("v1") {
+            if !domain_item.is_empty() {
+                let mut value = 0;
+                if level == domains_size {
+                    value = v;
                 }
+                //need to ensure name is unique across the tree (cf
+                //https://developers.google.com/chart/interactive/docs/gallery/treemap)
+                //so for each name, we check if it already exists and if the parent is the same.
+                // if this is the same parent, then, it is the same node, if not, we happen a random number to the name to ensure unicity
+                let name_str = {
+                    let mut name_str = String::from(domain_item);
+                    if already_used_names.contains_key(&String::from(&name_str)) {
+                        //get the parent
+                        let associated_parent =
+                            already_used_names.get(&String::from(&name_str)).unwrap();
+
+                        if *associated_parent == parent {
+                        } else {
+                            debug!(
+                                "Same name {:?} for parent {:?} - generate a random number",
+                                name_str, parent
+                            );
+                            name_str.push_str(" [");
+                            name_str.push_str(&rand::random::<u16>().to_string());
+                            name_str.push_str("]");
+                        }
+                    }
+
+                    already_used_names.insert(String::from(&name_str), String::from(&parent));
+
+                    name_str
+                };
+
+                let node = Node {
+                    level: level,
+                    name: String::from(&name_str),
+                    parent: String::from(&parent),
+                    value: value as i32,
+                };
+
+                response.insert(node);
+                parent = String::from(&name_str);
             }
-            index = index + 1;
+            // }
+            level = level + 1;
         }
     }
 
