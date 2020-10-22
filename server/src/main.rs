@@ -656,7 +656,7 @@ struct PullRequests {
     values: Vec<PullRequest>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct PullRequest {
     id: i32,
     version: i32,
@@ -664,22 +664,58 @@ struct PullRequest {
     state: String,
     #[serde(rename(serialize = "createdDate", deserialize = "createdDate"))]
     created_epoch: u64,
+    author: Author,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Info {
-    username: Option<String>,
-    password: Option<String>,
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Author {
+    user: User,
 }
 
-#[post("/v1/metrics/refresh")]
-pub fn refresh_metrics() -> HttpResponse {
-    info!("refresh metrics");
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct User {
+    #[serde(rename(serialize = "displayName", deserialize = "displayName"))]
+    display_name: String,
+    #[serde(rename(serialize = "emailAddress", deserialize = "emailAddress"))]
+    email_address: String,
+}
 
-    catalog::refresh_git_repo(&SETTINGS.catalog_path);
+#[get("/v1/metrics/pull-requests")]
+pub fn get_oldest_pr() -> HttpResponse {
+    let limit = 3;
+    info!("get oldest pull-request");
+    let pull_requests: PullRequests = get_pull_requests();
 
+    let current_epoch = std::time::SystemTime::now();
+    let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
+    let current_epoch = current_epoch.as_secs();
+    //
+    let mut pull_requests: Vec<_> = pull_requests
+        .values
+        .iter()
+        .map(|val| {
+            let created_epoch_in_sec = val.created_epoch / 1000;
+            if current_epoch < created_epoch_in_sec {
+                //val.created_epoch is in ms
+                error!(
+                    "Cannot compute epoch elapse as current epoch [{}] < obtained epoch [{}]",
+                    current_epoch, val.created_epoch
+                );
+            }
+            let delta: u64 = current_epoch - created_epoch_in_sec;
+
+            (val, delta)
+        })
+        .collect();
+    pull_requests.sort_by(|a, b| a.1.cmp(&b.1).reverse());
+    let pull_requests: Vec<_> = pull_requests.iter().map(|val| val.0).take(limit).collect();
+
+    //
+    HttpResponse::Ok().json(pull_requests)
+}
+
+fn get_pull_requests() -> PullRequests {
     let access_token = SETTINGS.stash_config.access_token.clone();
-
     let client = Client::new();
 
     let url = format!(
@@ -693,7 +729,18 @@ pub fn refresh_metrics() -> HttpResponse {
         .unwrap();
 
     debug!("Calling {} - got HTTP Status {:?}", url, resp.status());
+    //TODO manage unwrap withe resp.status().is_success() or is_server_error()
     let pull_requests: PullRequests = resp.json().unwrap();
+
+    pull_requests
+}
+
+#[post("/v1/metrics/refresh")]
+pub fn refresh_metrics() -> HttpResponse {
+    info!("refresh metrics");
+    catalog::refresh_git_repo(&SETTINGS.catalog_path);
+    //
+    let pull_requests: PullRequests = get_pull_requests();
 
     //keep metric pr_num
     let metrics = get_metrics_pull_requests_number(&pull_requests);
@@ -702,7 +749,7 @@ pub fn refresh_metrics() -> HttpResponse {
     //keep metric pr_age
     let current_epoch = std::time::SystemTime::now();
     let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
-    let metrics = get_metrics_pull_requests_ages(&pull_requests, current_epoch.as_secs());
+    let metrics = get_metrics_pull_requests_ages_stats(&pull_requests, current_epoch.as_secs());
     repo_metrics::save_metrics_pull_requests_ages(
         &SETTINGS.database,
         metrics.0,
@@ -740,7 +787,7 @@ fn get_metrics_pull_requests_number(pull_requests: &PullRequests) -> (DateTime<U
     (Utc::now(), pull_requests.size)
 }
 
-fn get_metrics_pull_requests_ages(
+fn get_metrics_pull_requests_ages_stats(
     pull_requests: &PullRequests,
     current_epoch: u64,
 ) -> (DateTime<Utc>, u64, u64, u64, u64) {
@@ -759,7 +806,8 @@ fn get_metrics_pull_requests_ages(
                 );
             }
             let delta: u64 = current_epoch - created_epoch_in_sec;
-            histogram.increment(delta / 86400); //keep values in days
+            //TODO clean unwrap
+            histogram.increment(delta / 86400).unwrap(); //keep values in days
 
             delta
         })
@@ -889,6 +937,7 @@ async fn main() {
             .service(get_tiers)
             .service(web::resource("/v1/envs/{id}").route(web::get().to(get_env)))
             .service(get_all_metrics)
+            .service(get_oldest_pr)
             .service(refresh_metrics)
             .route("/static", web::get().to(index))
             .route("/", web::get().to(index))
@@ -927,7 +976,7 @@ mod tests {
         let current_epoch = std::time::SystemTime::now();
         //fix date
         let dt = DateTime::parse_from_rfc2822("Sun, 29 Mar 2020 20:36:29 +0000").unwrap();
-        let metrics = super::get_metrics_pull_requests_ages(
+        let metrics = super::get_metrics_pull_requests_ages_stats(
             &pull_requests,
             dt.timestamp() as u64, /*current_epoch.as_secs()*/
         );
