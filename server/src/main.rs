@@ -357,6 +357,17 @@ pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
         .finish()
 }
 
+pub fn delete_domain(path: web::Path<(String,)>) -> HttpResponse {
+    //path: web::Path<(String,)>,
+    //&path.0
+    info!("deleting domain for id [{:?}]", &path.0);
+    let id = Uuid::parse_str(&path.0).unwrap();
+
+    repo_domains::delete_domain(&SETTINGS.database, id).unwrap();
+
+    HttpResponse::Ok().json("")
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tier {
     pub name: String,
@@ -917,6 +928,10 @@ async fn main() {
             .service(get_domains)
             .service(get_domains_stats)
             .service(create_domain)
+            .service(
+                web::scope("/v1/domains")
+                    .service(web::resource("/{id}").route(web::delete().to(delete_domain))),
+            )
             .service(get_all_specs)
             .service(create_api)
             .service(list_all_apis)

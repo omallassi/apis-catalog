@@ -116,3 +116,21 @@ pub fn get_domain(config: &super::super::settings::Database, id: Uuid) -> Result
 
     Ok(row)
 }
+
+pub fn delete_domain(config: &super::super::settings::Database, id: Uuid) -> Result<()> {
+    let mut db_path = String::from(&config.rusqlite_path);
+    db_path.push_str("/apis-catalog-all.db");
+    {
+        debug!(
+            "Delete domain [{}] into Domain_Database [{:?}]",
+            id, db_path
+        );
+    }
+
+    let conn = Connection::open(db_path)?;
+
+    let mut stmt = conn.prepare("DELETE FROM domains where id = ?1")?;
+    stmt.execute(params![id])?;
+
+    Ok(())
+}
