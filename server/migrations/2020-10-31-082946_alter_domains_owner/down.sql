@@ -1,0 +1,2 @@
+-- DROP COLUMN not support by sqlite -> no rollback
+-- ALTER TABLE domains DROP COLUMN owner;

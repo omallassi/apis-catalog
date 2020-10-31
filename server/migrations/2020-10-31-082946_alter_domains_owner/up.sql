@@ -1,0 +1,1 @@
+ALTER TABLE domains ADD owner TEXT NOT NULL default "N/A";
