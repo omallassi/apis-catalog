@@ -15,6 +15,7 @@ pub struct DomainItem {
     pub name: std::string::String,
     pub id: Uuid,
     pub description: String,
+    pub owner: String,
 }
 
 pub fn list_all_domains(config: &super::super::settings::Database) -> Result<Vec<DomainItem>> {
@@ -25,16 +26,8 @@ pub fn list_all_domains(config: &super::super::settings::Database) -> Result<Vec
     }
 
     let conn = Connection::open(db_path)?;
-    // conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS domains (
-    //         id UUID  NOT NULL UNIQUE,
-    //         name TEXT NOT NULL,
-    //         description TEXT
-    //     )",
-    //     NO_PARAMS,
-    // )?;
 
-    let mut stmt = conn.prepare("SELECT id, name, description FROM domains")?;
+    let mut stmt = conn.prepare("SELECT id, name, description, owner FROM domains")?;
     let mut rows = stmt.query(NO_PARAMS)?;
 
     let mut tuples = Vec::new();
@@ -42,10 +35,12 @@ pub fn list_all_domains(config: &super::super::settings::Database) -> Result<Vec
         let id = row.get("id")?;
         let name = row.get("name")?;
         let descripton = row.get("description")?;
+        let owner = row.get("owner")?;
         let domain = DomainItem {
             id: id,
             name: name,
             description: descripton,
+            owner: owner,
         };
 
         tuples.push(domain);
@@ -58,6 +53,7 @@ pub fn add_domain(
     config: &super::super::settings::Database,
     name: &str,
     description: &str,
+    owner: &str,
 ) -> Result<Uuid> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
@@ -69,19 +65,11 @@ pub fn add_domain(
     }
 
     let conn = Connection::open(db_path)?;
-    // conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS domains (
-    //         id UUID  NOT NULL UNIQUE,
-    //         name TEXT NOT NULL,
-    //         description TEXT
-    //     )",
-    //     NO_PARAMS,
-    // )?;
 
     let id = Uuid::new_v4();
     conn.execute(
-        "INSERT INTO domains (id, name, description) VALUES (?1, ?2, ?3)",
-        params![id, name, description],
+        "INSERT INTO domains (id, name, description, owner) VALUES (?1, ?2, ?3, ?4)",
+        params![id, name, description, owner],
     )?;
 
     conn.close().unwrap();
@@ -96,14 +84,6 @@ pub fn get_domain(config: &super::super::settings::Database, id: Uuid) -> Result
     }
 
     let conn = Connection::open(db_path)?;
-    // conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS domains (
-    //         id UUID  NOT NULL UNIQUE,
-    //         name TEXT NOT NULL,
-    //         description TEXT
-    //     )",
-    //     NO_PARAMS,
-    // )?;
 
     let mut stmt = conn.prepare("SELECT id, name, description FROM domains WHERE id = ?1")?;
     let row = stmt.query_row(params![id], |row| {
@@ -111,6 +91,7 @@ pub fn get_domain(config: &super::super::settings::Database, id: Uuid) -> Result
             name: row.get(1)?,
             id: row.get(0)?,
             description: row.get(2)?,
+            owner: row.get(3)?,
         })
     })?;
 

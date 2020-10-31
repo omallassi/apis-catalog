@@ -213,6 +213,7 @@ pub struct Domain {
     pub name: String,
     pub id: Uuid,
     pub description: String,
+    pub owner: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -339,6 +340,7 @@ pub fn get_domains() -> HttpResponse {
             name: domain.name,
             id: domain.id,
             description: domain.description,
+            owner: domain.owner,
         };
         domains.push(domain);
     }
@@ -350,7 +352,13 @@ pub fn get_domains() -> HttpResponse {
 
 #[post("/v1/domains")]
 pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
-    let uuid = add_domain(&SETTINGS.database, &domain.name, &domain.description).unwrap();
+    let uuid = add_domain(
+        &SETTINGS.database,
+        &domain.name,
+        &domain.description,
+        &domain.owner,
+    )
+    .unwrap();
 
     HttpResponse::Created()
         .header("Location", format!("/v1/domains/{}", uuid))
