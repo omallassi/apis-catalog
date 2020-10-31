@@ -222,6 +222,52 @@ pub fn get_api_by_id(config: &super::super::settings::Database, api: Uuid) -> Re
     Ok(row)
 }
 
+pub fn get_apis_per_domain_id(
+    config: &super::super::settings::Database,
+    domain_id: Uuid,
+) -> Result<Vec<ApiItem>> {
+    let db_path = get_init_db(&config.rusqlite_path).unwrap();
+    let conn = Connection::open(db_path)?;
+
+    let mut stmt =
+        conn.prepare("SELECT id, name, domain_id, tier_id FROM apis WHERE domain_id = ?1")?;
+    let mut rows = stmt.query(params![domain_id])?;
+    let mut results = Vec::new();
+    //TODO O(2N+1)
+    while let Some(row) = rows.next()? {
+        let id = row.get(0)?;
+        let tier_id = row.get(3)?;
+        //get last status
+        let status = match get_last_status(config, id) {
+            Ok(val) => val.status,
+            Err(why) => {
+                warn!("Unable to get status for api [{:?}] - [{:?}]", id, why);
+                String::from("NONE") //TODO - reuse enum
+            }
+        };
+        let tier = match get_related_tier(config, tier_id) {
+            Ok(val) => val,
+            Err(why) => {
+                warn!("Unable to get tier for api [{:?}] - [{:?}]", id, why);
+                TierItem {
+                    id: Uuid::nil(),
+                    name: String::from("N/A"),
+                }
+            }
+        };
+
+        results.push(ApiItem {
+            name: row.get(1)?,
+            id: id,
+            tier: tier,
+            domain_id: row.get(2)?,
+            status: status,
+        });
+    }
+
+    Ok(results)
+}
+
 pub fn update_api_status(
     config: &super::super::settings::Database,
     status: StatusItem,

@@ -1,4 +1,4 @@
-catalog_path = "/Users/omallassi/code/apis-catalog/"
+catalog_path = "/Users/omallassi/code/apis-catalog/" 
 catalog_dir = "/Users/omallassi/code/apis-catalog/catalog/"
 
 [stash_config]

@@ -371,9 +371,31 @@ pub fn delete_domain(path: web::Path<(String,)>) -> HttpResponse {
     info!("deleting domain for id [{:?}]", &path.0);
     let id = Uuid::parse_str(&path.0).unwrap();
 
-    repo_domains::delete_domain(&SETTINGS.database, id).unwrap();
+    //check if apis are related to this domain
+    let response = match repo_apis::get_apis_per_domain_id(&SETTINGS.database, id) {
+        Ok(api) => {
+            if api.len() != 0 {
+                error!("Domain [{}] has some APIs attached - cannot be deleted", id);
+                HttpResponse::PreconditionFailed().json(format!(
+                    "Domain [{}] has [{}] apis attached",
+                    id,
+                    api.len()
+                ))
+            } else {
+                info!("No APIs related to domain [{}]", id);
+                repo_domains::delete_domain(&SETTINGS.database, id).unwrap();
+                HttpResponse::Ok().json("")
+            }
+        }
+        Err(why) => {
+            //if not, delete the domain
 
-    HttpResponse::Ok().json("")
+            error!("Error while deleting domain [{}] - [{:?}]", id, why);
+            HttpResponse::BadRequest().json("Error while deleting domain")
+        }
+    };
+
+    response
 }
 
 #[derive(Serialize, Deserialize, Debug)]
