@@ -170,6 +170,7 @@ struct Domain {
     name: String,
     id: Uuid,
     description: String,
+    owner: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -189,9 +190,16 @@ fn get_domains() -> Result<(), reqwest::Error> {
     //
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row![b -> "Id", b -> "Domain Name"]);
+    table.set_titles(
+        row![b -> "Id", b -> "Domain Name", b -> "Domain Description", b -> "Domain Owner"],
+    );
     for domain in domains.domains {
-        table.add_row(row![domain.id, domain.name]);
+        table.add_row(row![
+            domain.id,
+            domain.name,
+            domain.description,
+            domain.owner
+        ]);
     }
 
     // Print the table to stdout
@@ -200,13 +208,14 @@ fn get_domains() -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-fn create_domain(name: &str, description: &str) -> Result<(), reqwest::Error> {
+fn create_domain(name: &str, description: &str, owner: &str) -> Result<(), reqwest::Error> {
     let client = Client::new();
 
     let domain = Domain {
         id: Uuid::nil(),
         name: name.to_string(),
         description: description.to_string(),
+        owner: owner.to_string(),
     };
     let url = format!(
         "http://{address}/v1/domains",
@@ -479,6 +488,14 @@ fn main() {
                                 .takes_value(true)
                                 .required(false)
                                 .help("Some description, if you want to..."),
+                        )
+                        .arg(
+                            Arg::with_name("owner")
+                                .short("o")
+                                .long("owner")
+                                .takes_value(true)
+                                .required(false)
+                                .help("The name of the owner of this domain"),
                         ),
                 ),
         )
@@ -671,10 +688,15 @@ fn main() {
             ("create", Some(matches)) => {
                 let description = match matches.value_of("description") {
                     Some(description) => description,
-                    None => "",
+                    None => "N/A",
                 };
 
-                create_domain(matches.value_of("name").unwrap(), description);
+                let owner = match matches.value_of("owner") {
+                    Some(owner) => owner,
+                    None => "N/A",
+                };
+
+                create_domain(matches.value_of("name").unwrap(), description, owner);
             }
             _ => unreachable!(),
         },
