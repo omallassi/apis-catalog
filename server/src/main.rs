@@ -491,7 +491,23 @@ pub fn list_all_apis() -> HttpResponse {
 
     while let Some(api) = all_apis.pop() {
         //get domain related to this API
-        let domain = repo_domains::get_domain(&SETTINGS.database, api.domain_id).unwrap();
+        let domain = match repo_domains::get_domain(&SETTINGS.database, api.domain_id) {
+            Ok(val) => val,
+            Err(why) => {
+                error!(
+                    "Problem while getting domain [{}] for api [{}] - {}",
+                    api.domain_id, api.id, why
+                );
+
+                let domain = DomainItem {
+                    name: "N/A".to_string(),
+                    id: Uuid::nil(),
+                    description: "".to_string(),
+                    owner: "".to_string(),
+                };
+                domain
+            }
+        };
         //
         let api = Api {
             name: api.name,
