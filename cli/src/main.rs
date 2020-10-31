@@ -227,6 +227,20 @@ fn create_domain(name: &str, description: &str, owner: &str) -> Result<(), reqwe
     Ok(())
 }
 
+fn delete_domain(id: &str) -> Result<(), reqwest::Error> {
+    let client = Client::new();
+
+    let url = format!(
+        "http://{address}/v1/domains/{id}",
+        address = &SETTINGS.server.address,
+        id = id
+    );
+    let resp = client.delete(&url).send()?;
+    debug!("Got Response [{:?}]", resp);
+
+    Ok(())
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tier {
     pub name: String,
@@ -497,6 +511,17 @@ fn main() {
                                 .required(false)
                                 .help("The name of the owner of this domain"),
                         ),
+                )
+                .subcommand(
+                    SubCommand::with_name("delete")
+                        .about("Delete a new Domain")
+                        .arg(
+                            Arg::with_name("id")
+                                .long("id")
+                                .takes_value(true)
+                                .required(true)
+                                .help("The name of the domain"),
+                        ),
                 ),
         )
         .subcommand(
@@ -697,6 +722,9 @@ fn main() {
                 };
 
                 create_domain(matches.value_of("name").unwrap(), description, owner);
+            }
+            ("delete", Some(matches)) => {
+                delete_domain(matches.value_of("id").unwrap());
             }
             _ => unreachable!(),
         },
