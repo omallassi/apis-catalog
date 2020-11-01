@@ -111,6 +111,12 @@ struct Spec {
     audience: String,
 }
 
+fn get_spec_short_path(spec: &SpecItem) -> &str {
+    let short_path = &spec.path[SETTINGS.catalog_dir.as_str().len()..spec.path.len()];
+
+    short_path
+}
+
 #[get("/v1/specs")]
 fn get_all_specs() -> HttpResponse {
     debug!("get_all_specs()");
@@ -119,7 +125,7 @@ fn get_all_specs() -> HttpResponse {
     let mut all_specs = catalog::list_specs(SETTINGS.catalog_path.as_str());
     while let Some(spec) = all_specs.pop() {
         info!("Analysing file [{:?}]", spec.path);
-        let short_path = &spec.path[SETTINGS.catalog_dir.as_str().len()..spec.path.len()];
+        let short_path = get_spec_short_path(&spec);
         let spec = Spec {
             name: String::from(short_path),
             id: spec.id,
@@ -240,9 +246,77 @@ impl Eq for Node {}
 impl Hash for Node {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let mut name = self.name.to_string();
-        let mut key = name.push_str(self.parent.as_str());
+        let key = name.push_str(self.parent.as_str());
         key.hash(state);
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DomainError {
+    pub spec_domain: String,
+    pub spec_path: String,
+    pub resources: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DomainErrors {
+    pub errors: Vec<DomainError>,
+}
+
+#[get("/v1/domains/errors")]
+pub fn get_domains_errors() -> HttpResponse {
+    info!("get domains errors");
+
+    //get all specs
+    let all_specs: Vec<SpecItem> = catalog::list_specs(SETTINGS.catalog_path.as_str());
+    //at this stage data = {"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
+    let data: std::collections::HashMap<String, usize> =
+        catalog::get_endpoints_num_per_subdomain(&all_specs);
+
+    //get all declared (and official) domains
+    let all_domains: Vec<String> = match list_all_domains(&SETTINGS.database) {
+        Ok(all_domains) => all_domains
+            .iter()
+            .map(|val| String::from(&val.name))
+            .collect(),
+        Err(why) => {
+            panic!("Unable to get domains: {}", why);
+        }
+    };
+
+    //make the check
+    let mut errors: Vec<DomainError> = Vec::new();
+    for spec in &all_specs {
+        let short_path = get_spec_short_path(&spec);
+        match all_domains.contains(&spec.domain) {
+            true => info!(
+                "[{}] is contained - [{}] resources - spec [{}]",
+                &spec.domain,
+                data.get(&spec.domain).unwrap(),
+                short_path
+            ),
+            false => {
+                info!(
+                    "[{}] is *not* contained - [{}] resources - spec [{}]",
+                    &spec.domain,
+                    data.get(&spec.domain).unwrap(),
+                    short_path
+                );
+                let error = DomainError {
+                    spec_domain: String::from(&spec.domain),
+                    spec_path: String::from(short_path),
+                    resources: *data.get(&spec.domain).unwrap(),
+                };
+
+                errors.push(error);
+            }
+        }
+    }
+
+    //return the response
+    let errors = DomainErrors { errors: errors };
+
+    HttpResponse::Ok().json(errors)
 }
 
 #[get("/v1/domains/stats")]
@@ -252,7 +326,7 @@ pub fn get_domains_stats() -> HttpResponse {
     let all_specs: Vec<SpecItem> = catalog::list_specs(SETTINGS.catalog_path.as_str());
 
     let data: std::collections::HashMap<String, usize> =
-        catalog::get_endpoints_num_per_subdomain(all_specs);
+        catalog::get_endpoints_num_per_subdomain(&all_specs);
 
     //at this stage the  data structure contains
     //{"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
@@ -974,6 +1048,7 @@ async fn main() {
             .service(get_domains)
             .service(get_domains_stats)
             .service(create_domain)
+            .service(get_domains_errors)
             .service(
                 web::scope("/v1/domains")
                     .service(web::resource("/{id}").route(web::delete().to(delete_domain))),

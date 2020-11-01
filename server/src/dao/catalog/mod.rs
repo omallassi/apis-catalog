@@ -30,6 +30,7 @@ pub struct SpecItem {
     pub id: std::string::String,
     pub api_spec: OpenAPI,
     pub audience: std::string::String,
+    pub domain: std::string::String,
 }
 
 pub fn list_specs(path: &str) -> Vec<SpecItem> {
@@ -61,12 +62,14 @@ pub fn list_specs(path: &str) -> Vec<SpecItem> {
                     Some(aud) => aud,
                     None => String::from("N/A"),
                 };
+                let domain = get_domain_from_spec(&openapi);
                 //create the API Item and add it to the returned value
                 let spec = SpecItem {
                     path: path,
                     id: format!("{:?}", oid),
-                    api_spec: openapi,
+                    api_spec: openapi.clone(),
                     audience: audience,
+                    domain: domain.to_string(),
                 };
                 specs.push(spec);
             } else {
@@ -116,12 +119,14 @@ pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
                     Some(aud) => aud,
                     None => String::from("N/A"),
                 };
+                let domain = get_domain_from_spec(&openapi);
                 //create the API Item and add it to the returned value
                 let spec = SpecItem {
                     path: path.to_string(),
                     id: format!("{:?}", oid),
-                    api_spec: openapi,
+                    api_spec: openapi.clone(),
                     audience: audience,
+                    domain: domain.to_string(),
                 };
                 specs.push(spec);
             } else {
@@ -376,17 +381,14 @@ fn get_endpoints_num_per_audience_metrics(
     stats
 }
 
-pub fn get_endpoints_num_per_subdomain(all_specs: Vec<SpecItem>) -> HashMap<String, usize> {
+pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<String, usize> {
     let mut data: HashMap<String, usize> = HashMap::new();
     for spec in all_specs {
         debug!(
             "get_endpoints_num_per_subdomain - parsing spec [{:?}]",
             spec.path
         );
-        let base_url = match &spec.api_spec.servers.is_empty() {
-            true => "NA - servers attribute not specified",
-            false => &spec.api_spec.servers[0].url, //TODO can do better
-        };
+        let base_url = get_domain_from_spec(&spec.api_spec);
         let num = spec.api_spec.paths.len();
 
         *data.entry(base_url.to_string()).or_insert(0) += num;
@@ -395,6 +397,15 @@ pub fn get_endpoints_num_per_subdomain(all_specs: Vec<SpecItem>) -> HashMap<Stri
     debug!("endpoints per subdomain [{:?}]", data);
 
     data
+}
+
+fn get_domain_from_spec(spec: &OpenAPI) -> &str {
+    let base_url = match &spec.servers.is_empty() {
+        true => "NA - servers attribute not specified",
+        false => &spec.servers[0].url, //TODO can do better
+    };
+
+    base_url
 }
 
 #[cfg(test)]
@@ -423,6 +434,7 @@ mod tests {
             id: String::from("std::string::String"),
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
+            domain: String::from("std::string::String"),
         };
 
         specs.push(spec_item);
@@ -452,6 +464,7 @@ mod tests {
             id: String::from("std::string::String"),
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
+            domain: String::from("std::string::String"),
         };
 
         specs.push(spec_item);
@@ -474,11 +487,12 @@ mod tests {
             id: String::from("std::string::String"),
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
+            domain: String::from("std::string::String"),
         };
 
         specs.push(spec_item);
 
-        let data = super::get_endpoints_num_per_subdomain(specs);
+        let data = super::get_endpoints_num_per_subdomain(&specs);
 
         assert_eq!(data.get("/v1/a/c").unwrap(), &1usize);
         assert_eq!(data.get("/v1/a/b").unwrap(), &1usize);
