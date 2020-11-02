@@ -288,28 +288,45 @@ pub fn get_domains_errors() -> HttpResponse {
     let mut errors: Vec<DomainError> = Vec::new();
     for spec in &all_specs {
         let short_path = get_spec_short_path(&spec);
-        match all_domains.contains(&spec.domain) {
-            true => info!(
-                "[{}] is contained - [{}] resources - spec [{}]",
-                &spec.domain,
-                data.get(&spec.domain).unwrap(),
-                short_path
-            ),
-            false => {
-                info!(
-                    "[{}] is *not* contained - [{}] resources - spec [{}]",
-                    &spec.domain,
-                    data.get(&spec.domain).unwrap(),
-                    short_path
-                );
-                let error = DomainError {
-                    spec_domain: String::from(&spec.domain),
-                    spec_path: String::from(short_path),
-                    resources: *data.get(&spec.domain).unwrap(),
-                };
-
-                errors.push(error);
+        let spec_domain = &spec.domain;
+        //will loop over all_domains to check if domains "match or not". contains() cannot work as the yml contains /v1 and not the domain
+        let mut is_contained = false;
+        for domain in &all_domains {
+            match spec_domain.contains(domain.as_str()) {
+                true => {
+                    // info!(
+                    //     "[{}] is contained - [{}] resources - spec [{}]",
+                    //     &spec.domain,
+                    //     data.get(&spec.domain).unwrap(),
+                    //     short_path
+                    // );
+                    is_contained = true;
+                    break;
+                }
+                false => {
+                    // info!(
+                    //     "[{}] is *not* contained - [{}] resources - spec [{}]",
+                    //     &spec.domain,
+                    //     data.get(&spec.domain).unwrap(),
+                    //     short_path
+                    // );
+                    is_contained = false;
+                }
             }
+            debug!(
+                "Matching [{}] with [{}] - is_contained [{}]",
+                spec_domain, domain, is_contained
+            );
+        }
+
+        if !is_contained {
+            let error = DomainError {
+                spec_domain: String::from(&spec.domain),
+                spec_path: String::from(short_path),
+                resources: *data.get(&spec.domain).unwrap(),
+            };
+
+            errors.push(error);
         }
     }
 
