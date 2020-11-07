@@ -762,7 +762,7 @@ pub fn list_env() -> HttpResponse {
 pub struct Metrics {
     pub pr_num: Vec<(DateTime<Utc>, i32)>,
     pub pr_ages: Vec<(DateTime<Utc>, i64, i64, i64, i64)>,
-    pub endpoints_num: Vec<(DateTime<Utc>, Option<String>, Option<String>, i32)>,
+    pub endpoints_num: Vec<(DateTime<Utc>, i32)>, //Vec<(DateTime<Utc>, Option<String>, Option<String>, i32)>,
     pub zally_violations: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)>,
     pub endpoints_num_per_audience: Vec<(DateTime<Utc>, std::collections::HashMap<String, usize>)>,
 }
@@ -825,7 +825,7 @@ pub fn get_all_metrics() -> HttpResponse {
     let metrics = Metrics {
         pr_num: pr_num_timeseries.points,
         pr_ages: pr_ages_timeseries.points,
-        endpoints_num: endpoints_num_incl_pr,
+        endpoints_num: endpoints_num,
         endpoints_num_per_audience: endpoints_audience_number.points,
         zally_violations: zally_ignore_timeseries.points,
     };
