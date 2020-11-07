@@ -7,7 +7,7 @@ use reqwest::Client;
 
 extern crate config;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 
 use log::{debug, error, info};
 
@@ -762,7 +762,7 @@ pub fn list_env() -> HttpResponse {
 pub struct Metrics {
     pub pr_num: Vec<(DateTime<Utc>, i32)>,
     pub pr_ages: Vec<(DateTime<Utc>, i64, i64, i64, i64)>,
-    pub endpoints_num: Vec<(DateTime<Utc>, i32)>,
+    pub endpoints_num: Vec<(DateTime<Utc>, Option<String>, Option<String>, i32)>,
     pub zally_violations: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)>,
     pub endpoints_num_per_audience: Vec<(DateTime<Utc>, std::collections::HashMap<String, usize>)>,
 }
@@ -777,19 +777,57 @@ pub fn get_all_metrics() -> HttpResponse {
         repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database).unwrap();
     let endpoints_number: TimeSeries =
         repo_metrics::get_metrics_endpoints_number(&SETTINGS.database).unwrap();
-
-    let returned_stats: i64BasedTimeSeries =
+    let zally_ignore_timeseries: i64BasedTimeSeries =
         repo_metrics::get_metrics_zally_ignore(&SETTINGS.database).unwrap();
-
     let endpoints_audience_number: StringBasedTimeSeries =
         repo_metrics::get_metrics_endpoints_per_audience(&SETTINGS.database).unwrap();
+
+    //will combine PR informations with metrics
+    let merged_prs: Vec<PullRequest> = get_pull_requests("MERGED").values;
+    let merged_prs: Vec<(DateTime<Utc>, PullRequest)> = merged_prs
+        .into_iter()
+        .map(|val| {
+            let dt = chrono::Utc.timestamp(val.closed_epoch.unwrap() / 1000, 0);
+            (dt, val)
+        })
+        .collect();
+    //
+    let endpoints_num: Vec<(DateTime<Utc>, i32)> = endpoints_number.points;
+    let mut endpoints_num_incl_pr: Vec<(DateTime<Utc>, Option<String>, Option<String>, i32)> =
+        Vec::new();
+    for tuple in &endpoints_num {
+        let date: DateTime<Utc> = tuple.0;
+        for pr in &merged_prs {
+            match date
+                .format("%Y-%m-%d")
+                .to_string()
+                .starts_with(pr.0.format("%Y-%m-%d").to_string().as_str())
+            {
+                true => {
+                    let annotation = format!(
+                        "id: {}, title: {}, author: {}",
+                        pr.1.id, pr.1.title, pr.1.author.user.email_address,
+                    );
+                    endpoints_num_incl_pr.push((
+                        date,
+                        Some(pr.1.id.to_string()),
+                        Some(annotation),
+                        tuple.1,
+                    ));
+                    break;
+                }
+                false => endpoints_num_incl_pr.push((date, None, None, tuple.1)),
+            }
+        }
+    }
+
     //
     let metrics = Metrics {
         pr_num: pr_num_timeseries.points,
         pr_ages: pr_ages_timeseries.points,
-        endpoints_num: endpoints_number.points,
+        endpoints_num: endpoints_num_incl_pr,
         endpoints_num_per_audience: endpoints_audience_number.points,
-        zally_violations: returned_stats.points,
+        zally_violations: zally_ignore_timeseries.points,
     };
 
     HttpResponse::Ok().json(metrics)
@@ -812,6 +850,8 @@ struct PullRequest {
     state: String,
     #[serde(rename(serialize = "createdDate", deserialize = "createdDate"))]
     created_epoch: u64,
+    #[serde(rename(serialize = "closedDate", deserialize = "closedDate"))]
+    closed_epoch: Option<i64>,
     author: Author,
 }
 
@@ -832,7 +872,7 @@ struct User {
 pub fn get_oldest_pr() -> HttpResponse {
     let limit = 3;
     info!("get oldest pull-request");
-    let pull_requests: PullRequests = get_pull_requests();
+    let pull_requests: PullRequests = get_pull_requests("OPEN");
 
     let current_epoch = std::time::SystemTime::now();
     let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
@@ -862,13 +902,23 @@ pub fn get_oldest_pr() -> HttpResponse {
     HttpResponse::Ok().json(pull_requests)
 }
 
-fn get_pull_requests() -> PullRequests {
+#[get("/v1/metrics/merged-pull-requests")]
+pub fn get_merged_pr() -> HttpResponse {
+    info!("get merged pull-request");
+    let pull_requests: PullRequests = get_pull_requests("MERGED");
+
+    let pull_requests: Vec<_> = pull_requests.values;
+    //
+    HttpResponse::Ok().json(pull_requests)
+}
+
+fn get_pull_requests(status: &str) -> PullRequests {
     let access_token = SETTINGS.stash_config.access_token.clone();
     let client = Client::new();
 
     let url = format!(
-        "{}/pull-requests?state=OPEN&limit=1000",
-        SETTINGS.stash_config.base_uri
+        "{}/pull-requests?state={}&limit=1000",
+        SETTINGS.stash_config.base_uri, status
     );
     let mut resp = client
         .get(url.as_str())
@@ -888,7 +938,7 @@ pub fn refresh_metrics() -> HttpResponse {
     info!("refresh metrics");
     catalog::refresh_git_repo(&SETTINGS.catalog_path);
     //
-    let pull_requests: PullRequests = get_pull_requests();
+    let pull_requests: PullRequests = get_pull_requests("OPEN");
 
     //keep metric pr_num
     let metrics = get_metrics_pull_requests_number(&pull_requests);
@@ -1091,6 +1141,7 @@ async fn main() {
             .service(web::resource("/v1/envs/{id}").route(web::get().to(get_env)))
             .service(get_all_metrics)
             .service(get_oldest_pr)
+            .service(get_merged_pr)
             .service(refresh_metrics)
             .route("/static", web::get().to(index))
             .route("/", web::get().to(index))
