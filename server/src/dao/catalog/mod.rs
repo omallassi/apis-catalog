@@ -55,29 +55,32 @@ pub fn list_specs(path: &str) -> Vec<SpecItem> {
                 }
             };
 
-            if let Ok(openapi) = serde_yaml::from_reader(blob.content()) {
-                //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                //TODO this whole thing has to be reworked
-                let audience = match get_audience_from_spec(&file_path) {
-                    Some(aud) => aud,
-                    None => String::from("N/A"),
-                };
-                let domain = get_domain_from_spec(&openapi);
-                //create the API Item and add it to the returned value
-                let spec = SpecItem {
-                    path: path,
-                    id: format!("{:?}", oid),
-                    api_spec: openapi.clone(),
-                    audience: audience,
-                    domain: domain.to_string(),
-                };
-                specs.push(spec);
-            } else {
-                warn!("Unable to parse file [{}]", path);
+            match serde_yaml::from_reader(blob.content()) {
+                Ok(openapi) => {
+                    //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
+                    //TODO this whole thing has to be reworked
+                    let audience = match get_audience_from_spec(&file_path) {
+                        Some(aud) => aud,
+                        None => String::from("N/A"),
+                    };
+                    let domain = get_domain_from_spec(&openapi);
+                    //create the API Item and add it to the returned value
+                    let spec = SpecItem {
+                        path: path,
+                        id: format!("{:?}", oid),
+                        api_spec: openapi.clone(),
+                        audience: audience,
+                        domain: domain.to_string(),
+                    };
+                    specs.push(spec);
+                }
+                Err(why) => {
+                    warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
+                }
             }
         }
     } else {
-        warn!("Unable to parse file [{}]", path);
+        warn!("Unable to get git repo from path [{}]", path);
     }
 
     specs
@@ -90,7 +93,11 @@ fn get_audience_from_spec(spec: &Path) -> Option<String> {
     let spec_content = fs::read_to_string(spec).unwrap_or_default();
 
     if let Some(cap) = RE.captures(spec_content.as_str()) {
-        debug!("found x-audience [{}]", cap[3].to_string());
+        debug!(
+            "found x-audience [{}] in spec [{:?}]",
+            cap[3].to_string(),
+            spec
+        );
         Some(cap[3].to_string())
     } else {
         debug!("Unable to x-audience from [{:?}]", spec);
@@ -134,7 +141,7 @@ pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
             }
         }
     } else {
-        warn!("Unable to parse file [{}]", path);
+        warn!("Unable to get git repo from path [{}]", path);
     }
 
     specs
@@ -158,11 +165,11 @@ pub fn refresh_git_repo(path: &str) {
     info!("Refresh Git Repo with result [{:?}]", "result");
 }
 
-pub fn get_zally_ignore(path: &str) -> std::collections::HashMap<i64, usize> {
+pub fn get_zally_ignore(all_specs: &Vec<SpecItem>) -> std::collections::HashMap<i64, usize> {
     let mut merged_stats = std::collections::HashMap::new();
 
-    let specs = list_specs(path);
-    for spec in specs.iter() {
+    // let specs = list_specs(path);
+    for spec in all_specs.iter() {
         //need to load the yaml file as OpenAPI crate will remove the x-zally-ignore...
         let yaml_spec_as_string = std::fs::read_to_string(spec.path.as_str()).unwrap();
         let stats = get_zally_ignore_metrics(yaml_spec_as_string.as_str(), spec.path.as_str());
@@ -249,13 +256,11 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
 
             match zally {
                 Some(val) => {
-                    debug!("Got Zally Ignore {:?} for path {:?}", zally, path);
-
                     for elt in val.as_vec().unwrap() {
                         let elt = match elt.as_i64() {
                             Some(val) => val,
                             None => {
-                                warn!("Got zally-ignore {:?}", elt);
+                                warn!("Got zally-ignore [{:?}]", elt);
                                 -1
                             }
                         };
@@ -268,11 +273,6 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
                                 stats_per_path.insert(elt, 1);
                             }
                         }
-                        // println!(
-                        //     "x-zally-ignore {:?} {:?}",
-                        //     elt.as_i64(),
-                        //     elt.as_i64().unwrap()
-                        // );
                     }
                 }
                 None => {
@@ -300,11 +300,12 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
     stats
 }
 
-pub fn get_endpoints_num_per_audience(path: &str) -> std::collections::HashMap<String, usize> {
+pub fn get_endpoints_num_per_audience(
+    all_specs: &Vec<SpecItem>,
+) -> std::collections::HashMap<String, usize> {
     let mut merged_stats = std::collections::HashMap::new();
 
-    let specs = list_specs(path);
-    for spec in specs.iter() {
+    for spec in all_specs.iter() {
         //need to load the yaml file as OpenAPI crate will remove the x-zally-ignore...
         let yaml_spec_as_string = std::fs::read_to_string(spec.path.as_str()).unwrap();
         let stats = get_endpoints_num_per_audience_metrics(
@@ -360,7 +361,7 @@ fn get_endpoints_num_per_audience_metrics(
     {
         match doc_info_tag.get(&Yaml::String(String::from("x-audience"))) {
             Some(val) => {
-                info!("found audience [{:?}] for spec [{:?}]", val, spec);
+                info!("found audience [{:?}] for spec [{:?}]", val, spec_name);
                 let audience_name = String::from(val.as_str().unwrap());
                 match stats.get(&audience_name) {
                     Some(val) => {
@@ -372,7 +373,7 @@ fn get_endpoints_num_per_audience_metrics(
                 };
             }
             None => {
-                info!("no audience for spec {:?}", spec_name);
+                info!("no audience for spec [{:?}]", spec_name);
                 stats.insert(String::from("no audience"), num_of_endpoints);
             }
         };

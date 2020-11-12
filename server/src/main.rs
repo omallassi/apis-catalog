@@ -38,7 +38,6 @@ use repo_apis::*;
 use repo_deployments::*;
 use repo_domains::*;
 use repo_envs::*;
-use repo_metrics::*;
 
 mod settings;
 use settings::Settings;
@@ -771,16 +770,58 @@ pub struct Metrics {
 pub fn get_all_metrics() -> HttpResponse {
     info!("get all metrics");
 
-    let pr_num_timeseries: TimeSeries =
-        repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database).unwrap();
-    let pr_ages_timeseries: TupleTimeSeries =
-        repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database).unwrap();
-    let endpoints_number: TimeSeries =
-        repo_metrics::get_metrics_endpoints_number(&SETTINGS.database).unwrap();
-    let zally_ignore_timeseries: i64BasedTimeSeries =
-        repo_metrics::get_metrics_zally_ignore(&SETTINGS.database).unwrap();
-    let endpoints_audience_number: StringBasedTimeSeries =
-        repo_metrics::get_metrics_endpoints_per_audience(&SETTINGS.database).unwrap();
+    let pr_num_timeseries: Vec<(DateTime<Utc>, i32)> =
+        match repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database) {
+            Ok(val) => val.points,
+            Err(why) => {
+                error!(
+                    "Error while getting get_metrics_pull_requests_number [{}]",
+                    why
+                );
+                Vec::new()
+            }
+        };
+
+    let pr_ages_timeseries: Vec<(DateTime<Utc>, i64, i64, i64, i64)> =
+        match repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database) {
+            Ok(val) => val.points,
+            Err(why) => {
+                error!(
+                    "Error while getting get_metrics_pull_requests_ages [{}]",
+                    why
+                );
+                Vec::new()
+            }
+        };
+
+    let endpoints_number: Vec<(DateTime<Utc>, i32)> =
+        match repo_metrics::get_metrics_endpoints_number(&SETTINGS.database) {
+            Ok(val) => val.points,
+            Err(why) => {
+                error!("Error while getting get_metrics_endpoints_number [{}]", why);
+                Vec::new()
+            }
+        };
+
+    let zally_ignore_timeseries: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)> =
+        match repo_metrics::get_metrics_zally_ignore(&SETTINGS.database) {
+            Ok(val) => val.points,
+            Err(why) => {
+                error!("Error while getting get_metrics_zally_ignore [{}]", why);
+                Vec::new()
+            }
+        };
+    let endpoints_audience_number: Vec<(DateTime<Utc>, std::collections::HashMap<String, usize>)> =
+        match repo_metrics::get_metrics_endpoints_per_audience(&SETTINGS.database) {
+            Ok(val) => val.points,
+            Err(why) => {
+                error!(
+                    "Error while getting get_metrics_endpoints_per_audience [{}]",
+                    why
+                );
+                Vec::new()
+            }
+        };
 
     //will combine PR informations with metrics
     let merged_prs: Vec<PullRequest> = get_pull_requests("MERGED").values;
@@ -792,10 +833,10 @@ pub fn get_all_metrics() -> HttpResponse {
         })
         .collect();
     //
-    let endpoints_num: Vec<(DateTime<Utc>, i32)> = endpoints_number.points;
+    // let endpoints_num: Vec<(DateTime<Utc>, i32)> = endpoints_number.points;
     let mut endpoints_num_incl_pr: Vec<(DateTime<Utc>, Option<String>, Option<String>, i32)> =
         Vec::new();
-    for tuple in &endpoints_num {
+    for tuple in &endpoints_number {
         let date: DateTime<Utc> = tuple.0;
         for pr in &merged_prs {
             match date
@@ -823,11 +864,11 @@ pub fn get_all_metrics() -> HttpResponse {
 
     //
     let metrics = Metrics {
-        pr_num: pr_num_timeseries.points,
-        pr_ages: pr_ages_timeseries.points,
-        endpoints_num: endpoints_num,
-        endpoints_num_per_audience: endpoints_audience_number.points,
-        zally_violations: zally_ignore_timeseries.points,
+        pr_num: pr_num_timeseries,
+        pr_ages: pr_ages_timeseries,
+        endpoints_num: endpoints_number,
+        endpoints_num_per_audience: endpoints_audience_number,
+        zally_violations: zally_ignore_timeseries,
     };
 
     HttpResponse::Ok().json(metrics)
@@ -957,24 +998,30 @@ pub fn refresh_metrics() -> HttpResponse {
         isize::try_from(metrics.4).unwrap(),
     )
     .unwrap();
+
     //get # of endpoints
     let all_specs: Vec<SpecItem> = catalog::list_specs(SETTINGS.catalog_path.as_str());
+
+    let all_specs_paths: Vec<String> = all_specs.iter().map(|val| val.path.to_string()).collect();
+    info!(
+        "List of retrieved and parsed OpenAPI Specifications [{:?}]",
+        all_specs_paths
+    );
+
     let len = &all_specs.len();
-    let metrics = get_metrics_endpoints_num(all_specs);
-    debug!(
-        "Got [{}] specifications and [{:?}] endpoints",
+    let metrics = get_metrics_endpoints_num(&all_specs);
+    info!(
+        "Parsed [{}] specifications and got a total of [{:?}] paths",
         len, &metrics
     );
     repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1).unwrap();
 
     //save metrics zally_ignore
-    //TODO Inject specs to the method
-    let stats = catalog::get_zally_ignore(SETTINGS.catalog_path.as_str());
+    let stats = catalog::get_zally_ignore(&all_specs);
     repo_metrics::save_metrics_zally_ignore(&SETTINGS.database, Utc::now(), stats).unwrap();
 
     //save metrics endpoints_num_per audience
-    //TODO Inject specs to the method
-    let stats = catalog::get_endpoints_num_per_audience(SETTINGS.catalog_path.as_str());
+    let stats = catalog::get_endpoints_num_per_audience(&all_specs);
     repo_metrics::save_metrics_endpoints_num_per_audience(&SETTINGS.database, Utc::now(), stats)
         .unwrap();
     //
@@ -1029,15 +1076,20 @@ fn get_metrics_pull_requests_ages_stats(
 }
 
 //TODO move this method into catalog/mod.rs
-fn get_metrics_endpoints_num(all_specs: Vec<SpecItem>) -> (DateTime<Utc>, i32) {
+fn get_metrics_endpoints_num(all_specs: &Vec<SpecItem>) -> (DateTime<Utc>, i32) {
     let endpoints_per_spec: Vec<_> = all_specs
         .iter()
-        .map(|spec| spec.api_spec.paths.len())
+        .map(|spec| {
+            let num = spec.api_spec.paths.len();
+            debug!("# of paths - spec [{:?}] got [{:?}] paths", spec.path, num);
+
+            num
+        })
         .collect();
 
     let total: i32 = endpoints_per_spec.iter().sum::<usize>() as i32;
-    debug!(
-        "Got # of endpoints per spec [{:?}] - and total # of endpoints [{}]",
+    info!(
+        "# of paths - per spec [{:?}] - and total # of paths [{}]",
         &endpoints_per_spec, &total
     );
 
