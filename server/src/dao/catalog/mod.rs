@@ -147,6 +147,12 @@ pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
     specs
 }
 
+pub fn get_spec_short_path(catalog_dir_srt: String, spec: &SpecItem) -> &str {
+    let short_path = &spec.path[catalog_dir_srt.as_str().len()..spec.path.len()];
+
+    short_path
+}
+
 //
 fn get_git_repo(path: &str) -> Result<Repository, git2::Error> {
     let repo: Repository = Repository::open(path)?;
@@ -161,7 +167,7 @@ fn get_git_repo(path: &str) -> Result<Repository, git2::Error> {
 pub fn refresh_git_repo(path: &str) {
     //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
     //TODO be more proper on error management here.typical case: credentials to git pull are no longer working...
-    run_cmd!("cd {}; git pull", path);
+    run_cmd!("cd {}; git pull", path).unwrap();
     info!("Refresh Git Repo with result [{:?}]", "result");
 }
 

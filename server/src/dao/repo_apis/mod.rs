@@ -9,8 +9,7 @@ use uuid::Uuid;
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
-//use rustbreak::{FileDatabase, deser::Ron};
-use log::{debug, info, warn};
+use log::{info, warn};
 
 use std::sync::Once;
 
