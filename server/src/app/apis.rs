@@ -293,7 +293,7 @@ pub struct User {
     pub email_address: String,
 }
 
-#[get("/v1/metrics/pull-requests")]
+#[get("/v1/pull-requests")]
 pub fn get_oldest_pr() -> HttpResponse {
     let limit = 3;
     info!("get oldest pull-request");
@@ -327,7 +327,7 @@ pub fn get_oldest_pr() -> HttpResponse {
     HttpResponse::Ok().json(pull_requests)
 }
 
-#[get("/v1/metrics/merged-pull-requests")]
+#[get("/v1/merged-pull-requests")]
 pub fn get_merged_pr() -> HttpResponse {
     info!("get merged pull-request");
     let pull_requests: PullRequests = get_pull_requests("MERGED");
