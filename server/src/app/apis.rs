@@ -5,6 +5,9 @@ use actix_web::{get, post};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
+extern crate reqwest;
+use reqwest::Client;
+
 #[path = "../dao/mod.rs"]
 mod dao;
 use dao::repo_apis::*;
@@ -251,4 +254,203 @@ pub fn update_api_tier_by_id(path: web::Path<(String,)>, tier: Json<String>) -> 
     dao::repo_apis::update_api_tier(&SETTINGS.database, api_id, tier_id).unwrap();
 
     HttpResponse::Ok().json("")
+}
+
+//
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PullRequests {
+    pub size: i32,
+    pub limit: i32,
+    #[serde(rename(serialize = "isLastPage", deserialize = "isLastPage"))]
+    pub is_last_page: bool,
+    pub values: Vec<PullRequest>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PullRequest {
+    pub id: i32,
+    pub version: i32,
+    pub title: String,
+    pub state: String,
+    #[serde(rename(serialize = "createdDate", deserialize = "createdDate"))]
+    pub created_epoch: u64,
+    #[serde(rename(serialize = "closedDate", deserialize = "closedDate"))]
+    pub closed_epoch: Option<i64>,
+    pub author: Author,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Author {
+    pub user: User,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct User {
+    #[serde(rename(serialize = "displayName", deserialize = "displayName"))]
+    pub display_name: String,
+    #[serde(rename(serialize = "emailAddress", deserialize = "emailAddress"))]
+    pub email_address: String,
+}
+
+#[get("/v1/metrics/pull-requests")]
+pub fn get_oldest_pr() -> HttpResponse {
+    let limit = 3;
+    info!("get oldest pull-request");
+    let pull_requests: PullRequests = get_pull_requests("OPEN");
+
+    let current_epoch = std::time::SystemTime::now();
+    let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
+    let current_epoch = current_epoch.as_secs();
+    //
+    let mut pull_requests: Vec<_> = pull_requests
+        .values
+        .iter()
+        .map(|val| {
+            let created_epoch_in_sec = val.created_epoch / 1000;
+            if current_epoch < created_epoch_in_sec {
+                //val.created_epoch is in ms
+                error!(
+                    "Cannot compute epoch elapse as current epoch [{}] < obtained epoch [{}]",
+                    current_epoch, val.created_epoch
+                );
+            }
+            let delta: u64 = current_epoch - created_epoch_in_sec;
+
+            (val, delta)
+        })
+        .collect();
+    pull_requests.sort_by(|a, b| a.1.cmp(&b.1).reverse());
+    let pull_requests: Vec<_> = pull_requests.iter().map(|val| val.0).take(limit).collect();
+
+    //
+    HttpResponse::Ok().json(pull_requests)
+}
+
+#[get("/v1/metrics/merged-pull-requests")]
+pub fn get_merged_pr() -> HttpResponse {
+    info!("get merged pull-request");
+    let pull_requests: PullRequests = get_pull_requests("MERGED");
+
+    let pull_requests: Vec<_> = pull_requests.values;
+    //
+    HttpResponse::Ok().json(pull_requests)
+}
+
+pub fn get_pull_requests(status: &str) -> PullRequests {
+    let access_token = SETTINGS.stash_config.access_token.clone();
+    let client = Client::new();
+
+    let url = format!(
+        "{}/pull-requests?state={}&limit=1000",
+        SETTINGS.stash_config.base_uri, status
+    );
+    let mut resp = client
+        .get(url.as_str())
+        .header("Authorization", format!("Bearer {}", access_token))
+        .send()
+        .unwrap();
+
+    debug!("Calling {} - got HTTP Status {:?}", url, resp.status());
+    //TODO manage unwrap withe resp.status().is_success() or is_server_error()
+    let pull_requests: PullRequests = resp.json().unwrap();
+
+    pull_requests
+}
+
+//
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum Type {
+    ADDED,
+    REMOVED,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum ObjectType {
+    ZALLY,
+    PATH,
+    AUDIENCE,
+    PERMISSION,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Diff {
+    #[serde(rename(serialize = "type", deserialize = "type"))]
+    pub typ: Type,
+    #[serde(rename(serialize = "objectType", deserialize = "type"))]
+    pub object_type: ObjectType,
+    pub line: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Review {
+    pub id: u64,
+    pub diff: Vec<Diff>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Reviews {
+    pub reviews: Vec<Review>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct Line {
+    source: u64,
+    destination: u64,
+    line: String,
+    truncated: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct Segment {
+    #[serde(rename(serialize = "type", deserialize = "type"))]
+    typ: String,
+    lines: Vec<Line>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct Hunk {
+    segments: Vec<Segment>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct PullRequestDiff {
+    hunks: Vec<Hunk>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+struct PullRequestDiffs {
+    pub fromHash: String,
+    pub toHash: String,
+    pub diffs: Vec<PullRequestDiff>,
+}
+
+#[get("/v1/reviews")]
+pub fn list_all_reviews() -> HttpResponse {
+    info!("list all reviews");
+
+    ///metrics/pull-requests -> replace with /reviews/pr
+    let access_token = SETTINGS.stash_config.access_token.clone();
+    let client = Client::new();
+
+    // let url = format!(
+    //     "{}/pull-requests?state={}&limit=1000",
+    //     SETTINGS.stash_config.base_uri, status
+    // );
+    let mut resp = client
+        //.get(url.as_str())
+        .get("https://stash.murex.com/rest/api/1.0/projects/PAA/repos/apis-catalog/pull-requests/174/diff")
+        .header("Authorization", format!("Bearer {}", access_token))
+        .send()
+        .unwrap();
+
+    let response: PullRequestDiffs = resp.json().unwrap();
+
+    debug!("Calling  - got HTTP Status {:?}", response);
+
+    let response = Reviews {
+        reviews: Vec::new(),
+    };
+
+    HttpResponse::Ok().json(response)
 }

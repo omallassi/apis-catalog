@@ -89,6 +89,7 @@ async fn main() {
             .service(
                 web::resource("/v1/endpoints/{api}").route(web::get().to(app::apis::get_endpoints)),
             ) //TODO rework url
+            .service(app::apis::list_all_reviews)
             .service(app::apis::get_all_specs)
             .service(app::apis::create_api)
             .service(app::apis::list_all_apis)
@@ -113,8 +114,8 @@ async fn main() {
             .service(app::tiers::get_tiers)
             //metrics related endpoints
             .service(app::metrics::get_all_metrics)
-            .service(app::metrics::get_oldest_pr)
-            .service(app::metrics::get_merged_pr)
+            .service(app::apis::get_oldest_pr)
+            .service(app::apis::get_merged_pr)
             .service(app::metrics::refresh_metrics)
             //Static resources mapping
             .service(

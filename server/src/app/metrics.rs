@@ -11,6 +11,7 @@ use dao::catalog::*;
 
 #[path = "./apis.rs"]
 mod apis;
+use apis::*;
 
 use log::{debug, error, info};
 
@@ -100,7 +101,7 @@ pub fn get_all_metrics() -> HttpResponse {
         };
 
     //will combine PR informations with metrics
-    let merged_prs: Vec<PullRequest> = get_pull_requests("MERGED").values;
+    let merged_prs: Vec<PullRequest> = apis::get_pull_requests("MERGED").values;
     let merged_prs: Vec<(DateTime<Utc>, PullRequest)> = merged_prs
         .into_iter()
         .map(|val| {
@@ -148,106 +149,6 @@ pub fn get_all_metrics() -> HttpResponse {
     };
 
     HttpResponse::Ok().json(metrics)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct PullRequests {
-    size: i32,
-    limit: i32,
-    #[serde(rename(serialize = "isLastPage", deserialize = "isLastPage"))]
-    is_last_page: bool,
-    values: Vec<PullRequest>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct PullRequest {
-    id: i32,
-    version: i32,
-    title: String,
-    state: String,
-    #[serde(rename(serialize = "createdDate", deserialize = "createdDate"))]
-    created_epoch: u64,
-    #[serde(rename(serialize = "closedDate", deserialize = "closedDate"))]
-    closed_epoch: Option<i64>,
-    author: Author,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Author {
-    user: User,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct User {
-    #[serde(rename(serialize = "displayName", deserialize = "displayName"))]
-    display_name: String,
-    #[serde(rename(serialize = "emailAddress", deserialize = "emailAddress"))]
-    email_address: String,
-}
-
-#[get("/v1/metrics/pull-requests")]
-pub fn get_oldest_pr() -> HttpResponse {
-    let limit = 3;
-    info!("get oldest pull-request");
-    let pull_requests: PullRequests = get_pull_requests("OPEN");
-
-    let current_epoch = std::time::SystemTime::now();
-    let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
-    let current_epoch = current_epoch.as_secs();
-    //
-    let mut pull_requests: Vec<_> = pull_requests
-        .values
-        .iter()
-        .map(|val| {
-            let created_epoch_in_sec = val.created_epoch / 1000;
-            if current_epoch < created_epoch_in_sec {
-                //val.created_epoch is in ms
-                error!(
-                    "Cannot compute epoch elapse as current epoch [{}] < obtained epoch [{}]",
-                    current_epoch, val.created_epoch
-                );
-            }
-            let delta: u64 = current_epoch - created_epoch_in_sec;
-
-            (val, delta)
-        })
-        .collect();
-    pull_requests.sort_by(|a, b| a.1.cmp(&b.1).reverse());
-    let pull_requests: Vec<_> = pull_requests.iter().map(|val| val.0).take(limit).collect();
-
-    //
-    HttpResponse::Ok().json(pull_requests)
-}
-
-#[get("/v1/metrics/merged-pull-requests")]
-pub fn get_merged_pr() -> HttpResponse {
-    info!("get merged pull-request");
-    let pull_requests: PullRequests = get_pull_requests("MERGED");
-
-    let pull_requests: Vec<_> = pull_requests.values;
-    //
-    HttpResponse::Ok().json(pull_requests)
-}
-
-fn get_pull_requests(status: &str) -> PullRequests {
-    let access_token = SETTINGS.stash_config.access_token.clone();
-    let client = Client::new();
-
-    let url = format!(
-        "{}/pull-requests?state={}&limit=1000",
-        SETTINGS.stash_config.base_uri, status
-    );
-    let mut resp = client
-        .get(url.as_str())
-        .header("Authorization", format!("Bearer {}", access_token))
-        .send()
-        .unwrap();
-
-    debug!("Calling {} - got HTTP Status {:?}", url, resp.status());
-    //TODO manage unwrap withe resp.status().is_success() or is_server_error()
-    let pull_requests: PullRequests = resp.json().unwrap();
-
-    pull_requests
 }
 
 #[post("/v1/metrics/refresh")]
