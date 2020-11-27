@@ -15,6 +15,8 @@ mod dao;
 mod settings;
 use settings::Settings;
 
+use log::info;
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -24,6 +26,9 @@ extern crate lazy_static;
 async fn index(_req: HttpRequest) -> Result<NamedFile> {
     let mut path: PathBuf = PathBuf::from(&SETTINGS.server.static_resources_path);
     path.push("index.html");
+
+    info!("Loading page [{:?}]", path);
+
     Ok(NamedFile::open(path)?)
 }
 
