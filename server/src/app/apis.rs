@@ -360,12 +360,6 @@ pub fn get_pull_requests(status: &str) -> PullRequests {
 
 //
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub enum Type {
-    ADDED,
-    REMOVED,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum ObjectType {
     ZALLY,
     PATH,
@@ -376,7 +370,7 @@ pub enum ObjectType {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Diff {
     #[serde(rename(serialize = "type", deserialize = "type"))]
-    pub typ: Type,
+    pub typ: String,
     #[serde(rename(serialize = "objectType", deserialize = "type"))]
     pub object_type: ObjectType,
     pub line: String,
@@ -384,8 +378,9 @@ pub struct Diff {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Review {
-    pub id: u64,
-    pub diff: Vec<Diff>,
+    pub id: i32,
+    pub title: String,
+    pub diffs: Vec<Diff>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -429,28 +424,88 @@ struct PullRequestDiffs {
 pub fn list_all_reviews() -> HttpResponse {
     info!("list all reviews");
 
-    ///metrics/pull-requests -> replace with /reviews/pr
+    let mut reviews = Vec::new();
+
+    //get all Opened PRs
+    let pull_requests: PullRequests = get_pull_requests("OPEN");
+
+    //for each PR, get diff
     let access_token = SETTINGS.stash_config.access_token.clone();
     let client = Client::new();
 
-    // let url = format!(
-    //     "{}/pull-requests?state={}&limit=1000",
-    //     SETTINGS.stash_config.base_uri, status
-    // );
-    let mut resp = client
-        //.get(url.as_str())
-        .get("https://stash.murex.com/rest/api/1.0/projects/PAA/repos/apis-catalog/pull-requests/174/diff")
-        .header("Authorization", format!("Bearer {}", access_token))
-        .send()
-        .unwrap();
+    for pr in pull_requests.values {
+        let pr_id: i32 = pr.id;
+        let pr_title: String = pr.title;
+        let url = format!(
+            "{}/pull-requests/{}/diff",
+            SETTINGS.stash_config.base_uri, pr_id
+        );
+        let mut resp = client
+            .get(url.as_str())
+            .header("Authorization", format!("Bearer {}", access_token))
+            .send()
+            .unwrap();
 
-    let response: PullRequestDiffs = resp.json().unwrap();
+        let response: PullRequestDiffs = resp.json().unwrap();
 
-    debug!("Calling  - got HTTP Status {:?}", response);
+        let mut diffs: Vec<Diff> = Vec::new();
+        for diff in &response.diffs {
+            for hunk in &diff.hunks {
+                for segment in &hunk.segments {
+                    if "ADDED".eq_ignore_ascii_case(segment.typ.as_str())
+                        || "REMOVED".eq_ignore_ascii_case(segment.typ.as_str())
+                    {
+                        for line in &segment.lines {
+                            if line.line.trim_start().starts_with("/") {
+                                let diff = Diff {
+                                    typ: String::from(&segment.typ),
+                                    object_type: ObjectType::PATH,
+                                    line: String::from(&line.line),
+                                };
+                                diffs.push(diff);
+                            } else if line.line.trim_start().starts_with("x-zally-ignore") {
+                                let diff = Diff {
+                                    typ: String::from(&segment.typ),
+                                    object_type: ObjectType::ZALLY,
+                                    line: String::from(&line.line),
+                                };
+                                diffs.push(diff);
+                            } else if line.line.trim_start().starts_with("x-has-authority") {
+                                let diff = Diff {
+                                    typ: String::from(&segment.typ),
+                                    object_type: ObjectType::PERMISSION,
+                                    line: String::from(&line.line),
+                                };
+                                diffs.push(diff);
+                            } else if line.line.trim_start().starts_with("x-audience") {
+                                let diff = Diff {
+                                    typ: String::from(&segment.typ),
+                                    object_type: ObjectType::AUDIENCE,
+                                    line: String::from(&line.line),
+                                };
+                                diffs.push(diff);
+                            } else {
+                                debug!(
+                                    "line [{:?}] - does not contain interesting information",
+                                    line.line
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-    let response = Reviews {
-        reviews: Vec::new(),
-    };
+        let review = Review {
+            id: pr_id,
+            title: pr_title,
+            diffs: diffs,
+        };
+
+        reviews.push(review);
+    }
+
+    let response = Reviews { reviews: reviews };
 
     HttpResponse::Ok().json(response)
 }

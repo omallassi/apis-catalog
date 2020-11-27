@@ -124,6 +124,7 @@ async fn main() {
             .route("/", web::get().to(index))
             .route("/static", web::get().to(index))
             .route("/domains", web::get().to(index))
+            .route("/reviews", web::get().to(index))
             .route("/apis", web::get().to(index))
             .route("/envs", web::get().to(index))
     })
