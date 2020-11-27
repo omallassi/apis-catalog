@@ -123,15 +123,15 @@ async fn main() {
             .service(app::apis::get_merged_pr)
             .service(app::metrics::refresh_metrics)
             //Static resources mapping
-            .service(
-                Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"),
-            )
             .route("/", web::get().to(index))
             .route("/static", web::get().to(index))
             .route("/domains", web::get().to(index))
             .route("/reviews", web::get().to(index))
             .route("/apis", web::get().to(index))
             .route("/envs", web::get().to(index))
+            .service(
+                Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"),
+            )
     })
     .workers(4)
     .bind(&SETTINGS.server.bind_adress)
