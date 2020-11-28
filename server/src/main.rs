@@ -129,6 +129,7 @@ async fn main() {
             .route("/reviews", web::get().to(index))
             .route("/apis", web::get().to(index))
             .route("/envs", web::get().to(index))
+            //keep it at last position (in URLs mappings)
             .service(
                 Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"),
             )
