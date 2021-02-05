@@ -409,7 +409,20 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
 fn get_domain_from_spec(spec: &OpenAPI) -> &str {
     let base_url = match &spec.servers.is_empty() {
         true => "NA - servers attribute not specified",
-        false => &spec.servers[0].url, //TODO can do better
+        false => {
+            //TODO can do better
+            //base_url could have the following form http://baseurl/v1/xva-management/xva
+            //will extract http://baseurl and keep the rest
+            lazy_static! {
+                static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
+            }
+
+            if let Some(cap) = RE.captures(&spec.servers[0].url) {
+                cap.get(2).unwrap().as_str()
+            } else {
+                &spec.servers[0].url
+            }
+        }
     };
 
     base_url
