@@ -272,7 +272,7 @@ pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
         .finish()
 }
 
-pub fn delete_domain(path: web::Path<(String,)>) -> HttpResponse {
+pub fn delete_domain(path: web::Path<String>) -> HttpResponse {
     //path: web::Path<(String,)>,
     //&path.0
     info!("deleting domain for id [{:?}]", &path.0);

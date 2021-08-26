@@ -43,7 +43,7 @@ pub fn create_env(env: Json<Env>) -> HttpResponse {
     HttpResponse::Ok().json("")
 }
 
-pub fn get_env(path: web::Path<(String,)>) -> HttpResponse {
+pub fn get_env(path: web::Path<String>) -> HttpResponse {
     let env_id = Uuid::parse_str(&path.0).unwrap();
 
     let response = match dao::repo_envs::get_env(&SETTINGS.database, env_id) {

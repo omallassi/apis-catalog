@@ -40,7 +40,7 @@ pub struct Endpoint {
 }
 
 //#[get("/v1/endpoints/{api}")]
-pub fn get_endpoints(info: web::Path<(String,)>) -> HttpResponse {
+pub fn get_endpoints(info: web::Path<String>) -> HttpResponse {
     let mut endpoints = Endpoints {
         endpoints: Vec::new(),
     };
@@ -207,7 +207,7 @@ pub fn list_all_apis() -> HttpResponse {
     HttpResponse::Ok().json(apis_obj)
 }
 
-pub fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
+pub fn get_api_by_id(path: web::Path<String>) -> HttpResponse {
     info!("getting api for id [{:?}]", &path.0);
     let api = Uuid::parse_str(&path.0).unwrap();
 
@@ -228,7 +228,7 @@ pub fn get_api_by_id(path: web::Path<(String,)>) -> HttpResponse {
     HttpResponse::Ok().json(api)
 }
 
-pub fn update_api_status_by_id(path: web::Path<(String,)>, status: Json<Status>) -> HttpResponse {
+pub fn update_api_status_by_id(path: web::Path<String>, status: Json<Status>) -> HttpResponse {
     //path: web::Path<(String,)>,
     //&path.0
     info!("updating api for id [{:?}]", &path.0);
@@ -243,7 +243,7 @@ pub fn update_api_status_by_id(path: web::Path<(String,)>, status: Json<Status>)
     HttpResponse::Ok().json("")
 }
 
-pub fn update_api_tier_by_id(path: web::Path<(String,)>, tier: Json<String>) -> HttpResponse {
+pub fn update_api_tier_by_id(path: web::Path<String>, tier: Json<String>) -> HttpResponse {
     //path: web::Path<(String,)>,
     //&path.0
     info!("updating api for id [{:?}] and tier [{}]", &path.0, tier);

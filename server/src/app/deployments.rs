@@ -69,7 +69,7 @@ pub fn get_deployments() -> HttpResponse {
     HttpResponse::Ok().json(deployments)
 }
 
-pub fn get_deployments_for_api(path: web::Path<(String,)>) -> HttpResponse {
+pub fn get_deployments_for_api(path: web::Path<String>) -> HttpResponse {
     let mut deployments = Deployments {
         deployments: Vec::new(),
     };
