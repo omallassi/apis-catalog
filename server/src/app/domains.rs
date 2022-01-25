@@ -85,11 +85,13 @@ pub fn get_domains_errors() -> HttpResponse {
     //get all specs
     let all_specs: Vec<SpecItem> = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
     //at this stage data = {"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
+
     let data: std::collections::HashMap<String, usize> =
         dao::catalog::get_endpoints_num_per_subdomain(&all_specs);
 
     //get all declared (and official) domains
-    let all_domains: Vec<String> = match list_all_domains(&SETTINGS.database) {
+    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+    let all_domains: Vec<String> = match repo_domains_dao.list_all_domains(&SETTINGS.database) {
         Ok(all_domains) => all_domains
             .iter()
             .map(|val| String::from(&val.name))
@@ -233,12 +235,15 @@ pub fn get_domains_stats() -> HttpResponse {
 #[get("/v1/domains")]
 pub fn get_domains() -> HttpResponse {
     info!("get domains");
-    let mut all_domains: Vec<DomainItem> = match list_all_domains(&SETTINGS.database) {
-        Ok(all_domains) => all_domains,
-        Err(why) => {
-            panic!("Unable to get domains: {}", why);
-        }
-    };
+
+    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+    let mut all_domains: Vec<DomainItem> =
+        match repo_domains_dao.list_all_domains(&SETTINGS.database) {
+            Ok(all_domains) => all_domains,
+            Err(why) => {
+                panic!("Unable to get domains: {}", why);
+            }
+        };
 
     let mut domains = Vec::new();
 
@@ -259,13 +264,16 @@ pub fn get_domains() -> HttpResponse {
 
 #[post("/v1/domains")]
 pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
-    let uuid = add_domain(
-        &SETTINGS.database,
-        &domain.name,
-        &domain.description,
-        &domain.owner,
-    )
-    .unwrap();
+    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+
+    let uuid = repo_domains_dao
+        .add_domain(
+            &SETTINGS.database,
+            &domain.name,
+            &domain.description,
+            &domain.owner,
+        )
+        .unwrap();
 
     HttpResponse::Created()
         .header("Location", format!("/v1/domains/{}", uuid))
@@ -290,7 +298,10 @@ pub fn delete_domain(path: web::Path<String>) -> HttpResponse {
                 ))
             } else {
                 info!("No APIs related to domain [{}]", id);
-                dao::repo_domains::delete_domain(&SETTINGS.database, id).unwrap();
+                let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+                repo_domains_dao
+                    .delete_domain(&SETTINGS.database, id)
+                    .unwrap();
                 HttpResponse::Ok().json("")
             }
         }

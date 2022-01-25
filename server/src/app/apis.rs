@@ -172,7 +172,8 @@ pub fn list_all_apis() -> HttpResponse {
 
     while let Some(api) = all_apis.pop() {
         //get domain related to this API
-        let domain = match dao::repo_domains::get_domain(&SETTINGS.database, api.domain_id) {
+        let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+        let domain = match repo_domains_dao.get_domain(&SETTINGS.database, api.domain_id) {
             Ok(val) => val,
             Err(why) => {
                 error!(
@@ -213,7 +214,10 @@ pub fn get_api_by_id(path: web::Path<String>) -> HttpResponse {
 
     let api = dao::repo_apis::get_api_by_id(&SETTINGS.database, api).unwrap();
 
-    let domain = dao::repo_domains::get_domain(&SETTINGS.database, api.domain_id).unwrap();
+    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+    let domain = repo_domains_dao
+        .get_domain(&SETTINGS.database, api.domain_id)
+        .unwrap();
 
     let api = Api {
         id: api.id,
