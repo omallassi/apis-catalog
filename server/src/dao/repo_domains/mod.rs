@@ -9,7 +9,17 @@ use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
 //use rustbreak::{FileDatabase, deser::Ron};
-use log::debug;
+use log::{debug, error, info};
+
+use serde::{Deserialize, Serialize};
+
+#[path = "../../settings/mod.rs"]
+mod settings;
+use settings::Settings;
+
+lazy_static! {
+    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
+}
 
 /**
  * "public" part
@@ -49,31 +59,96 @@ pub enum DomainImplType {
 
 pub struct DomainImplFactory;
 impl DomainImplFactory {
-    // pub fn get_impl(t: &DomainImplType) -> Box<dyn DomainRepo> {
-    //     match t {
-    //         DomainImplType::YamlBasedDomainRepo => Box::new(YamlBasedDomainRepo {}),
-    //         DomainImplType::DbBasedDomainRepo => Box::new(DbBasedDomainRepo {}),
-    //     }
-    // }
-
     pub fn get_impl() -> Box<dyn DomainRepo> {
-        Box::new(DbBasedDomainRepo {})
+        let domain_type = &SETTINGS.domain_repo_type.domain_impl;
+        info!("Using Domain Impl {}", &domain_type);
+
+        match domain_type.as_str() {
+            "YamlBasedDomainRepo" => Box::new(YamlBasedDomainRepo {}),
+            "DbBasedDomainRepo" => Box::new(DbBasedDomainRepo {}),
+            _ => Box::new(DbBasedDomainRepo {}),
+        }
     }
 }
 
 /**
  * implementation based on yaml file
  */
-pub struct YamlBasedDomainRepo {}
+pub struct YamlBasedDomainRepo {
+    // domain_catalog: YamlBasedDomainCatalog,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct YamlBasedDomainCatalog {
+    #[serde(rename(serialize = "softwaredomains", deserialize = "softwaredomains"))]
+    software_domains: Vec<YamlBasedDomainCatalogItem>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct YamlBasedDomainCatalogItem {
+    id: String,
+    #[serde(rename(serialize = "subdomains", deserialize = "subdomains"))]
+    subdomains: Option<Vec<YamlBasedDomainCatalogItem>>,
+}
+
+// impl Default for YamlBasedDomainRepo {
+//     fn default() -> Self {
+//         Self {}
+//     }
+// }
+
+impl YamlBasedDomainRepo {
+    fn get_domain_catalog() -> YamlBasedDomainCatalog {
+        //TODO find a way to not reload from file every time this method is called
+
+        let f = match std::fs::File::open(&SETTINGS.domain_repo_type.domain_catalog_path) {
+            Ok(f) => {
+                info!(
+                    "has loaded Domain Catalog from Yaml file {:?}",
+                    SETTINGS.domain_repo_type.domain_catalog_path
+                );
+                f
+            }
+            Err(err) => {
+                error!(
+                    "failed loading Yml Catalog from {:?} - {:?}",
+                    SETTINGS.domain_repo_type.domain_catalog_path, err
+                );
+                panic!(
+                    "failed loading Yml Catalog from {:?} - {:?}",
+                    SETTINGS.domain_repo_type.domain_catalog_path, err
+                );
+            }
+        };
+
+        let yaml_struct = serde_yaml::from_reader(f);
+        match yaml_struct {
+            Ok(yaml) => yaml,
+            Err(err) => {
+                panic!("Unable to load Yaml Struct from file - {:?}", err);
+            }
+        }
+    }
+}
 
 impl DomainRepo for YamlBasedDomainRepo {
     fn list_all_domains(
         &self,
         config: &super::super::settings::Database,
     ) -> Result<Vec<DomainItem>> {
-        println!("oliv > FileBasedDomainRepo");
-
         let mut tuples = Vec::new();
+        let domain = DomainItem {
+            id: Uuid::new_v4(),
+            name: String::from("name"),
+            description: String::from("descripton"),
+            owner: String::from("owner"),
+        };
+
+        let catalog: YamlBasedDomainCatalog = YamlBasedDomainRepo::get_domain_catalog();
+        info!("OLIV {}", catalog.software_domains.len());
+
+        tuples.push(domain);
+
         Ok(tuples)
     }
 

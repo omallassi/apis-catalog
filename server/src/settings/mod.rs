@@ -26,12 +26,19 @@ pub struct Database {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct DomainRepoType {
+    pub domain_impl: String,
+    pub domain_catalog_path: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Settings {
     pub catalog_path: String,
     pub catalog_dir: String,
     pub stash_config: StashConfig,
     pub database: Database,
     pub server: Server,
+    pub domain_repo_type: DomainRepoType,
 }
 
 impl Settings {
