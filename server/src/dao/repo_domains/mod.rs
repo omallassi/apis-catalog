@@ -129,6 +129,38 @@ impl YamlBasedDomainRepo {
             }
         }
     }
+
+    fn get_flat_list(software_domains: &Vec<YamlBasedDomainCatalogItem>) -> Vec<String> {
+        let mut buf: Vec<String> = Vec::new();
+
+        for domain in software_domains {
+            let mut domain_str = String::new();
+            domain_str.push_str("/");
+            domain_str.push_str(domain.id.as_str());
+
+            debug!("got domain {:?}", domain_str);
+
+            match &domain.subdomains {
+                None => {
+                    debug!("no subdomain");
+                    buf.push(domain_str);
+                }
+                Some(subdomains) => {
+                    let buf_2 = YamlBasedDomainRepo::get_flat_list(&subdomains);
+
+                    for item in buf_2 {
+                        let mut s = String::new();
+                        s.push_str(domain_str.as_str());
+                        s.push_str(item.as_str());
+
+                        buf.push(s);
+                    }
+                }
+            }
+        }
+
+        buf
+    }
 }
 
 impl DomainRepo for YamlBasedDomainRepo {
@@ -137,17 +169,21 @@ impl DomainRepo for YamlBasedDomainRepo {
         config: &super::super::settings::Database,
     ) -> Result<Vec<DomainItem>> {
         let mut tuples = Vec::new();
-        let domain = DomainItem {
-            id: Uuid::new_v4(),
-            name: String::from("name"),
-            description: String::from("descripton"),
-            owner: String::from("owner"),
-        };
 
         let catalog: YamlBasedDomainCatalog = YamlBasedDomainRepo::get_domain_catalog();
-        info!("OLIV {}", catalog.software_domains.len());
 
-        tuples.push(domain);
+        let tmp = YamlBasedDomainRepo::get_flat_list(&catalog.software_domains);
+        debug!("list of all (flat) domains {:?}", tmp);
+
+        for domain in tmp {
+            let domain = DomainItem {
+                id: Uuid::new_v4(),
+                name: String::from(domain),
+                description: String::from("N/A"),
+                owner: String::from("N/A"),
+            };
+            tuples.push(domain);
+        }
 
         Ok(tuples)
     }
@@ -169,6 +205,8 @@ impl DomainRepo for YamlBasedDomainRepo {
         config: &super::super::settings::Database,
         id: Uuid,
     ) -> Result<DomainItem> {
+        info!("OLIV get_domain ");
+
         let id = Uuid::new_v4();
         Ok(DomainItem {
             name: String::from("name"),
