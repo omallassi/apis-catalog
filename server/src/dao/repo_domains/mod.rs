@@ -137,8 +137,9 @@ impl YamlBasedDomainRepo {
             let mut domain_str = String::new();
             domain_str.push_str("/");
             domain_str.push_str(domain.id.as_str());
+            debug!("got domain {:?}", &domain_str);
 
-            debug!("got domain {:?}", domain_str);
+            buf.push(String::from(&domain_str));
 
             match &domain.subdomains {
                 None => {
