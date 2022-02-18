@@ -4,3 +4,4 @@ Cargo.lock
 server/settings.toml
 server/config/local.toml
 logs.log
+server/docker-config/docker-local-env.list

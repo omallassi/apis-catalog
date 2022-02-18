@@ -1,0 +1,18 @@
+catalog_path = $CATALOG_PATH
+catalog_dir = $CATALOG_DIR
+
+[stash_config]
+base_uri = $STASH_CONFIG_BASE_URI
+access_token = $STASH_CONFIG_ACCESS_TOKEN
+
+[server]
+bind_adress = $SERVER_BIND_ADRESS
+static_resources_path = $SERVER_STATIC_RESOURCES_PATH
+
+[database]
+rusqlite_path = $DATABASE_RUSQLITE_PATH
+
+[domain_repo_type]
+# can be YamlBasedDomainRepo or DbBasedDomainRepo
+domain_impl = $DOMAIN_REPO_TYPE_DOMAIN_IMPL
+domain_catalog_path = $DOMAIN_REPO_TYPE_DOMAIN_CATALOG_PATH
