@@ -6,4 +6,6 @@ COPY ./ ./
 
 RUN cargo build
 
-ENTRYPOINT  envsubst < "./config/local-template.toml" > "./config/local-bis.toml" && RUST_LOG="info,apis_catalog_server=debug" ./target/debug/apis_catalog_server &
+RUN chmod a+rwx ./docker-config/entrypoint.sh
+
+ENTRYPOINT [ "./docker-config/entrypoint.sh" , "--variables"]

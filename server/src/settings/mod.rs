@@ -1,3 +1,4 @@
+use std::env;
 extern crate log;
 use log::info;
 
@@ -43,11 +44,17 @@ pub struct Settings {
 
 impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
-        //TODO find a way to inject this config file
         let mut settings = config::Config::default();
 
+        let config_file_path = match env::var("API_SERVER_CONFIG_FILE") {
+            Ok(var) => var,
+            Err(why) => String::from("server/config/local"),
+        };
+
+        info!("Will load Configiuration from file - [{:?}]", config_file_path);
+
         settings
-            .merge(config::File::with_name("server/config/local"))
+            .merge(config::File::with_name(config_file_path.as_str()))
             .unwrap()
             // Add in settings from the environment (with a prefix of API)
             // Eg.. `API_DEBUG=1 ./target/app` would set the `debug` key
