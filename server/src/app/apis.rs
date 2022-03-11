@@ -294,7 +294,7 @@ pub struct User {
     #[serde(rename(serialize = "displayName", deserialize = "displayName"))]
     pub display_name: String,
     #[serde(rename(serialize = "emailAddress", deserialize = "emailAddress"))]
-    pub email_address: String,
+    pub email_address: Option<String>,
 }
 
 #[get("/v1/pull-requests")]

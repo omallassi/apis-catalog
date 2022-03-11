@@ -123,7 +123,7 @@ pub fn get_all_metrics() -> HttpResponse {
             {
                 true => {
                     let annotation = format!(
-                        "id: {}, title: {}, author: {}",
+                        "id: {}, title: {}, author: {:?}",
                         pr.1.id, pr.1.title, pr.1.author.user.email_address,
                     );
                     endpoints_num_incl_pr.push((
