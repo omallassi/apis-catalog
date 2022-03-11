@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
       - name: clean
@@ -34,5 +34,4 @@ jobs:
       #Also seems like cucumber tests are part of coverage measures (which is nice)
         run: |
           cargo install cargo-tarpaulin
-          sed -i 's/harness = false/harness = true/g' `pwd`/adr_core_local_impl/Cargo.toml
           cargo tarpaulin --release --out Lcov --coveralls cWQm7CpdlatuS7Ws7pZPVwCYye0l3wPoL
