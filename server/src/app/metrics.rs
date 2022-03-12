@@ -3,7 +3,6 @@ use actix_web::{get, post};
 use serde::{Deserialize, Serialize};
 
 extern crate reqwest;
-use reqwest::Client;
 
 #[path = "../dao/mod.rs"]
 mod dao;
@@ -220,7 +219,7 @@ fn get_metrics_pull_requests_ages_stats(
 ) -> (DateTime<Utc>, u64, u64, u64, u64) {
     let mut histogram = Histogram::new();
     //
-    let elapse_in_ms: Vec<_> = pull_requests
+    let _elapse_in_ms: Vec<_> = pull_requests
         .values
         .iter()
         .map(|val| {

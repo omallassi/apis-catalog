@@ -167,7 +167,7 @@ impl YamlBasedDomainRepo {
 impl DomainRepo for YamlBasedDomainRepo {
     fn list_all_domains(
         &self,
-        config: &super::super::settings::Database,
+        _config: &super::super::settings::Database,
     ) -> Result<Vec<DomainItem>> {
         let mut tuples = Vec::new();
 
@@ -191,10 +191,10 @@ impl DomainRepo for YamlBasedDomainRepo {
 
     fn add_domain(
         &self,
-        config: &super::super::settings::Database,
-        name: &str,
-        description: &str,
-        owner: &str,
+        _config: &super::super::settings::Database,
+        _name: &str,
+        _description: &str,
+        _owner: &str,
     ) -> Result<Uuid> {
         let id = Uuid::new_v4();
 
@@ -203,8 +203,8 @@ impl DomainRepo for YamlBasedDomainRepo {
 
     fn get_domain(
         &self,
-        config: &super::super::settings::Database,
-        id: Uuid,
+        _config: &super::super::settings::Database,
+        _id: Uuid,
     ) -> Result<DomainItem> {
         info!("OLIV get_domain ");
 
@@ -217,7 +217,7 @@ impl DomainRepo for YamlBasedDomainRepo {
         })
     }
 
-    fn delete_domain(&self, config: &super::super::settings::Database, id: Uuid) -> Result<()> {
+    fn delete_domain(&self, _config: &super::super::settings::Database, _id: Uuid) -> Result<()> {
         Ok(())
     }
 }

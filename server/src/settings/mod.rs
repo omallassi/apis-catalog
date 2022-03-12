@@ -48,7 +48,7 @@ impl Settings {
 
         let config_file_path = match env::var("API_SERVER_CONFIG_FILE") {
             Ok(var) => var,
-            Err(why) => String::from("server/config/local"),
+            Err(_why) => String::from("server/config/local"),
         };
 
         info!("Will load Configiuration from file - [{:?}]", config_file_path);

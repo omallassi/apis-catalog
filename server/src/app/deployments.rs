@@ -53,7 +53,7 @@ pub fn get_deployments() -> HttpResponse {
     let mut all_tuples: Vec<(String, String)> = match list_all_deployments(&SETTINGS.database) {
         Ok(all_tuples) => all_tuples,
         Err(why) => {
-            debug!("No Deployments found");
+            debug!("No Deployments found - {:?}", why);
             Vec::new()
         }
     };

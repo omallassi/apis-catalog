@@ -1,13 +1,13 @@
 use actix_web::web::Json;
 use actix_web::{get, post};
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse};
 use serde::{Deserialize, Serialize};
 
 #[path = "../dao/mod.rs"]
 mod dao;
 use dao::repo_apis::*;
 
-use log::{debug, error, info};
+use log::{info};
 
 #[path = "../settings/mod.rs"]
 mod settings;

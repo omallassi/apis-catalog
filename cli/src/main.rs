@@ -4,7 +4,7 @@ use clap::{App, AppSettings, Arg, SubCommand};
 #[macro_use]
 extern crate prettytable;
 use prettytable::format;
-use prettytable::{Cell, Row, Table};
+use prettytable::{Table};
 
 extern crate reqwest;
 use reqwest::{Client, Response};
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 extern crate env_logger;
 extern crate log;
-use log::{debug, error, info, warn};
+use log::{debug, info, error};
 
 use std::vec::Vec;
 
@@ -129,7 +129,7 @@ fn deploy(api: &str, env: &str) -> Result<(), reqwest::Error> {
 fn get_deployments(api: Option<&str>) -> Result<(), reqwest::Error> {
     let client = Client::new();
     let mut resp: Response;
-    let api_id = match api {
+    match api {
         Some(api_id) => {
             debug!("get deployments for specificied api {:?}", api_id);
             let url = format!(
@@ -395,7 +395,7 @@ fn update_api_status(api: &str, value: &str) -> Result<(), reqwest::Error> {
         id = api
     );
     //update and send it and updated version back
-    let mut resp = client.post(&url).json(&status).send()?;
+    let resp = client.post(&url).json(&status).send()?;
     debug!("response: {:?}", resp.status());
 
     Ok(())
@@ -410,7 +410,7 @@ fn update_api_tier(api: &str, tier: &str) -> Result<(), reqwest::Error> {
         id = api
     );
     //update and send it and updated version back
-    let mut resp = client.post(&url).json(&tier).send()?;
+    let resp = client.post(&url).json(&tier).send()?;
     debug!("response: {:?}", resp.status());
 
     Ok(())
@@ -701,14 +701,20 @@ fn main() {
 
     if let Some(matches) = matches.subcommand_matches("endpoints") {
         if matches.is_present("spec") {
-            get_endpoints(matches.value_of("spec").unwrap());
+            match get_endpoints(matches.value_of("spec").unwrap()){
+                Ok(_) => info!("operation ended normally"),
+                Err(e) => error!("Operation failed - {:?}", e),
+            };
         }
     }
 
     match matches.subcommand() {
         ("domains", Some(domains_matches)) => match domains_matches.subcommand() {
             ("list", Some(_matches)) => {
-                get_domains();
+                match get_domains(){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             ("create", Some(matches)) => {
                 let description = match matches.value_of("description") {
@@ -721,25 +727,40 @@ fn main() {
                     None => "N/A",
                 };
 
-                create_domain(matches.value_of("name").unwrap(), description, owner);
+                match create_domain(matches.value_of("name").unwrap(), description, owner){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             ("delete", Some(matches)) => {
-                delete_domain(matches.value_of("id").unwrap());
+                match delete_domain(matches.value_of("id").unwrap()){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             _ => unreachable!(),
         },
         ("tiers", Some(tiers_matches)) => match tiers_matches.subcommand() {
             ("create", Some(matches)) => {
-                create_tier(matches.value_of("name").unwrap());
+                match create_tier(matches.value_of("name").unwrap()){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             ("list", Some(_matches)) => {
-                get_tiers();
+                match get_tiers(){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             _ => unreachable!(),
         },
         ("specs", Some(matches)) => match matches.subcommand() {
             ("list", Some(_matches)) => {
-                get_specs();
+                match get_specs(){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             // ("deploy", Some(matches)) => {
             //     deploy(matches.value_of("spec-id").unwrap(), matches.value_of("env").unwrap());
@@ -748,20 +769,25 @@ fn main() {
         },
         ("deployments", Some(deployments)) => match deployments.subcommand() {
             ("list", Some(matches)) => {
-                get_deployments(matches.value_of("api"));
+                match get_deployments(matches.value_of("api")){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),};
             }
             ("create", Some(matches)) => {
-                deploy(
-                    matches.value_of("api").unwrap(),
-                    matches.value_of("env").unwrap(),
-                );
+                match deploy(matches.value_of("api").unwrap(), matches.value_of("env").unwrap()){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
 
             _ => unreachable!(),
         },
         ("env", Some(deployments)) => match deployments.subcommand() {
             ("list", Some(_matches)) => {
-                list_env();
+                match list_env(){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             ("create", Some(matches)) => {
                 create_env(
@@ -784,16 +810,22 @@ fn main() {
                 list_all_apis().unwrap();
             }
             ("status", Some(matches)) => {
-                update_api_status(
+                match update_api_status(
                     matches.value_of("api").unwrap(),
                     matches.value_of("value").unwrap(),
-                );
+                ){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
             ("tier", Some(matches)) => {
-                update_api_tier(
+                match update_api_tier(
                     matches.value_of("api").unwrap(),
                     matches.value_of("tier").unwrap(),
-                );
+                ){
+                    Ok(_) => info!("operation ended normally"),
+                    Err(e) => error!("Operation failed - {:?}", e),
+                };
             }
 
             _ => unreachable!(),

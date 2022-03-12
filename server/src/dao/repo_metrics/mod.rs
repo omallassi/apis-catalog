@@ -1,13 +1,11 @@
 extern crate rusqlite;
 
-use std::collections::HashMap;
-
 use chrono::{DateTime, Utc};
 
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
-use log::{debug, info, warn};
+use log::{debug};
 
 pub fn save_metrics_pull_requests_number(
     config: &super::super::settings::Database,
