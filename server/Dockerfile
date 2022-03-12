@@ -5,6 +5,8 @@
 FROM rust:1.58.1-buster
 RUN apt-get update && apt-get -y install gettext-base
 
+VOLUME [ "/data" ]
+
 WORKDIR /apis-catalog
 COPY ./ ./
 RUN cargo build
