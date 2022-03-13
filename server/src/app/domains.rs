@@ -314,3 +314,12 @@ pub fn delete_domain(path: web::Path<String>) -> HttpResponse {
 
     response
 }
+
+// #[cfg(test)]
+// mod tests {
+//     #[test]
+//     fn test_domains_method() {
+        
+//         assert_eq!(2, 3);
+//     }
+// }
