@@ -10,7 +10,6 @@ use actix_web::{HttpRequest, Result};
 use std::path::PathBuf;
 
 mod app;
-mod dao;
 
 mod settings;
 use settings::Settings;

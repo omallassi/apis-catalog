@@ -419,8 +419,10 @@ struct PullRequestDiff {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct PullRequestDiffs {
-    pub fromHash: String,
-    pub toHash: String,
+    #[serde(rename(serialize = "fromHash", deserialize = "fromHash"))]
+    pub from_hash: String,
+    #[serde(rename(serialize = "toHash", deserialize = "toHash"))]
+    pub to_hash: String,
     pub diffs: Vec<PullRequestDiff>,
 }
 

@@ -34,7 +34,7 @@ pub struct StatusItem {
     pub status: String,
 }
 
-static INIT_DB: Once = Once::new();
+//static INIT_DB: Once = Once::new();
 
 fn get_init_db(rusqlite: &String) -> Result<String> {
     let mut db_path = String::from(rusqlite);

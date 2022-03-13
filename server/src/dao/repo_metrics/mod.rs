@@ -286,13 +286,13 @@ pub fn save_metrics_endpoints_num_per_audience(
 }
 
 #[derive(Debug)]
-pub struct i64BasedTimeSeries {
+pub struct I64BasedTimeSeries {
     pub points: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)>,
 }
 
 pub fn get_metrics_zally_ignore(
     config: &super::super::settings::Database,
-) -> Result<i64BasedTimeSeries> {
+) -> Result<I64BasedTimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
     {
@@ -317,7 +317,7 @@ pub fn get_metrics_zally_ignore(
         ));
     }
 
-    let timeseries = i64BasedTimeSeries { points: points };
+    let timeseries = I64BasedTimeSeries { points: points };
 
     Ok(timeseries)
 }
