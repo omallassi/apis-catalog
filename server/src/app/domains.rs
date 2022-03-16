@@ -39,6 +39,7 @@ pub struct Domain {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Domains {
+    pub is_read_only: bool,
     pub domains: Vec<Domain>,
 }
 
@@ -257,7 +258,7 @@ pub fn get_domains() -> HttpResponse {
         domains.push(domain);
     }
 
-    let domains_obj = Domains { domains: domains };
+    let domains_obj = Domains { is_read_only: dao::repo_domains::DomainImplFactory::is_read_only(), domains: domains };
 
     HttpResponse::Ok().json(domains_obj)
 }

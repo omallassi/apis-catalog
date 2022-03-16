@@ -69,6 +69,16 @@ impl DomainImplFactory {
             _ => Box::new(DbBasedDomainRepo {}),
         }
     }
+
+    pub fn is_read_only() -> bool {
+        let domain_type = &SETTINGS.domain_repo_type.domain_impl;
+
+        match domain_type.as_str() {
+            "YamlBasedDomainRepo" => true,
+            "DbBasedDomainRepo" => false,
+            _ => true,
+        }
+    }
 }
 
 /**
