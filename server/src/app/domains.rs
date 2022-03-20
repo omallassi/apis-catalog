@@ -35,6 +35,7 @@ pub struct Domain {
     pub id: Uuid,
     pub description: String,
     pub owner: String,
+    pub is_empty: bool
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -246,14 +247,31 @@ pub fn get_domains() -> HttpResponse {
             }
         };
 
+
+    let all_specs: Vec<SpecItem> = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
+    let non_emtpy_domains: std::collections::HashMap<String, usize> =
+        dao::catalog::get_endpoints_num_per_subdomain(&all_specs);
+
+    //TODO : crappy!! find a way to better handle the /v1 - maybe relying on servers attr in OAI is not the right way and having dedicated OAI attributes would be easier / proper (alos taking into sonsiderations code generation plugins)
+    let mut cleaned_non_empty_domain : std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for (key, value) in &non_emtpy_domains {
+        cleaned_non_empty_domain.insert(key[3..key.len()].to_string(), *value);
+    }
+    //end TODO
+
     let mut domains = Vec::new();
 
     while let Some(domain) = all_domains.pop() {
+        //TODO not good but there is a /v1 in domain.name - need to find another way with this version thing 
+
+        let is_empty :  bool = ! cleaned_non_empty_domain.contains_key(&domain.name); 
+
         let domain = Domain {
             name: domain.name,
             id: domain.id,
             description: domain.description,
             owner: domain.owner,
+            is_empty: is_empty, 
         };
         domains.push(domain);
     }

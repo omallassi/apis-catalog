@@ -188,7 +188,7 @@ impl DomainRepo for YamlBasedDomainRepo {
 
         for domain in tmp {
             let domain = DomainItem {
-                id: Uuid::new_v4(),
+                id: Uuid::new_v4(), //TODO nil() will break the UI, need to find something here
                 name: String::from(domain),
                 description: String::from("N/A"),
                 owner: String::from("N/A"),
