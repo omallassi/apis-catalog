@@ -154,7 +154,7 @@ impl YamlBasedDomainRepo {
             match &domain.subdomains {
                 None => {
                     debug!("no subdomain");
-                    buf.push(domain_str);
+                    //buf.push(domain_str);
                 }
                 Some(subdomains) => {
                     let buf_2 = YamlBasedDomainRepo::get_flat_list(&subdomains);
@@ -182,6 +182,7 @@ impl DomainRepo for YamlBasedDomainRepo {
         let mut tuples = Vec::new();
 
         let catalog: YamlBasedDomainCatalog = YamlBasedDomainRepo::get_domain_catalog();
+        debug!("list of all (hierarchical) domains {:?}", serde_json::to_string(&catalog));
 
         let tmp = YamlBasedDomainRepo::get_flat_list(&catalog.software_domains);
         debug!("list of all (flat) domains {:?}", tmp);
@@ -343,5 +344,24 @@ impl DomainRepo for DbBasedDomainRepo {
         stmt.execute(params![id])?;
 
         Ok(())
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_get_flat_list_domains() {
+        let list_of_domains = "{\"softwaredomains\":[{\"id\":\"analytics\",\"subdomains\":[{\"id\":\"xva\",\"subdomains\":null},{\"id\":\"time-series\",\"subdomains\":null}]},{\"id\":\"audit33\",\"subdomains\":[{\"id\":\"trails\",\"subdomains\":null}]}  ]}";
+        let software_domains: YamlBasedDomainCatalog = serde_json::from_str(list_of_domains).unwrap();
+
+        let tmp = YamlBasedDomainRepo::get_flat_list(&software_domains.software_domains);
+        println!("list of all (flat) domains {:?}", tmp);
+
+        assert_eq!(tmp.len(), 5);
     }
 }

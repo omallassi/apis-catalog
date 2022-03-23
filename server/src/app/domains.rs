@@ -262,9 +262,7 @@ pub fn get_domains() -> HttpResponse {
     let mut domains = Vec::new();
 
     while let Some(domain) = all_domains.pop() {
-        //TODO not good but there is a /v1 in domain.name - need to find another way with this version thing 
-
-        let is_empty :  bool = ! cleaned_non_empty_domain.contains_key(&domain.name); 
+        let is_empty : bool = ! cleaned_non_empty_domain.contains_key(&domain.name); 
 
         let domain = Domain {
             name: domain.name,
