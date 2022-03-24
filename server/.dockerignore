@@ -1,3 +1,4 @@
 ./target/
 ./docker-config/docker-local-env.list
 .DS_Store
+logs.log

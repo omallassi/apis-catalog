@@ -14,4 +14,4 @@ git clone $REPO_TO_CLONE $CATALOG_PATH
 # Start the server
 echo -e "\033[1;32m*** Starting apis-catalog Server ***\033[0m"
 export API_SERVER_CONFIG_FILE=./config/local.toml
-RUST_LOG="info,apis_catalog_server=debug" ./target/debug/apis_catalog_server
+RUST_LOG="info,apis_catalog_server=debug" ./apis_catalog_server
