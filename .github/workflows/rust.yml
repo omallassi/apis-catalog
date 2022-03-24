@@ -28,12 +28,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Generate and publish code coverage
-        with: 
-          coveralls_token : ${{secrets.COVERALLS_TOKEN}}
       #This is a crappy work around. Got issues as tarpaulin seems to be running `cargo test -- --test-threads 1
       # which seems to not work w/ the used version of cucumber-rust. 
       #Changhing harness = true work around the pb...
       #Also seems like cucumber tests are part of coverage measures (which is nice)
         run: |
           cargo install cargo-tarpaulin
-          cargo tarpaulin --release --out Lcov --coveralls "$env.coveralls_token"
+          cargo tarpaulin --release --out Lcov --coveralls "${{secrets.COVERALLS_TOKEN}}"
