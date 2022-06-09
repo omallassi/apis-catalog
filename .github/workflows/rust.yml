@@ -67,4 +67,3 @@ jobs:
           context: ./server/
           push: true
           tags: omallassi/apis-catalog:latest
-          labels: omallassi/apis-catalog:latest
