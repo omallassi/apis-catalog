@@ -1,7 +1,7 @@
 use openapiv3::OpenAPI;
 
 use actix_web::web::Json;
-use actix_web::{get, post};
+use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -40,18 +40,20 @@ pub struct Endpoint {
 }
 
 //#[get("/v1/endpoints/{api}")]
-pub fn get_endpoints(info: web::Path<String>) -> HttpResponse {
+pub async fn get_endpoints(info: web::Path<String>) -> impl Responder {
+
+    let api = info.into_inner();
     let mut endpoints = Endpoints {
         endpoints: Vec::new(),
     };
 
-    let mut all_apis = dao::catalog::get_spec(SETTINGS.catalog_path.as_str(), &info.0);
+    let mut all_apis = dao::catalog::get_spec(SETTINGS.catalog_path.as_str(), &api);
 
     while let Some(api) = all_apis.pop() {
         info!("Analysing file [{:?}]", api.path);
 
         let openapi: OpenAPI = api.api_spec;
-        for val in openapi.paths.keys() {
+        for val in openapi.paths.paths.keys() {
             let endpoint = Endpoint {
                 name: String::from(val),
             };
@@ -77,7 +79,7 @@ pub struct Spec {
 }
 
 #[get("/v1/specs")]
-pub fn get_all_specs() -> HttpResponse {
+pub async fn get_all_specs() -> impl Responder {
     debug!("get_all_specs()");
     let mut specs = Specs { specs: Vec::new() };
 
@@ -148,7 +150,7 @@ pub struct Apis {
 }
 
 #[post("/v1/apis")]
-pub fn create_api(api: Json<Api>) -> HttpResponse {
+pub async fn create_api(api: Json<Api>) -> impl Responder {
     info!("create api [{:?}]", api);
 
     dao::repo_apis::add_api(&SETTINGS.database, &api.name, &api.domain_id).unwrap();
@@ -157,7 +159,7 @@ pub fn create_api(api: Json<Api>) -> HttpResponse {
 }
 
 #[get("/v1/apis")]
-pub fn list_all_apis() -> HttpResponse {
+pub async fn list_all_apis() -> impl Responder {
     info!("list all apis");
 
     let mut all_apis: Vec<ApiItem> = match dao::repo_apis::list_all_apis(&SETTINGS.database) {
@@ -208,9 +210,11 @@ pub fn list_all_apis() -> HttpResponse {
     HttpResponse::Ok().json(apis_obj)
 }
 
-pub fn get_api_by_id(path: web::Path<String>) -> HttpResponse {
-    info!("getting api for id [{:?}]", &path.0);
-    let api = Uuid::parse_str(&path.0).unwrap();
+pub async fn get_api_by_id(path: web::Path<String>) -> impl Responder {
+    let id = path.into_inner();
+
+    info!("getting api for id [{:?}]", &id);
+    let api = Uuid::parse_str(&id).unwrap();
 
     let api = dao::repo_apis::get_api_by_id(&SETTINGS.database, api).unwrap();
 
@@ -232,13 +236,13 @@ pub fn get_api_by_id(path: web::Path<String>) -> HttpResponse {
     HttpResponse::Ok().json(api)
 }
 
-pub fn update_api_status_by_id(path: web::Path<String>, status: Json<Status>) -> HttpResponse {
-    //path: web::Path<(String,)>,
-    //&path.0
-    info!("updating api for id [{:?}]", &path.0);
+pub async fn update_api_status_by_id(path: web::Path<String>, status: Json<Status>) -> impl Responder {
+    let id = path.into_inner();
+
+    info!("updating api for id [{:?}]", &id);
 
     let status_item = StatusItem {
-        api_id: Uuid::parse_str(&path.0).unwrap(),
+        api_id: Uuid::parse_str(&id).unwrap(),
         status: status.as_str(),
     };
 
@@ -247,12 +251,12 @@ pub fn update_api_status_by_id(path: web::Path<String>, status: Json<Status>) ->
     HttpResponse::Ok().json("")
 }
 
-pub fn update_api_tier_by_id(path: web::Path<String>, tier: Json<String>) -> HttpResponse {
-    //path: web::Path<(String,)>,
-    //&path.0
-    info!("updating api for id [{:?}] and tier [{}]", &path.0, tier);
+pub async fn update_api_tier_by_id(path: web::Path<String>, tier: Json<String>) -> impl Responder {
+    let id = path.into_inner();
 
-    let api_id = Uuid::parse_str(&path.0).unwrap();
+    info!("updating api for id [{:?}] and tier [{}]", &id, tier);
+
+    let api_id = Uuid::parse_str(&id).unwrap();
     let tier_id = Uuid::parse_str(tier.as_str()).unwrap();
 
     dao::repo_apis::update_api_tier(&SETTINGS.database, api_id, tier_id).unwrap();
@@ -298,7 +302,7 @@ pub struct User {
 }
 
 #[get("/v1/pull-requests")]
-pub fn get_oldest_pr() -> HttpResponse {
+pub async fn get_oldest_pr() -> impl Responder {
     let limit = 3;
     info!("get oldest pull-request");
     let pull_requests: PullRequests = get_pull_requests("OPEN");
@@ -332,7 +336,7 @@ pub fn get_oldest_pr() -> HttpResponse {
 }
 
 #[get("/v1/merged-pull-requests")]
-pub fn get_merged_pr() -> HttpResponse {
+pub async fn get_merged_pr() -> impl Responder {
     info!("get merged pull-request");
     let pull_requests: PullRequests = get_pull_requests("MERGED");
 
@@ -427,7 +431,7 @@ struct PullRequestDiffs {
 }
 
 #[get("/v1/reviews")]
-pub fn list_all_reviews() -> HttpResponse {
+pub async fn list_all_reviews() -> impl Responder {
     info!("list all reviews");
 
     let mut reviews = Vec::new();

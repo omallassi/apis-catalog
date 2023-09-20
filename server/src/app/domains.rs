@@ -1,5 +1,5 @@
 use actix_web::web::Json;
-use actix_web::{get, post};
+use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -81,7 +81,7 @@ pub struct DomainErrors {
 }
 
 #[get("/v1/domains/errors")]
-pub fn get_domains_errors() -> HttpResponse {
+pub async fn get_domains_errors() -> impl Responder {
     info!("get domains errors");
 
     //get all specs
@@ -157,7 +157,7 @@ pub fn get_domains_errors() -> HttpResponse {
 }
 
 #[get("/v1/domains/stats")]
-pub fn get_domains_stats() -> HttpResponse {
+pub async fn get_domains_stats() -> impl Responder {
     info!("get domains stats");
 
     let all_specs: Vec<SpecItem> = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
@@ -235,7 +235,7 @@ pub fn get_domains_stats() -> HttpResponse {
 }
 
 #[get("/v1/domains")]
-pub fn get_domains() -> HttpResponse {
+pub async fn get_domains() -> impl Responder {
     info!("get domains");
 
     let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
@@ -280,7 +280,7 @@ pub fn get_domains() -> HttpResponse {
 }
 
 #[post("/v1/domains")]
-pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
+pub async fn create_domain(domain: Json<Domain>) -> impl Responder {
     let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
 
     let uuid = repo_domains_dao
@@ -297,11 +297,10 @@ pub fn create_domain(domain: Json<Domain>) -> HttpResponse {
         .finish()
 }
 
-pub fn delete_domain(path: web::Path<String>) -> HttpResponse {
-    //path: web::Path<(String,)>,
-    //&path.0
-    info!("deleting domain for id [{:?}]", &path.0);
-    let id = Uuid::parse_str(&path.0).unwrap();
+pub async fn delete_domain(path: web::Path<String>) -> impl Responder {
+    let id = path.into_inner();
+    info!("deleting domain for id [{:?}]", id);
+    let id = Uuid::parse_str(&id).unwrap();
 
     //check if apis are related to this domain
     let response = match dao::repo_apis::get_apis_per_domain_id(&SETTINGS.database, id) {

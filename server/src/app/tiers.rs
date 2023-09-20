@@ -1,5 +1,5 @@
 use actix_web::web::Json;
-use actix_web::{get, post};
+use actix_web::{get, post, Responder};
 use actix_web::{HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -35,7 +35,7 @@ pub struct Tiers {
 }
 
 #[get("/v1/tiers")]
-pub fn get_tiers() -> HttpResponse {
+pub async fn get_tiers() -> impl Responder {
     info!("get tiers");
     let mut all_tiers: Vec<TierItem> = match list_all_tiers(&SETTINGS.database) {
         Ok(all_tiers) => all_tiers,
@@ -60,7 +60,7 @@ pub fn get_tiers() -> HttpResponse {
 }
 
 #[post("/v1/tiers")]
-pub fn create_tier(tier: Json<Tier>) -> HttpResponse {
+pub async fn create_tier(tier: Json<Tier>) -> impl Responder {
     let uuid = add_tier(&SETTINGS.database, &tier.name).unwrap();
 
     HttpResponse::Created()

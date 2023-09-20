@@ -220,7 +220,7 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
     {
         match doc.get(&Yaml::String(String::from("x-zally-ignore"))) {
             Some(val) => {
-                //println!("x-zally-ignore {:?}", val);
+                println!("x-zally-ignore {:?}", val);
 
                 let paths = doc
                     .get(&Yaml::String(String::from("paths")))
@@ -228,7 +228,10 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
                     .as_hash()
                     .unwrap();
 
+                println!("x-paths {:?}", paths);
+
                 for elt in val.as_vec().unwrap() {
+                    println!("tt {:?}", elt); //TODO some zally ignore are String . as exple - tt String("M010")
                     stats.insert(elt.as_i64().unwrap(), paths.len());
                     // println!(
                     //     "x-zally-ignore {:?} {:?}",
@@ -396,7 +399,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
             spec.path
         );
         let base_url = get_domain_from_spec(&spec.api_spec);
-        let num = spec.api_spec.paths.len();
+        let num = spec.api_spec.paths.paths.len();
 
         *data.entry(base_url.to_string()).or_insert(0) += num;
     }

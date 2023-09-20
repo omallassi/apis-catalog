@@ -1,4 +1,4 @@
-use actix_web::HttpResponse;
+use actix_web::{HttpResponse, Responder};
 use actix_web::{get, post};
 use serde::{Deserialize, Serialize};
 
@@ -43,7 +43,7 @@ pub struct Metrics {
 }
 
 #[get("/v1/metrics")]
-pub fn get_all_metrics() -> HttpResponse {
+pub async fn get_all_metrics() -> impl Responder {
     info!("get all metrics");
 
     let pr_num_timeseries: Vec<(DateTime<Utc>, i32)> =
@@ -151,7 +151,7 @@ pub fn get_all_metrics() -> HttpResponse {
 }
 
 #[post("/v1/metrics/refresh")]
-pub fn refresh_metrics() -> HttpResponse {
+pub async fn refresh_metrics() -> impl Responder {
     info!("refresh metrics");
     dao::catalog::refresh_git_repo(&SETTINGS.catalog_path);
     //
@@ -261,7 +261,7 @@ fn get_metrics_endpoints_num(all_specs: &Vec<SpecItem>) -> (DateTime<Utc>, i32) 
     let endpoints_per_spec: Vec<_> = all_specs
         .iter()
         .map(|spec| {
-            let num = spec.api_spec.paths.len();
+            let num = spec.api_spec.paths.paths.len();
             debug!("# of paths - spec [{:?}] got [{:?}] paths", spec.path, num);
 
             num

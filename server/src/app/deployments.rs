@@ -1,5 +1,5 @@
 use actix_web::web::Json;
-use actix_web::{get, post};
+use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -33,7 +33,7 @@ pub struct Deployments {
 }
 
 #[post("/v1/deployments")]
-pub fn add_deployment(deployment: Json<Deployment>) -> HttpResponse {
+pub async fn add_deployment(deployment: Json<Deployment>) -> impl Responder {
     release(
         &SETTINGS.database,
         deployment.api.clone(),
@@ -45,7 +45,7 @@ pub fn add_deployment(deployment: Json<Deployment>) -> HttpResponse {
 }
 
 #[get("/v1/deployments")]
-pub fn get_deployments() -> HttpResponse {
+pub async fn get_deployments() -> impl Responder {
     let mut deployments = Deployments {
         deployments: Vec::new(),
     };
@@ -69,16 +69,17 @@ pub fn get_deployments() -> HttpResponse {
     HttpResponse::Ok().json(deployments)
 }
 
-pub fn get_deployments_for_api(path: web::Path<String>) -> HttpResponse {
+pub async fn get_deployments_for_api(path: web::Path<String>) -> impl Responder {
+    let api = path.into_inner();
     let mut deployments = Deployments {
         deployments: Vec::new(),
     };
 
     let mut all_tuples: Vec<(String, String)> =
-        match get_all_deployments_for_api(&SETTINGS.database, &path.0) {
+        match get_all_deployments_for_api(&SETTINGS.database, &api) {
             Ok(all_tuples) => all_tuples,
             Err(why) => {
-                error!("No Deployments found for api [{:?}] - [{:?}]", &path.0, why);
+                error!("No Deployments found for api [{:?}] - [{:?}]", &api, why);
                 Vec::new()
             }
         };

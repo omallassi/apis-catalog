@@ -1,5 +1,5 @@
 use actix_web::web::Json;
-use actix_web::{get, post};
+use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -36,15 +36,16 @@ pub struct Env {
 }
 
 #[post("/v1/envs")]
-pub fn create_env(env: Json<Env>) -> HttpResponse {
+pub async fn create_env(env: Json<Env>) -> impl Responder {
     info!("create env [{:?}]", env);
     add_env(&SETTINGS.database, &env.name, &env.description).unwrap();
 
     HttpResponse::Ok().json("")
 }
 
-pub fn get_env(path: web::Path<String>) -> HttpResponse {
-    let env_id = Uuid::parse_str(&path.0).unwrap();
+pub async fn get_env(path: web::Path<String>) -> impl Responder {
+    let id = path.into_inner();
+    let env_id = Uuid::parse_str(&id).unwrap();
 
     let response = match dao::repo_envs::get_env(&SETTINGS.database, env_id) {
         Ok(env) => {
@@ -58,7 +59,7 @@ pub fn get_env(path: web::Path<String>) -> HttpResponse {
             HttpResponse::Ok().json(returned_env)
         }
         Err(_) => {
-            debug!("No Env found for api [{:?}]", &path.0);
+            debug!("No Env found for api [{:?}]", &id);
 
             HttpResponse::NotFound().finish()
         }
@@ -68,7 +69,7 @@ pub fn get_env(path: web::Path<String>) -> HttpResponse {
 }
 
 #[get("/v1/envs")]
-pub fn list_env() -> HttpResponse {
+pub async fn list_env() -> impl Responder {
     info!("list envs");
 
     let mut envs = Envs { envs: Vec::new() };

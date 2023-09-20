@@ -6,7 +6,7 @@ extern crate config;
 
 use actix_files::{Files, NamedFile};
 use actix_web::{middleware::Logger, web, App, HttpServer};
-use actix_web::{HttpRequest, Result};
+use actix_web::{HttpRequest, Result, Error};
 use std::path::PathBuf;
 
 mod app;
@@ -22,7 +22,7 @@ extern crate lazy_static;
 /**
  * To server static pages
  */
-async fn index(_req: HttpRequest) -> Result<NamedFile> {
+async fn index(_req: HttpRequest) -> Result<NamedFile, Error> {
     let mut path: PathBuf = PathBuf::from(&SETTINGS.server.static_resources_path);
     path.push("index.html");
 
@@ -129,9 +129,9 @@ async fn main() {
             .route("/apis", web::get().to(index))
             .route("/envs", web::get().to(index))
             //keep it at last position (in URLs mappings)
-            .service(
-                Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"),
-            )
+            // .service(
+            //     Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"),
+            // )
     })
     .workers(4)
     .bind(&SETTINGS.server.bind_adress)
