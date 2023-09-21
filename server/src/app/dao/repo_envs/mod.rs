@@ -2,13 +2,13 @@ extern crate failure;
 extern crate rusqlite;
 extern crate time;
 extern crate uuid;
-
 use uuid::Uuid;
+
+use crate::shared::settings::*;
 
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
-//use rustbreak::{FileDatabase, deser::Ron};
 use log::debug;
 
 pub struct EnvItem {
@@ -17,7 +17,7 @@ pub struct EnvItem {
     pub description: String,
 }
 
-pub fn list_all_envs(config: &super::super::settings::Database) -> Result<Vec<EnvItem>> {
+pub fn list_all_envs(config: &Database) -> Result<Vec<EnvItem>> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
     {
@@ -53,7 +53,7 @@ pub fn list_all_envs(config: &super::super::settings::Database) -> Result<Vec<En
     Ok(tuples)
 }
 
-pub fn get_env(config: &super::super::settings::Database, id: Uuid) -> Result<EnvItem> {
+pub fn get_env(config: &Database, id: Uuid) -> Result<EnvItem> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
     {
@@ -82,7 +82,7 @@ pub fn get_env(config: &super::super::settings::Database, id: Uuid) -> Result<En
 }
 
 pub fn add_env(
-    config: &super::super::settings::Database,
+    config: &Database,
     name: &str,
     description: &str,
 ) -> Result<()> {

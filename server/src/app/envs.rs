@@ -3,21 +3,13 @@ use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
-#[path = "../dao/mod.rs"]
-mod dao;
-use dao::repo_envs::*;
+use crate::app::dao::repo_envs::*;
+use crate::shared::settings::*;
 
 use log::{debug, info};
 
-#[path = "../settings/mod.rs"]
-mod settings;
-use settings::Settings;
-
 use uuid::Uuid;
 
-lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
-}
 
 /*
  * Envs related APIs
@@ -47,7 +39,7 @@ pub async fn get_env(path: web::Path<String>) -> impl Responder {
     let id = path.into_inner();
     let env_id = Uuid::parse_str(&id).unwrap();
 
-    let response = match dao::repo_envs::get_env(&SETTINGS.database, env_id) {
+    let response = match crate::app::dao::repo_envs::get_env(&SETTINGS.database, env_id) {
         Ok(env) => {
             let returned_env = Env {
                 id: env.id,

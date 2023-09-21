@@ -6,12 +6,12 @@ extern crate uuid;
 use chrono::Utc;
 use uuid::Uuid;
 
+use crate::shared::settings::*;
+
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
 use log::{info, warn};
-
-use std::sync::Once;
 
 #[derive(Debug)]
 pub struct ApiItem {
@@ -85,7 +85,7 @@ fn get_init_db(rusqlite: &String) -> Result<String> {
     Ok(String::from(&db_path))
 }
 
-pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<ApiItem>> {
+pub fn list_all_apis(config: &Database) -> Result<Vec<ApiItem>> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
@@ -131,7 +131,7 @@ pub fn list_all_apis(config: &super::super::settings::Database) -> Result<Vec<Ap
     Ok(tuples)
 }
 
-fn get_related_tier(config: &super::super::settings::Database, tier_id: Uuid) -> Result<TierItem> {
+fn get_related_tier(config: &Database, tier_id: Uuid) -> Result<TierItem> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
@@ -146,7 +146,7 @@ fn get_related_tier(config: &super::super::settings::Database, tier_id: Uuid) ->
     Ok(row)
 }
 
-fn get_last_status(config: &super::super::settings::Database, api_id: Uuid) -> Result<StatusItem> {
+fn get_last_status(config: &Database, api_id: Uuid) -> Result<StatusItem> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
@@ -162,7 +162,7 @@ fn get_last_status(config: &super::super::settings::Database, api_id: Uuid) -> R
 }
 
 pub fn add_api(
-    config: &super::super::settings::Database,
+    config: &Database,
     name: &str,
     domain_id: &Uuid,
 ) -> Result<()> {
@@ -182,7 +182,7 @@ pub fn add_api(
     Ok(())
 }
 
-pub fn get_api_by_id(config: &super::super::settings::Database, api: Uuid) -> Result<ApiItem> {
+pub fn get_api_by_id(config: &Database, api: Uuid) -> Result<ApiItem> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
@@ -222,7 +222,7 @@ pub fn get_api_by_id(config: &super::super::settings::Database, api: Uuid) -> Re
 }
 
 pub fn get_apis_per_domain_id(
-    config: &super::super::settings::Database,
+    config: &Database,
     domain_id: Uuid,
 ) -> Result<Vec<ApiItem>> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
@@ -268,7 +268,7 @@ pub fn get_apis_per_domain_id(
 }
 
 pub fn update_api_status(
-    config: &super::super::settings::Database,
+    config: &Database,
     status: StatusItem,
 ) -> Result<()> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
@@ -291,7 +291,7 @@ pub fn update_api_status(
 }
 
 pub fn update_api_tier(
-    config: &super::super::settings::Database,
+    config: &Database,
     api_id: Uuid,
     tier_id: Uuid,
 ) -> Result<()> {
@@ -309,7 +309,7 @@ pub fn update_api_tier(
     Ok(())
 }
 
-pub fn add_tier(config: &super::super::settings::Database, name: &str) -> Result<Uuid> {
+pub fn add_tier(config: &Database, name: &str) -> Result<Uuid> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 
@@ -324,7 +324,7 @@ pub fn add_tier(config: &super::super::settings::Database, name: &str) -> Result
     Ok(id)
 }
 
-pub fn list_all_tiers(config: &super::super::settings::Database) -> Result<Vec<TierItem>> {
+pub fn list_all_tiers(config: &Database) -> Result<Vec<TierItem>> {
     let db_path = get_init_db(&config.rusqlite_path).unwrap();
     let conn = Connection::open(db_path)?;
 

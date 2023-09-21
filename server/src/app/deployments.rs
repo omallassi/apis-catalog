@@ -3,19 +3,10 @@ use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
-#[path = "../dao/mod.rs"]
-mod dao;
-use dao::repo_deployments::*;
+use crate::app::dao::repo_deployments::*;
+use crate::shared::settings::*;
 
 use log::{debug, error};
-
-#[path = "../settings/mod.rs"]
-mod settings;
-use settings::Settings;
-
-lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
-}
 
 /*
  * deployments related APIs

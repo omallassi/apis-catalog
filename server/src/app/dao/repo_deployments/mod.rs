@@ -3,13 +3,14 @@ extern crate rusqlite;
 extern crate time;
 extern crate uuid;
 
+use crate::shared::settings::*;
+
 use rusqlite::{named_params, NO_PARAMS};
 use rusqlite::{params, Connection, Result};
 
-//use rustbreak::{FileDatabase, deser::Ron};
 use log::debug;
 
-pub fn release(config: &super::super::settings::Database, api: String, env: String) -> Result<()> {
+pub fn release(config: &Database, api: String, env: String) -> Result<()> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
     {
@@ -41,7 +42,7 @@ pub fn release(config: &super::super::settings::Database, api: String, env: Stri
 }
 
 pub fn list_all_deployments(
-    config: &super::super::settings::Database,
+    config: &Database,
 ) -> Result<Vec<(String, String)>> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
@@ -70,7 +71,7 @@ pub fn list_all_deployments(
 }
 
 pub fn get_all_deployments_for_api(
-    config: &super::super::settings::Database,
+    config: &Database,
     api: &str,
 ) -> Result<Vec<(String, String)>> {
     let mut db_path = String::from(&config.rusqlite_path);

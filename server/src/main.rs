@@ -4,15 +4,15 @@ extern crate uuid;
 
 extern crate config;
 
+mod app;
+
+mod shared;
+use shared::settings::*;
+
 use actix_files::{Files, NamedFile};
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use actix_web::{HttpRequest, Result, Error};
 use std::path::PathBuf;
-
-mod app;
-
-mod settings;
-use settings::Settings;
 
 use log::info;
 
@@ -32,7 +32,7 @@ async fn index(_req: HttpRequest) -> Result<NamedFile, Error> {
 }
 
 lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
+    static ref SETTINGS: shared::settings::Settings = Settings::new().unwrap();
 }
 
 /**

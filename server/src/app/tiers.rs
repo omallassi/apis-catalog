@@ -3,21 +3,13 @@ use actix_web::{get, post, Responder};
 use actix_web::{HttpResponse};
 use serde::{Deserialize, Serialize};
 
-#[path = "../dao/mod.rs"]
-mod dao;
-use dao::repo_apis::*;
+use crate::app::dao::repo_apis::*;
+use crate::shared::settings::*;
 
-use log::{info};
-
-#[path = "../settings/mod.rs"]
-mod settings;
-use settings::Settings;
+use log::{debug, error, info};
 
 use uuid::Uuid;
 
-lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
-}
 
 /*
  * Tier(s) related APIs

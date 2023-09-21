@@ -42,6 +42,10 @@ pub struct Settings {
     pub domain_repo_type: DomainRepoType,
 }
 
+lazy_static! {
+    pub static ref SETTINGS: Settings = Settings::new().unwrap();
+}
+
 impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
         let mut settings = config::Config::default();

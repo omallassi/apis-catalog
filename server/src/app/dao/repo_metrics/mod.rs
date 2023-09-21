@@ -5,10 +5,12 @@ use chrono::{DateTime, Utc};
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
+use crate::shared::settings::*;
+
 use log::{debug};
 
 pub fn save_metrics_pull_requests_number(
-    config: &super::super::settings::Database,
+    config: &Database,
     datetime: DateTime<Utc>,
     size: i32,
 ) -> Result<()> {
@@ -44,7 +46,7 @@ pub struct TimeSeries {
 }
 
 pub fn get_metrics_pull_requests_number(
-    config: &super::super::settings::Database,
+    config: &Database,
 ) -> Result<TimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
@@ -81,7 +83,7 @@ pub fn get_metrics_pull_requests_number(
 }
 
 pub fn save_metrics_pull_requests_ages(
-    config: &super::super::settings::Database,
+    config: &Database,
     datetime: DateTime<Utc>,
     p0: isize,
     p50: isize,
@@ -123,7 +125,7 @@ pub struct TupleTimeSeries {
 }
 
 pub fn get_metrics_pull_requests_ages(
-    config: &super::super::settings::Database,
+    config: &Database,
 ) -> Result<TupleTimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
@@ -166,7 +168,7 @@ pub fn get_metrics_pull_requests_ages(
 }
 
 pub fn save_metrics_endpoints_num(
-    config: &super::super::settings::Database,
+    config: &Database,
     datetime: DateTime<Utc>,
     size: i32,
 ) -> Result<()> {
@@ -197,7 +199,7 @@ pub fn save_metrics_endpoints_num(
 }
 
 pub fn get_metrics_endpoints_number(
-    config: &super::super::settings::Database,
+    config: &Database,
 ) -> Result<TimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
@@ -234,7 +236,7 @@ pub fn get_metrics_endpoints_number(
 }
 
 pub fn save_metrics_zally_ignore(
-    config: &super::super::settings::Database,
+    config: &Database,
     datetime: DateTime<Utc>,
     stats: std::collections::HashMap<i64, usize>,
 ) -> Result<()> {
@@ -260,7 +262,7 @@ pub fn save_metrics_zally_ignore(
 }
 
 pub fn save_metrics_endpoints_num_per_audience(
-    config: &super::super::settings::Database,
+    config: &Database,
     datetime: DateTime<Utc>,
     stats: std::collections::HashMap<String, usize>,
 ) -> Result<()> {
@@ -291,7 +293,7 @@ pub struct I64BasedTimeSeries {
 }
 
 pub fn get_metrics_zally_ignore(
-    config: &super::super::settings::Database,
+    config: &Database,
 ) -> Result<I64BasedTimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");
@@ -328,7 +330,7 @@ pub struct StringBasedTimeSeries {
 }
 
 pub fn get_metrics_endpoints_per_audience(
-    config: &super::super::settings::Database,
+    config: &Database,
 ) -> Result<StringBasedTimeSeries> {
     let mut db_path = String::from(&config.rusqlite_path);
     db_path.push_str("/apis-catalog-all.db");

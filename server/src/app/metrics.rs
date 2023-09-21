@@ -4,19 +4,12 @@ use serde::{Deserialize, Serialize};
 
 extern crate reqwest;
 
-#[path = "../dao/mod.rs"]
-mod dao;
-use dao::catalog::*;
-
-#[path = "./apis.rs"]
-mod apis;
-use apis::*;
+use crate::app::dao::catalog::*;
+use crate::app::dao::repo_metrics::*;
+use crate::app::apis::*;
+use crate::shared::settings::*;
 
 use log::{debug, error, info};
-
-#[path = "../settings/mod.rs"]
-mod settings;
-use settings::Settings;
 
 use chrono::{DateTime, TimeZone, Utc};
 
@@ -24,10 +17,6 @@ extern crate histogram;
 use histogram::Histogram;
 
 use std::convert::TryFrom;
-
-lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
-}
 
 /*
  * Metrics related APIs
@@ -47,7 +36,7 @@ pub async fn get_all_metrics() -> impl Responder {
     info!("get all metrics");
 
     let pr_num_timeseries: Vec<(DateTime<Utc>, i32)> =
-        match dao::repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database) {
+        match crate::app::dao::repo_metrics::get_metrics_pull_requests_number(&SETTINGS.database) {
             Ok(val) => val.points,
             Err(why) => {
                 error!(
@@ -59,7 +48,7 @@ pub async fn get_all_metrics() -> impl Responder {
         };
 
     let pr_ages_timeseries: Vec<(DateTime<Utc>, i64, i64, i64, i64)> =
-        match dao::repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database) {
+        match crate::app::dao::repo_metrics::get_metrics_pull_requests_ages(&SETTINGS.database) {
             Ok(val) => val.points,
             Err(why) => {
                 error!(
@@ -71,7 +60,7 @@ pub async fn get_all_metrics() -> impl Responder {
         };
 
     let endpoints_number: Vec<(DateTime<Utc>, i32)> =
-        match dao::repo_metrics::get_metrics_endpoints_number(&SETTINGS.database) {
+        match crate::app::dao::repo_metrics::get_metrics_endpoints_number(&SETTINGS.database) {
             Ok(val) => val.points,
             Err(why) => {
                 error!("Error while getting get_metrics_endpoints_number [{}]", why);
@@ -80,7 +69,7 @@ pub async fn get_all_metrics() -> impl Responder {
         };
 
     let zally_ignore_timeseries: Vec<(DateTime<Utc>, std::collections::HashMap<i64, usize>)> =
-        match dao::repo_metrics::get_metrics_zally_ignore(&SETTINGS.database) {
+        match crate::app::dao::repo_metrics::get_metrics_zally_ignore(&SETTINGS.database) {
             Ok(val) => val.points,
             Err(why) => {
                 error!("Error while getting get_metrics_zally_ignore [{}]", why);
@@ -88,7 +77,7 @@ pub async fn get_all_metrics() -> impl Responder {
             }
         };
     let endpoints_audience_number: Vec<(DateTime<Utc>, std::collections::HashMap<String, usize>)> =
-        match dao::repo_metrics::get_metrics_endpoints_per_audience(&SETTINGS.database) {
+        match crate::app::dao::repo_metrics::get_metrics_endpoints_per_audience(&SETTINGS.database) {
             Ok(val) => val.points,
             Err(why) => {
                 error!(
@@ -100,7 +89,7 @@ pub async fn get_all_metrics() -> impl Responder {
         };
 
     //will combine PR informations with metrics
-    let merged_prs: Vec<PullRequest> = apis::get_pull_requests("MERGED").values;
+    let merged_prs: Vec<PullRequest> = get_pull_requests("MERGED").values;
     let merged_prs: Vec<(DateTime<Utc>, PullRequest)> = merged_prs
         .into_iter()
         .map(|val| {
@@ -153,19 +142,19 @@ pub async fn get_all_metrics() -> impl Responder {
 #[post("/v1/metrics/refresh")]
 pub async fn refresh_metrics() -> impl Responder {
     info!("refresh metrics");
-    dao::catalog::refresh_git_repo(&SETTINGS.catalog_path);
+    crate::app::dao::catalog::refresh_git_repo(&SETTINGS.catalog_path);
     //
     let pull_requests: PullRequests = get_pull_requests("OPEN");
 
     //keep metric pr_num
     let metrics = get_metrics_pull_requests_number(&pull_requests);
-    dao::repo_metrics::save_metrics_pull_requests_number(&SETTINGS.database, metrics.0, metrics.1)
+    crate::app::dao::repo_metrics::save_metrics_pull_requests_number(&SETTINGS.database, metrics.0, metrics.1)
         .unwrap();
     //keep metric pr_age
     let current_epoch = std::time::SystemTime::now();
     let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
     let metrics = get_metrics_pull_requests_ages_stats(&pull_requests, current_epoch.as_secs());
-    dao::repo_metrics::save_metrics_pull_requests_ages(
+    crate::app::dao::repo_metrics::save_metrics_pull_requests_ages(
         &SETTINGS.database,
         metrics.0,
         isize::try_from(metrics.1).unwrap(),
@@ -176,7 +165,7 @@ pub async fn refresh_metrics() -> impl Responder {
     .unwrap();
 
     //get # of endpoints
-    let all_specs: Vec<SpecItem> = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
+    let all_specs: Vec<SpecItem> = list_specs(SETTINGS.catalog_path.as_str());
 
     let all_specs_paths: Vec<String> = all_specs.iter().map(|val| val.path.to_string()).collect();
     info!(
@@ -190,16 +179,16 @@ pub async fn refresh_metrics() -> impl Responder {
         "Parsed [{}] specifications and got a total of [{:?}] paths",
         len, &metrics
     );
-    dao::repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1)
+    crate::app::dao::repo_metrics::save_metrics_endpoints_num(&SETTINGS.database, metrics.0, metrics.1)
         .unwrap();
 
     //save metrics zally_ignore
-    let stats = dao::catalog::get_zally_ignore(&all_specs);
-    dao::repo_metrics::save_metrics_zally_ignore(&SETTINGS.database, Utc::now(), stats).unwrap();
+    let stats = get_zally_ignore(&all_specs);
+    crate::app::dao::repo_metrics::save_metrics_zally_ignore(&SETTINGS.database, Utc::now(), stats).unwrap();
 
     //save metrics endpoints_num_per audience
-    let stats = dao::catalog::get_endpoints_num_per_audience(&all_specs);
-    dao::repo_metrics::save_metrics_endpoints_num_per_audience(
+    let stats = get_endpoints_num_per_audience(&all_specs);
+    crate::app::dao::repo_metrics::save_metrics_endpoints_num_per_audience(
         &SETTINGS.database,
         Utc::now(),
         stats,

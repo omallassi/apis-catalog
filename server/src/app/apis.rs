@@ -8,22 +8,14 @@ use serde::{Deserialize, Serialize};
 extern crate reqwest;
 use reqwest::Client;
 
-#[path = "../dao/mod.rs"]
-mod dao;
-use dao::repo_apis::*;
-use dao::repo_domains::*;
+use crate::app::dao::repo_apis::*;
+use crate::app::dao::repo_domains::*;
+use crate::app::dao::catalog::*;
+use crate::shared::settings::*;
 
 use log::{debug, error, info};
 
-#[path = "../settings/mod.rs"]
-mod settings;
-use settings::Settings;
-
 use uuid::Uuid;
-
-lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
-}
 
 /*
  * APIs & specs related APIs
@@ -47,7 +39,7 @@ pub async fn get_endpoints(info: web::Path<String>) -> impl Responder {
         endpoints: Vec::new(),
     };
 
-    let mut all_apis = dao::catalog::get_spec(SETTINGS.catalog_path.as_str(), &api);
+    let mut all_apis = get_spec(SETTINGS.catalog_path.as_str(), &api);
 
     while let Some(api) = all_apis.pop() {
         info!("Analysing file [{:?}]", api.path);
@@ -83,11 +75,11 @@ pub async fn get_all_specs() -> impl Responder {
     debug!("get_all_specs()");
     let mut specs = Specs { specs: Vec::new() };
 
-    let mut all_specs = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
+    let mut all_specs = list_specs(SETTINGS.catalog_path.as_str());
     while let Some(spec) = all_specs.pop() {
         info!("Analysing file [{:?}]", spec.path);
         let short_path =
-            dao::catalog::get_spec_short_path(String::from(&SETTINGS.catalog_dir), &spec);
+            get_spec_short_path(String::from(&SETTINGS.catalog_dir), &spec);
         let spec = Spec {
             name: String::from(short_path),
             id: spec.id,
@@ -153,7 +145,7 @@ pub struct Apis {
 pub async fn create_api(api: Json<Api>) -> impl Responder {
     info!("create api [{:?}]", api);
 
-    dao::repo_apis::add_api(&SETTINGS.database, &api.name, &api.domain_id).unwrap();
+    add_api(&SETTINGS.database, &api.name, &api.domain_id).unwrap();
 
     HttpResponse::Ok().json("")
 }
@@ -162,7 +154,7 @@ pub async fn create_api(api: Json<Api>) -> impl Responder {
 pub async fn list_all_apis() -> impl Responder {
     info!("list all apis");
 
-    let mut all_apis: Vec<ApiItem> = match dao::repo_apis::list_all_apis(&SETTINGS.database) {
+    let mut all_apis: Vec<ApiItem> = match crate::app::dao::repo_apis::list_all_apis(&SETTINGS.database) {
         Ok(all_apis) => all_apis,
         Err(why) => {
             error!("Unable to get apis: {}", why);
@@ -174,7 +166,7 @@ pub async fn list_all_apis() -> impl Responder {
 
     while let Some(api) = all_apis.pop() {
         //get domain related to this API
-        let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+        let repo_domains_dao = crate::app::dao::repo_domains::DomainImplFactory::get_impl();
         let domain = match repo_domains_dao.get_domain(&SETTINGS.database, api.domain_id) {
             Ok(val) => val,
             Err(why) => {
@@ -216,9 +208,9 @@ pub async fn get_api_by_id(path: web::Path<String>) -> impl Responder {
     info!("getting api for id [{:?}]", &id);
     let api = Uuid::parse_str(&id).unwrap();
 
-    let api = dao::repo_apis::get_api_by_id(&SETTINGS.database, api).unwrap();
+    let api = crate::app::dao::repo_apis::get_api_by_id(&SETTINGS.database, api).unwrap();
 
-    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+    let repo_domains_dao = crate::app::dao::repo_domains::DomainImplFactory::get_impl();
     let domain = repo_domains_dao
         .get_domain(&SETTINGS.database, api.domain_id)
         .unwrap();
@@ -246,7 +238,7 @@ pub async fn update_api_status_by_id(path: web::Path<String>, status: Json<Statu
         status: status.as_str(),
     };
 
-    dao::repo_apis::update_api_status(&SETTINGS.database, status_item).unwrap();
+    update_api_status(&SETTINGS.database, status_item).unwrap();
 
     HttpResponse::Ok().json("")
 }
@@ -259,7 +251,7 @@ pub async fn update_api_tier_by_id(path: web::Path<String>, tier: Json<String>) 
     let api_id = Uuid::parse_str(&id).unwrap();
     let tier_id = Uuid::parse_str(tier.as_str()).unwrap();
 
-    dao::repo_apis::update_api_tier(&SETTINGS.database, api_id, tier_id).unwrap();
+    update_api_tier(&SETTINGS.database, api_id, tier_id).unwrap();
 
     HttpResponse::Ok().json("")
 }

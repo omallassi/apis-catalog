@@ -5,25 +5,14 @@ use serde::{Deserialize, Serialize};
 
 use std::hash::{Hash, Hasher};
 
-#[path = "../dao/mod.rs"]
-mod dao;
-use dao::catalog::*;
-use dao::repo_domains::*;
-
-#[path = "./apis.rs"]
-mod apis;
+use crate::app::dao::repo_domains::*;
+use crate::app::dao::catalog::*;
+use crate::shared::settings::*;
 
 use log::{debug, error, info};
 
-#[path = "../settings/mod.rs"]
-mod settings;
-use settings::Settings;
-
 use uuid::Uuid;
 
-lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
-}
 
 /*
  * domain related APIs
@@ -85,14 +74,13 @@ pub async fn get_domains_errors() -> impl Responder {
     info!("get domains errors");
 
     //get all specs
-    let all_specs: Vec<SpecItem> = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
+    let all_specs: Vec<SpecItem> = list_specs(SETTINGS.catalog_path.as_str());
     //at this stage data = {"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
 
-    let data: std::collections::HashMap<String, usize> =
-        dao::catalog::get_endpoints_num_per_subdomain(&all_specs);
+    let data: std::collections::HashMap<String, usize> = get_endpoints_num_per_subdomain(&all_specs);
 
     //get all declared (and official) domains
-    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+    let repo_domains_dao = crate::app::dao::repo_domains::DomainImplFactory::get_impl();
     let all_domains: Vec<String> = match repo_domains_dao.list_all_domains(&SETTINGS.database) {
         Ok(all_domains) => all_domains
             .iter()
@@ -106,8 +94,7 @@ pub async fn get_domains_errors() -> impl Responder {
     //make the check
     let mut errors: Vec<DomainError> = Vec::new();
     for spec in &all_specs {
-        let short_path =
-            dao::catalog::get_spec_short_path(String::from(&SETTINGS.catalog_dir), &spec);
+        let short_path = get_spec_short_path(String::from(&SETTINGS.catalog_dir), &spec);
         let spec_domain = &spec.domain;
         //will loop over all_domains to check if domains "match or not". contains() cannot work as the yml contains /v1 and not the domain
         let mut is_contained = false;
@@ -160,10 +147,9 @@ pub async fn get_domains_errors() -> impl Responder {
 pub async fn get_domains_stats() -> impl Responder {
     info!("get domains stats");
 
-    let all_specs: Vec<SpecItem> = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
+    let all_specs: Vec<SpecItem> = list_specs(SETTINGS.catalog_path.as_str());
 
-    let data: std::collections::HashMap<String, usize> =
-        dao::catalog::get_endpoints_num_per_subdomain(&all_specs);
+    let data: std::collections::HashMap<String, usize> = get_endpoints_num_per_subdomain(&all_specs);
 
     //at this stage the  data structure contains
     //{"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
@@ -238,7 +224,7 @@ pub async fn get_domains_stats() -> impl Responder {
 pub async fn get_domains() -> impl Responder {
     info!("get domains");
 
-    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+    let repo_domains_dao = crate::app::dao::repo_domains::DomainImplFactory::get_impl();
     let mut all_domains: Vec<DomainItem> =
         match repo_domains_dao.list_all_domains(&SETTINGS.database) {
             Ok(all_domains) => all_domains,
@@ -248,9 +234,8 @@ pub async fn get_domains() -> impl Responder {
         };
 
 
-    let all_specs: Vec<SpecItem> = dao::catalog::list_specs(SETTINGS.catalog_path.as_str());
-    let non_emtpy_domains: std::collections::HashMap<String, usize> =
-        dao::catalog::get_endpoints_num_per_subdomain(&all_specs);
+    let all_specs: Vec<SpecItem> = list_specs(SETTINGS.catalog_path.as_str());
+    let non_emtpy_domains: std::collections::HashMap<String, usize> = get_endpoints_num_per_subdomain(&all_specs);
 
     //TODO : crappy!! find a way to better handle the /v1 - maybe relying on servers attr in OAI is not the right way and having dedicated OAI attributes would be easier / proper (alos taking into sonsiderations code generation plugins)
     let mut cleaned_non_empty_domain : std::collections::HashMap<String, usize> = std::collections::HashMap::new();
@@ -274,14 +259,14 @@ pub async fn get_domains() -> impl Responder {
         domains.push(domain);
     }
 
-    let domains_obj = Domains { is_read_only: dao::repo_domains::DomainImplFactory::is_read_only(), domains: domains };
+    let domains_obj = Domains { is_read_only: crate::app::dao::repo_domains::DomainImplFactory::is_read_only(), domains: domains };
 
     HttpResponse::Ok().json(domains_obj)
 }
 
 #[post("/v1/domains")]
 pub async fn create_domain(domain: Json<Domain>) -> impl Responder {
-    let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+    let repo_domains_dao = crate::app::dao::repo_domains::DomainImplFactory::get_impl();
 
     let uuid = repo_domains_dao
         .add_domain(
@@ -303,7 +288,7 @@ pub async fn delete_domain(path: web::Path<String>) -> impl Responder {
     let id = Uuid::parse_str(&id).unwrap();
 
     //check if apis are related to this domain
-    let response = match dao::repo_apis::get_apis_per_domain_id(&SETTINGS.database, id) {
+    let response = match crate::app::dao::repo_apis::get_apis_per_domain_id(&SETTINGS.database, id) {
         Ok(api) => {
             if api.len() != 0 {
                 error!("Domain [{}] has some APIs attached - cannot be deleted", id);
@@ -314,7 +299,7 @@ pub async fn delete_domain(path: web::Path<String>) -> impl Responder {
                 ))
             } else {
                 info!("No APIs related to domain [{}]", id);
-                let repo_domains_dao = dao::repo_domains::DomainImplFactory::get_impl();
+                let repo_domains_dao = crate::app::dao::repo_domains::DomainImplFactory::get_impl();
                 repo_domains_dao
                     .delete_domain(&SETTINGS.database, id)
                     .unwrap();

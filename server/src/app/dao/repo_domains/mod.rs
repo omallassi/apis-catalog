@@ -5,20 +5,17 @@ extern crate uuid;
 
 use uuid::Uuid;
 
+use crate::shared::settings::*;
+
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 
-//use rustbreak::{FileDatabase, deser::Ron};
 use log::{debug, error, info};
 
 use serde::{Deserialize, Serialize};
 
-#[path = "../../settings/mod.rs"]
-mod settings;
-use settings::Settings;
-
 lazy_static! {
-    static ref SETTINGS: settings::Settings = Settings::new().unwrap();
+    static ref SETTINGS: Settings = Settings::new().unwrap();
 }
 
 /**
@@ -27,21 +24,21 @@ lazy_static! {
 pub trait DomainRepo {
     fn list_all_domains(
         &self,
-        config: &super::super::settings::Database,
+        config: &Database,
     ) -> Result<Vec<DomainItem>>;
 
     fn add_domain(
         &self,
-        config: &super::super::settings::Database,
+        config: &Database,
         name: &str,
         description: &str,
         owner: &str,
     ) -> Result<Uuid>;
 
-    fn get_domain(&self, config: &super::super::settings::Database, id: Uuid)
+    fn get_domain(&self, config: &Database, id: Uuid)
         -> Result<DomainItem>;
 
-    fn delete_domain(&self, config: &super::super::settings::Database, id: Uuid) -> Result<()>;
+    fn delete_domain(&self, config: &Database, id: Uuid) -> Result<()>;
 }
 
 //
@@ -177,7 +174,7 @@ impl YamlBasedDomainRepo {
 impl DomainRepo for YamlBasedDomainRepo {
     fn list_all_domains(
         &self,
-        _config: &super::super::settings::Database,
+        _config: &Database,
     ) -> Result<Vec<DomainItem>> {
         let mut tuples = Vec::new();
 
@@ -202,7 +199,7 @@ impl DomainRepo for YamlBasedDomainRepo {
 
     fn add_domain(
         &self,
-        _config: &super::super::settings::Database,
+        _config: &Database,
         _name: &str,
         _description: &str,
         _owner: &str,
@@ -214,7 +211,7 @@ impl DomainRepo for YamlBasedDomainRepo {
 
     fn get_domain(
         &self,
-        _config: &super::super::settings::Database,
+        _config: &Database,
         _id: Uuid,
     ) -> Result<DomainItem> {
         info!("OLIV get_domain ");
@@ -228,7 +225,7 @@ impl DomainRepo for YamlBasedDomainRepo {
         })
     }
 
-    fn delete_domain(&self, _config: &super::super::settings::Database, _id: Uuid) -> Result<()> {
+    fn delete_domain(&self, _config: &Database, _id: Uuid) -> Result<()> {
         Ok(())
     }
 }
@@ -242,7 +239,7 @@ impl DomainRepo for DbBasedDomainRepo {
     //
     fn list_all_domains(
         &self,
-        config: &super::super::settings::Database,
+        config: &Database,
     ) -> Result<Vec<DomainItem>> {
         let mut db_path = String::from(&config.rusqlite_path);
         db_path.push_str("/apis-catalog-all.db");
@@ -276,7 +273,7 @@ impl DomainRepo for DbBasedDomainRepo {
 
     fn add_domain(
         &self,
-        config: &super::super::settings::Database,
+        config: &Database,
         name: &str,
         description: &str,
         owner: &str,
@@ -304,7 +301,7 @@ impl DomainRepo for DbBasedDomainRepo {
 
     fn get_domain(
         &self,
-        config: &super::super::settings::Database,
+        config: &Database,
         id: Uuid,
     ) -> Result<DomainItem> {
         let mut db_path = String::from(&config.rusqlite_path);
@@ -328,7 +325,7 @@ impl DomainRepo for DbBasedDomainRepo {
         Ok(row)
     }
 
-    fn delete_domain(&self, config: &super::super::settings::Database, id: Uuid) -> Result<()> {
+    fn delete_domain(&self, config: &Database, id: Uuid) -> Result<()> {
         let mut db_path = String::from(&config.rusqlite_path);
         db_path.push_str("/apis-catalog-all.db");
         {
