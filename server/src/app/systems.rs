@@ -48,7 +48,11 @@ impl Eq for System {}
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Layer {
     pub name: String,
-    pub config_color: String,
+    pub description: std::string::String,
+    #[serde(rename = "image")]
+    pub config_image_link: std::string::String,
+    #[serde(rename = "color")]
+    pub config_color: std::string::String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -85,14 +89,24 @@ fn get_all_layers_per_systems(path: &str) -> std::collections::HashMap<System, V
         match (systems_layers.contains_key(&system)) {
             true => {
                 let mut layers = systems_layers.get_mut(&system).unwrap();
-                layers.push(Layer { name: String::from(&item.layer), config_color: String::from(&item.config_color) });
+                layers.push(Layer { 
+                    name: String::from(&item.layer), 
+                    description: String::from(&item.description),
+                    config_color: String::from(&item.config_color),
+                    config_image_link: String::from(&item.config_image_link)
+                });
 
 
             },
             false => {
                 //add the system and the layer
                 let mut layers: Vec<Layer> = Vec::new();
-                layers.push(Layer { name: String::from(&item.layer), config_color: String::from(&item.config_color) });
+                layers.push(Layer { 
+                    name: String::from(&item.layer), 
+                    description: String::from(&item.description),
+                    config_color: String::from(&item.config_color),
+                    config_image_link: String::from(&item.config_image_link)
+                });
 
                 systems_layers.insert(system, layers);
             }
