@@ -31,9 +31,6 @@ async fn index(_req: HttpRequest) -> Result<NamedFile, Error> {
     Ok(NamedFile::open(path)?)
 }
 
-lazy_static! {
-    static ref SETTINGS: shared::settings::Settings = Settings::new().unwrap();
-}
 
 /**
  *
@@ -121,6 +118,7 @@ async fn main() {
             .service(app::apis::get_oldest_pr)
             .service(app::apis::get_merged_pr)
             .service(app::metrics::refresh_metrics)
+            .service(app::systems::get_all_systems)
             //Static resources mapping
             .route("/", web::get().to(index))
             .route("/static", web::get().to(index))

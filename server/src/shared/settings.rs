@@ -33,6 +33,11 @@ pub struct DomainRepoType {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct SystemsAndLayers {
+    pub systems_catalog_path: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Settings {
     pub catalog_path: String,
     pub catalog_dir: String,
@@ -40,6 +45,7 @@ pub struct Settings {
     pub database: Database,
     pub server: Server,
     pub domain_repo_type: DomainRepoType,
+    pub systems_and_layers: SystemsAndLayers,
 }
 
 lazy_static! {

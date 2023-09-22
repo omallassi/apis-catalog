@@ -16,3 +16,6 @@ rusqlite_path = "$DATABASE_RUSQLITE_PATH"
 # can be YamlBasedDomainRepo or DbBasedDomainRepo
 domain_impl = "$DOMAIN_REPO_TYPE_DOMAIN_IMPL"
 domain_catalog_path = "$DOMAIN_REPO_TYPE_DOMAIN_CATALOG_PATH"
+
+[systems_and_layers]
+systems_catalog_path = "$SYSTEMS_CATALOG_PATH"

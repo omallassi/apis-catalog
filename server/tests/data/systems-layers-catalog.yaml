@@ -1,33 +1,28 @@
-- system: Mx3
+- system: A
   layer: Application
   description: Small Description
   image: https://media-exp1.licdn.com/dms/image/C4D1BAQHfaOVQovQAsg/company-background_10000/0/1572011051004?e=2147483647&v=beta&t=I_h4FMkeaI664bZG1rkV68K6n76JrmaMq27MUI80gYI
   color: "#D8CCA3"
-- system: Mx3
+- system: A
   layer: Functional
   description: Small Description
   image: https://media-exp1.licdn.com/dms/image/C4D1BAQHfaOVQovQAsg/company-background_10000/0/1572011051004?e=2147483647&v=beta&t=I_h4FMkeaI664bZG1rkV68K6n76JrmaMq27MUI80gYI
   color: "#D8CCA3"
-- system: Mx3
+- system: A
   layer: Platform
   description: Small Description
   image: https://media-exp1.licdn.com/dms/image/C4D1BAQHfaOVQovQAsg/company-background_10000/0/1572011051004?e=2147483647&v=beta&t=I_h4FMkeaI664bZG1rkV68K6n76JrmaMq27MUI80gYI
   color: "#D8CCA3"
-- system: Bpaas
+- system: B
   layer: Application
   description: Small Description
   image: https://media-exp1.licdn.com/dms/image/C4D1BAQHfaOVQovQAsg/company-background_10000/0/1572011051004?e=2147483647&v=beta&t=I_h4FMkeaI664bZG1rkV68K6n76JrmaMq27MUI80gYI
   color: "#FF8000"
-- system: Bpaas
+- system: B
   layer: Functional
   description: Small Description
   image: https://media-exp1.licdn.com/dms/image/C4D1BAQHfaOVQovQAsg/company-background_10000/0/1572011051004?e=2147483647&v=beta&t=I_h4FMkeaI664bZG1rkV68K6n76JrmaMq27MUI80gYI
   color: "#FF9933"
-- system: Bpaas
-  layer: Platform
-  description: Small Description
-  image: https://media-exp1.licdn.com/dms/image/C4D1BAQHfaOVQovQAsg/company-background_10000/0/1572011051004?e=2147483647&v=beta&t=I_h4FMkeaI664bZG1rkV68K6n76JrmaMq27MUI80gYI
-  color: "#FFB266"
 - system: Default
   layer: Default
   description: Small Description
