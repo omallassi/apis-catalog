@@ -39,7 +39,8 @@ pub async fn get_endpoints(info: web::Path<String>) -> impl Responder {
         endpoints: Vec::new(),
     };
 
-    let mut all_apis = get_spec(SETTINGS.catalog_path.as_str(), &api);
+    //TODO - does not work for the specified api
+    let mut all_apis = list_specs(SETTINGS.catalog_path.as_str());
 
     while let Some(api) = all_apis.pop() {
         info!("Analysing file [{:?}]", api.path);

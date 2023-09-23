@@ -1,0 +1,233 @@
+openapi: 3.0.0
+info:
+  x-audience: company
+  description: History Trail App
+  version: 1.0.0
+  title: HistoryTrail AppLayer REST API
+  contact:
+    name: god
+    email: god@iamoff.xom
+
+servers:
+  - url: "/v1/audit/trails"
+
+x-systems: 
+  - bpaas
+x-layer: application
+
+paths:
+  /v1/audit/trails/events:
+    get:
+      tags:
+        - History Trails
+      operationId: getEvents
+      summary: Get history trail events, paginated, in descending order by creation date, potentially filtered by creation date
+      parameters:
+        - $ref: "#/components/parameters/event_created_before"
+        - $ref: "#/components/parameters/event_created_after"
+        - $ref: "#/components/parameters/range"
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Events"
+        "206":
+          description: partial content, restricted to 50 elements
+          headers:
+            Content-Range:
+              $ref: "#/components/headers/Content-Range"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Events"
+        "400":
+          description: the request parameters (e.g. range) are invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The client does not have the rights to call this endpoint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "416":
+          description: range out of bounds
+          headers:
+            Content-Range:
+              $ref: "#/components/headers/Content-Range"
+        "500":
+          description: The request failed due to some internal error (backend services unavailable or with internal error or some unexpected error)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/audit/trails/expired-events:
+    delete:
+      tags:
+        - Operability (Internal)
+      operationId: deleteExpiredEvents
+      summary: Delete all history trail events older than the retention period.
+      description: |
+        Trigger a purge of the eligible history trail events: older than the retention period (with regards to the event creation date).
+
+        __Note__: the data retention policy (number of weeks to keep) is defined via a server-side configuration
+      responses:
+        "204":
+          description: successful purge
+        "403":
+          description: The client does not have the rights to call this endpoint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: The request failed due to some internal error (backend services unavailable or with internal error or some unexpected error)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  headers:
+    Content-Range:
+      description: The range returned over the total amount of queried items. e.g. 10-19/100 means items 10 to 19 were returned out of 100
+      schema:
+        type: string
+        pattern: ^\d+-\d+\/\d+$
+      example: 10-19/100
+
+  parameters:
+    range:
+      name: range
+      in: query
+      style: form
+      description: specifies the range of elements to include (e.g. range=20-29 will return settings 20 to 29 inclusive). Maximum pagination range value is 50 (e.g. 50-99)
+      schema:
+        type: string
+        pattern: ^\d+-\d+$
+      example: "50-99"
+    event_created_before:
+      name: createdBefore
+      in: query
+      style: form
+      description: filter expression that can be applied to the "createdAt" field to select all events created before the specified date
+      schema:
+        type: string
+        format: date-time
+    event_created_after:
+      name: createdAfter
+      in: query
+      style: form
+      description: filter expression that can be applied to the "createdAt" field to select all events created before the specified date
+      schema:
+        type: string
+        format: date-time
+
+  schemas:
+
+    ErrorResponse:
+      type: object
+      description: A generic error response containing a code, a human readable message and an optional list of inner errors
+      properties:
+        code:
+          type: string
+          description: Error code (as per the significant events catalog)
+          example: "MX-AUDIT-00010"
+        message:
+          type: string
+          description: Message describing the error
+        timestamp:
+          type: string
+          format: date-time
+        innerErrors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorResponse"
+          example: [{
+            "code": "MX-OTHER-00210",
+            "message": "Error details"
+          }]
+
+    Events:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+
+    Event:
+      type: object
+      description: History trail event
+      properties:
+        id:
+          type: string
+        correlationId:
+          type: string
+          description: This is a correlation id that may be used to link several events together (ex. several deletion trigerred as part of the same purge request)
+        domain:
+          type: string
+          description: the domain where the event was issued
+          example: xva-management
+        subdomain:
+          type: string
+          description: the subdomain where the event was issued
+          example: xva
+        code:
+          type: string
+          description: |
+            a descriptive code of the event
+
+            By convention, the event code should be described with a verb at past tense (e.g. CREATED). When the code refers to an object, it should be put in the first place for visibility (e.g. POLICY_ASSIGNED)
+          example: DELETED
+        createdAt:
+          type: string
+          format: date-time
+          description: event creation date
+        author:
+          $ref: "#/components/schemas/Author"
+        details:
+          type: object
+          description: Key-value pairs structure to further describe an event depending on its code (ex. details for the policy being assigned to a group)
+          additionalProperties:
+            type: string
+        target:
+          $ref: "#/components/schemas/Target"
+
+    Author:
+      type: object
+      description: details of the history trail event initiator
+      properties:
+        username:
+          type: string
+          example: BO
+        tenant:
+          type: string
+
+    Target:
+      type: object
+      description: the object impacted by the history trail event
+      properties:
+        type:
+          type: string
+          description: type of the object impacted
+          example: DIFFUSION_SETTINGS
+        id:
+          type: string
+          description: identifier of the object impacted
+        label:
+          type: string
+          description: label of the object impacted
+        tenant:
+          type: string
+          description: tenant that the object impacted belongs to
+        metadata:
+          type: object
+          description: Key-value pairs structure to further describe the object impacted by the event (ex. short description, group type for groups)
+          additionalProperties:
+            type: string

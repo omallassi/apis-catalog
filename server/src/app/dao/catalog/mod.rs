@@ -3,9 +3,11 @@ use glob::glob;
 use log::{debug, info, warn};
 
 extern crate yaml_rust;
+use serde_json::to_vec;
 use yaml_rust::{Yaml, YamlLoader};
 
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 use std::path::Path;
 use std::vec::Vec;
@@ -31,137 +33,101 @@ pub struct SpecItem {
     pub api_spec: OpenAPI,
     pub audience: std::string::String,
     pub domain: std::string::String,
+    pub layer: String,
+    pub systems: Vec<String>,
 }
 
 pub fn list_specs(path: &str) -> Vec<SpecItem> {
     let mut specs = Vec::new();
-    //get connection to git repo (should be cloned as prerequisite)
-    if let Ok(repo) = get_git_repo(path) {
-        let pattern = format!("{}{}", path, "/**/*.yaml"); //TODO fragile
-        for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
-            let path = entry.display().to_string();
-            let file_path = Path::new(&path);
-            let oid: Oid = match repo.blob_path(file_path) {
-                Ok(oid) => oid,
-                Err(why) => {
-                    panic!("Unable to get File: {}", why);
-                }
-            };
-            //generate the OpenAPI
-            let blob: Blob = match repo.find_blob(oid) {
-                Ok(blob) => blob,
-                Err(why) => {
-                    panic!("Unable to get Blob: {}", why);
-                }
-            };
 
-            match serde_yaml::from_reader(blob.content()) {
-                Ok(openapi) => {
-                    //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                    //TODO this whole thing has to be reworked
-                    let audience = match get_audience_from_spec(&file_path) {
-                        Some(aud) => aud,
-                        None => String::from("N/A"),
-                    };
-                    let domain = get_domain_from_spec(&openapi);
-                    //create the API Item and add it to the returned value
-                    let spec = SpecItem {
-                        path: path,
-                        id: format!("{:?}", oid),
-                        api_spec: openapi.clone(),
-                        audience: audience,
-                        domain: domain.to_string(),
-                    };
-                    specs.push(spec);
-                }
-                Err(why) => {
-                    warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
-                }
-            }
-        }
-    } else {
-        warn!("Unable to get git repo from path [{}]", path);
-    }
+    info!("Is loading OAI specs files from [{:?}]", path);
+    let pattern = format!("{}{}", path, "/**/*.yaml");
+    for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
+        let path = entry.display().to_string();
+        let file_path = Path::new(&path);
 
-    specs
-}
+        info!("getting spec file [{:?}]", file_path);
 
-fn get_audience_from_spec(spec: &Path) -> Option<String> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(x-audience)(\s*:)(.+)").unwrap();
-    }
-    let spec_content = fs::read_to_string(spec).unwrap_or_default();
+        let f = std::fs::File::open(file_path).unwrap();
 
-    if let Some(cap) = RE.captures(spec_content.as_str()) {
-        debug!(
-            "found x-audience [{}] in spec [{:?}]",
-            cap[3].to_string(),
-            spec
-        );
-        Some(cap[3].to_string())
-    } else {
-        debug!("Unable to x-audience from [{:?}]", spec);
-        None
-    }
-}
-
-//
-pub fn get_spec(path: &str, id: &str) -> Vec<SpecItem> {
-    let mut specs = Vec::new();
-    //get connection to git repo (should be cloned as prerequisite)
-    if let Ok(repo) = get_git_repo(path) {
-        //generate the OpenAPI
-        if let Ok(oid) = Oid::from_str(id) {
-            let blob: Blob = match repo.find_blob(oid) {
-                Ok(blob) => blob,
-                Err(why) => {
-                    panic!("Unable to get Blob: {}", why);
-                }
-            };
-
-            if let Ok(openapi) = serde_yaml::from_reader(blob.content()) {
+        match serde_yaml::from_reader(f) {
+            Ok(openapi) => {
                 //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                //TODO this whole thing has to be reworked
-                let audience = match get_audience_from_spec(Path::new(path)) {
-                    Some(aud) => aud,
-                    None => String::from("N/A"),
-                };
+                let audience = get_audience_from_spec(&openapi);
                 let domain = get_domain_from_spec(&openapi);
+                let layer = get_layer_from_spec(&openapi);
+                let systems = get_systems_from_spec(&openapi);
+
                 //create the API Item and add it to the returned value
+                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                path.hash(&mut hasher);
+                let hash = hasher.finish();
+                
                 let spec = SpecItem {
-                    path: path.to_string(),
-                    id: format!("{:?}", oid),
+                    path: path,
+                    id: format!("{:?}", hash),
                     api_spec: openapi.clone(),
                     audience: audience,
                     domain: domain.to_string(),
+                    layer: layer,
+                    systems: systems,
                 };
                 specs.push(spec);
-            } else {
-                warn!("Unable to parse file [{}]", path);
+            }
+            Err(why) => {
+                warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
             }
         }
-    } else {
-        warn!("Unable to get git repo from path [{}]", path);
     }
 
     specs
+}
+
+fn get_audience_from_spec(spec: &OpenAPI) -> String {
+    let audience:String  = match spec.info.extensions.get("x-audience"){
+        Some(aud) => String::from(aud.as_str().unwrap()),
+        None => String::from("N/A"),
+    };
+
+    audience
+}
+
+fn get_layer_from_spec(spec: &OpenAPI) -> String {
+    let layer:String  = match spec.extensions.get("x-layer"){
+        Some(layer) => String::from(layer.as_str().unwrap()),
+        None => String::from("N/A"),
+    };
+
+    layer
+}
+
+fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
+    
+    let systems = match openapi.extensions.get("x-systems"){
+        Some(systems) => {
+            let mut returned_systems: Vec<String> = Vec::new();
+            for system in systems.as_array().unwrap(){
+                //did not find a way to use into_iter().collect::Vec<String>>
+                returned_systems.push(String::from(system.as_str().unwrap()));
+            }
+
+            returned_systems
+        },
+        None => {
+            let mut systems: Vec<String> = Vec::new();
+            systems.push(String::from("N/A"));        
+
+            systems
+        }
+    };
+
+    systems
 }
 
 pub fn get_spec_short_path(catalog_dir_srt: String, spec: &SpecItem) -> &str {
     let short_path = &spec.path[catalog_dir_srt.as_str().len()..spec.path.len()];
 
     short_path
-}
-
-//
-fn get_git_repo(path: &str) -> Result<Repository, git2::Error> {
-    let repo: Repository = Repository::open(path)?;
-    info!(
-        "Parsing yaml files from Git Repo [{}]",
-        path.to_string() + &"**/*.yaml".to_string()
-    );
-
-    Ok(repo)
 }
 
 pub fn refresh_git_repo(path: &str) {
@@ -209,12 +175,6 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
     }; // Result<Vec<Yaml>, ScanError>
     let doc = docs[0].as_hash().unwrap(); //Option<&Hash> et LinkedHashMap<Yaml, Yaml>;
 
-    // let iter = doc.iter();
-    // for item in iter {
-    //     println!("---------");
-    //     println!("{:?}", &item);
-    //     println!("---------");
-    // }
     let mut stats = std::collections::HashMap::new();
     //get global zally-ignore
     {
@@ -233,12 +193,6 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
                 for elt in val.as_vec().unwrap() {
                     println!("tt {:?}", elt); //TODO some zally ignore are String . as exple - tt String("M010")
                     stats.insert(elt.as_i64().unwrap(), paths.len());
-                    // println!(
-                    //     "x-zally-ignore {:?} {:?}",
-                    //     elt.as_i64(),
-                    //     elt.as_i64().unwrap()
-                    // );
-                    // println!("path len {:?}", paths.len());
                 }
             }
             None => info!("no global zally-ignore for spec {:?}", spec_name),
@@ -433,6 +387,8 @@ fn get_domain_from_spec(spec: &OpenAPI) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use crate::app::dao::catalog::SpecItem;
+
 
     #[test]
     fn test_get_endpoints_num_per_subdomain_1() {
@@ -458,6 +414,8 @@ mod tests {
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
+            layer: String::from("std::string::String"),
+            systems: Vec::new(),
         };
 
         specs.push(spec_item);
@@ -488,6 +446,8 @@ mod tests {
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
+            layer: String::from("std::string::String"),
+            systems: Vec::new(),
         };
 
         specs.push(spec_item);
@@ -511,6 +471,8 @@ mod tests {
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
+            layer: String::from("std::string::String"),
+            systems: Vec::new(),
         };
 
         specs.push(spec_item);
@@ -650,5 +612,28 @@ mod tests {
         let results = super::get_endpoints_num_per_audience_metrics(spec, "name");
 
         assert_eq!(results.get("an audience").unwrap(), &2usize);
+    }
+
+    #[test]
+    fn test_list_all_specs() {
+        let mut path = std::path::PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("./tests/data/catalog/");
+
+        let results = super::list_specs(path.into_os_string().into_string().unwrap().as_str());
+        assert_eq!(results.len(), 2);
+        //
+        let spec: &SpecItem = results.get(0).unwrap();
+        assert_eq!(spec.audience, "company");
+        assert_eq!(spec.domain, "/v1/analytics/time-series");
+        assert_eq!(spec.layer, "N/A");
+        assert_eq!(spec.systems.len(), 1);
+        assert_eq!(spec.systems[0], "N/A");
+
+        let spec: &SpecItem = results.get(1).unwrap();
+        assert_eq!(spec.audience, "company");
+        assert_eq!(spec.domain, "/v1/audit/trails");
+        assert_eq!(spec.layer, "application");
+        assert_eq!(spec.systems[0], "bpaas");
     }
 }

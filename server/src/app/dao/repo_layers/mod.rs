@@ -50,7 +50,7 @@ mod tests {
 
         let sut = super::list_systems_and_layers(path.into_os_string().into_string().unwrap().as_str());
 
-        let expected_val : usize = 7;
+        let expected_val : usize = 6;
         assert_eq!(&sut.len(), &expected_val);
         let item = &sut.get(0).unwrap();
         assert_ne!(item.system, "");

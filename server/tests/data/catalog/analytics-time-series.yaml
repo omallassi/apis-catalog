@@ -1,0 +1,396 @@
+openapi: "3.0.0"
+info:
+  title: Market Data Time Series
+  description: |
+    The Market Data Time Series API is...
+  version: "1.0"
+  x-audience: company
+  contact:
+    name: Market data time series dev
+    email: dev@nowhere.com
+x-zally-ignore:
+  - 151 # 151 for default answers
+  - 147 # 147 for accepting resources with more than 3 levels
+servers:
+  - url: /v1/analytics/time-series
+
+paths:
+  /v1/analytics/time-series/rates/swaptions/volatilities-data/providers/{provider}:
+    post:
+      summary: inserts/updates the swaption volatilities in the repository.
+      tags:
+        - Swaption volatilities
+      description: |
+        - The key of a swaption volatility point is represented by (expiry, underlyingTenor, strike).
+        - The values of a swaption volatility point are the volatilities in different formats (normal, lognormal).
+        - When a swaption volatility point key does not exist, the key/values are inserted in the repository.
+        - When a swaption volatility point key already exists, the new values are updated in the repository.
+      parameters:
+        - $ref: "#/components/parameters/ProviderPath"
+      requestBody:
+        description: a CSV representing all the swaption volatilities to insert/update
+        required: true
+        content:
+          text/csv:
+            schema:
+              $ref: "#/components/schemas/SwaptionVolatilitiesDataCsv"
+      responses:
+        "202":
+          description: |
+            - the swaption volatilities are inserted/updated using a dedicated asynchronous job.
+            - the header location contains the url to long poll in order to get the status of the job.
+          headers:
+            Location:
+              $ref: "#/components/headers/Job-Location"
+    delete:
+      tags:
+        - Swaption volatilities
+      description: |
+        - deletes one or several full swaption volatility cubes from the repository.
+        - the swaption volatility cube(s) corresponding to both specified currencies and dates will be deleted.
+      parameters:
+        - $ref: "#/components/parameters/ProviderPath"
+        - $ref: "#/components/parameters/CurrenciesQuery"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+      responses:
+        "200":
+          description: deletes the swaption volatility cubes.
+  /v1/analytics/time-series/rates/swaptions/volatilities:
+    get:
+      summary: returns the full or partial swaption volatilities cube(s) from the repository.
+      tags:
+        - Swaption volatilities
+      parameters:
+        - $ref: "#/components/parameters/ProviderQuery"
+        - $ref: "#/components/parameters/CurrenciesQuery"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+        - $ref: "#/components/parameters/RateIndexType"
+        - $ref: "#/components/parameters/Expiries"
+        - $ref: "#/components/parameters/UnderlyingTenors"
+        - $ref: "#/components/parameters/OnlyATM"
+        - $ref: "#/components/parameters/WithHeader"
+      responses:
+        "202":
+          description: |
+            - the swaption volatilities are retrieved using a dedicated asynchronous job.
+            - the header location contains the url to long poll in order to get the data.
+          headers:
+            Location:
+              $ref: "#/components/headers/Job-Location"
+components:
+  headers:
+    Job-Location:
+      schema:
+        type: string
+        pattern: ^(\/\w+)+\/jobs\/\w+$
+      required: true
+  parameters:
+    ProviderPath:
+      in: path
+      name: provider
+      description: |
+        - the provider of the market data.
+      required: true
+      schema:
+        type: string
+      example: markit
+    JobPath:
+      in: path
+      name: jobId
+      required: true
+      schema:
+        type: string
+    CurrencyPath:
+      in: path
+      name: currency
+      required: true
+      schema:
+        type: string
+    CurvePath:
+      in: path
+      name: curve
+      required: true
+      description: |
+        - we should apply the url encoding to each label.
+      schema:
+        type: string
+      example: curve=EUR+EONIA
+    ProviderQuery:
+      in: query
+      name: provider
+      required: false
+      schema:
+        type: string
+      description: |
+        - the provider of the market data
+        - the default value is ""markit"
+      example: provider=tpi
+    InstrumentTypesQuery:
+      in: query
+      name: instrumentTypes
+      required: false
+      schema:
+        type: string
+      description: |
+        - the instrument types of the market data
+      example: instrumentTypes=FUT,SWAP
+    InstrumentTypeQuery:
+      in: query
+      name: instrumentType
+      required: false
+      schema:
+        type: string
+      description: |
+        - the instrument type of the market data
+      example: instrumentType=FUT
+    CurrenciesQuery:
+      in: query
+      name: currencies
+      required: true
+      schema:
+        type: string
+        pattern: ^\w+(,\w+)*$
+      description: the list of currencies of the market data
+      example: EUR,USD
+    StartDate:
+      in: query
+      name: startDate
+      required: true
+      schema:
+        type: string
+        format: date
+      description: |
+        - the start date (inclusive) of the market data.
+        - the date has the format YYYY-MM-DD
+      example: "2020-01-13"
+    EndDate:
+      in: query
+      name: endDate
+      required: true
+      schema:
+        type: string
+        format: date
+      description: |
+        - the end date (inclusive) of the market data.
+        - the date has the format YYYY-MM-DD
+      example: "2020-01-15"
+    Expiries:
+      in: query
+      name: expiries
+      required: false
+      schema:
+        type: string
+        pattern: ^\w+(,\w+)*$
+      description: |
+        - the list of expiry tenors inside the swaption volatility cubes.
+        - the values of the cartesian product of expiries and underlyingTenors are retrieved.
+      example: 10Y,20Y
+    UnderlyingTenors:
+      in: query
+      name: underlyingTenors
+      required: false
+      schema:
+        type: string
+        pattern: ^\w+(,\w+)*$
+      description: |
+        - the list of underlying tenors inside the swaption volatility cubes.
+        - the values of the cartesian product of expiries and underlyingTenors are retrieved.
+      example: 10Y,30Y
+    Pillars:
+      in: query
+      name: pillars
+      required: false
+      schema:
+        type: string
+        pattern: ^\w+(,\w+)*$
+      description: the list of pillar labels inside the rate curves.
+      example: 10Y,20Y
+    CurvesQuery:
+      in: query
+      name: curves
+      required: true
+      schema:
+        type: string
+        pattern: ^\w+(,\w+)*$
+      description: |
+        - the list of curve labels of the rate curves.
+        - we should apply the url encoding to each label.
+      example: EUR,EONIA
+    RateIndexType:
+      in: query
+      name: rateIndexType
+      required: false
+      schema:
+        type: string
+        enum: [ibor, rfr]
+      description: |
+        - the Rate index type to use (ibor, rfr).
+        - default value is ibor.
+      example: rfr
+    OnlyATM:
+      in: query
+      name: onlyATM
+      required: false
+      schema:
+        type: boolean
+      description: |
+        - onlyATM=true will select only ATM=Y values or when Relative strike is equal to 100, or Strike abs is ATM or ATMF (depending on the market data).
+        - onlyATM=false will select all values. 
+        - By default, onlyATM=false.
+      example: true
+    UnderlyingTypeQuery:
+      in: query
+      name: underlyingType
+      required: false
+      schema:
+        type: string
+      description: the underlying type of a market data (EQUITY, INDEX...)
+    UnderlyingLabelsQuery:
+      in: query
+      name: underlyingLabels
+      required: false
+      schema:
+        type: string
+        pattern: ^\w+(,\w+)*$
+      description: the list of underlying labels of a market data.
+      example: CAC40,MIC
+    CurrencyPairs:
+      in: query
+      name: currencyPairs
+      required: false
+      schema:
+        type: string
+        pattern: ^\w+(,\w+)*$
+      description: the list of currency pairs of a market data.
+      example: AUDBRL,EURUSD
+    FloatingExpiries:
+      in: query
+      name: floatingExpiries
+      required: false
+      schema:
+        type: boolean
+      description: |
+        - floatingExpirie
+      example: false
+    WithHeader:
+      in: query
+      name: withHeaders
+      required: false
+      schema:
+        type: boolean
+      description: |
+        - withHeaders=true will export header titles in the produced csv files, just before the output values lines.
+        - withHeaders=false will not export header titles in the produced csv files; the output values are exported starting the first line. 
+        - By default, withHeaders=true.
+      example: true
+  schemas:
+    SwaptionVolatilitiesDataCsv:
+      description: |
+        - A CSV representation of a complete swaption volatilities cube to insert
+      type: string
+    SwaptionVolatilitiesCsv:
+      description: |
+        - A CSV 
+      type: string
+    SwaptionVolatilitiesSabrCsv:
+      description: |
+        - A CSV representation of a queried complete/partial swaption volatilities cube with SABR parameters
+      type: string
+    RateCurvesCsv:
+      description: A CSV representation of a complete/partial rate curve(s)
+      type: string
+    RateFxCurvesCsv:
+      description: A CSV representation of a complete/partial FX rate curve(s)
+      type: string
+    RateMarketQuotesCsv:
+      description: A CSV representation of a complete/partial rate market quotes
+      type: string
+    RateQuotesFxCurvesCsv:
+      description: A CSV representation of a complete/partial cross currency basis swaps
+      type: string
+    CapFloorVolatilitiesCsv:
+      description: |
+        - A CSV representation of a queried complete/partial cap/floor volatilities
+      type: string
+    CapletFloorletVolatilitiesDataCsv:
+      description: |
+        - A CSV representation of a complete caplet/floorlet volatilities to insert
+      type: string
+    CapletFloorletVolatilitiesCsv:
+      description: |
+        - A CSV representation of a complete caplet/floorlet volatilities
+      type: string
+    CapletFloorletVolatilitiesSabrCsv:
+      description: |
+        - A CSV representation of a complete caplet/floorlet volatilities with SABR parameters
+      type: string
+    UnderlyingsCsv:
+      description: |
+        - A CSV representation of a underlying types and labels
+      type: string
+    EquitySpotsCsv:
+      description: |
+        - A CSV representation of a complete equity spots
+      type: string
+    EquityForwardCurvesCsv:
+      description: |
+        - A CSV representation of a complete equity forward curves
+      type: string
+    EquityVolatilitiesCsv:
+      description: |
+        - A CSV representation of a complete equity volatilities
+      type: string
+    FxSpotsCsv:
+      description: |
+        - A CSV representation of a complete fx spots
+      type: string
+    FxForwardCurvesCsv:
+      description: |
+        - A CSV representation of a complete fx forward curves
+      type: string
+    FxBrokerQuotesCsv:
+      description: |
+        - A CSV representation of a complete fx broker quotes
+      type: string
+    FxVolatilitiesCsv:
+      description: |
+        - A CSV representation of a complete fx volatilities
+      type: string
+    ErrorBody:
+      type: object
+      properties:
+        message:
+          type: string
+tags:
+  - name: Swaption volatilities
+    description: Everything about Swaption volatilities
+  - name: Rate curves
+    description: Everything about Rate curves
+  - name: Rate FX curves
+    description: Everything about Rate FX curves
+  - name: Rate market quotes
+    description: Everything about Rate market quotes
+  - name: Cross currency basis swaps
+    description: Everything about Cross currency basis swaps
+  - name: Rate cap/floor volatilities
+    description: Everything about Rate cap/floor volatilities
+  - name: Rate caplet/floorlet volatilities
+    description: Everything about Rate caplet/floorlet volatilities
+  - name: Equity spots
+    description: Everything about Equity spots
+  - name: Equity forward curves
+    description: Everything about Equity forward curves
+  - name: Equity volatilities
+    description: Everything about Equity volatilities
+  - name: FX spots
+    description: Everything about FX spots
+  - name: FX forward curves
+    description: Everything about FX forward curves
+  - name: FX broker quotes
+    description: Everything about FX broker quotes
+  - name: FX volatilities
+    description: Everything about FX volatilities
+  - name: Job
+    description: Everything about Job
