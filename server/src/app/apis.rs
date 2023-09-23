@@ -293,10 +293,19 @@ pub struct User {
     pub email_address: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct OldestPrLimit {
+    limit: Option<usize>,
+}
+
 #[get("/v1/pull-requests")]
-pub async fn get_oldest_pr() -> impl Responder {
-    let limit = 3;
-    info!("get oldest pull-request");
+pub async fn get_oldest_pr(param: web::Query<OldestPrLimit>) -> impl Responder {
+    let  limit = match param.limit {
+        Some(val) => val,
+        None => 5,
+    };
+
+    info!("get oldest pull-request with limit {:?}", limit);
     let pull_requests: PullRequests = get_pull_requests("OPEN");
 
     let current_epoch = std::time::SystemTime::now();
