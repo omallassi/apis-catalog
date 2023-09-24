@@ -71,7 +71,7 @@ fn get_all_layers_per_systems(path: &str) -> std::collections::HashMap<System, V
 
         match (systems_layers.contains_key(&system)) {
             true => {
-                let mut layers = systems_layers.get_mut(&system).unwrap();
+                let layers = systems_layers.get_mut(&system).unwrap();
                 layers.push(Layer { 
                     name: String::from(&item.layer), 
                     description: String::from(&item.description),
