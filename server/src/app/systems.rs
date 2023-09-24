@@ -1,10 +1,8 @@
-use log::{debug, error, info};
+use log::{debug, info};
 use serde::{Deserialize, Serialize};
-use serde::ser::Serializer;
-use serde::de::{Deserializer, Error as _};
 
-use actix_web::{get, post, Responder};
-use actix_web::{web, HttpResponse};
+use actix_web::{get, Responder};
+use actix_web::HttpResponse;
 
 use crate::app::dao::repo_layers::*;
 use crate::shared::settings::*;
@@ -29,21 +27,6 @@ impl PartialEq for System {
 }
 
 impl Eq for System {}
-
-// impl Serialize for System {
-//     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-//         serializer.serialize_str(&format!("{}", self.name))
-//     }
-// }
-
-// impl<'de> Deserialize<'de> for System {
-//     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-//         let data = <&str>::deserialize(deserializer)?;
-//         let name: String = String::from(data);
-
-//         Ok(Self { name })
-//     }
-// }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Layer {

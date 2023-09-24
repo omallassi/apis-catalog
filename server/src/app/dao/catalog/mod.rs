@@ -3,7 +3,6 @@ use glob::glob;
 use log::{debug, info, warn};
 
 extern crate yaml_rust;
-use serde_json::to_vec;
 use yaml_rust::{Yaml, YamlLoader};
 
 use std::collections::HashMap;
@@ -12,9 +11,6 @@ use std::hash::{Hash, Hasher};
 use std::path::Path;
 use std::vec::Vec;
 
-extern crate git2;
-use git2::{Blob, Oid, Repository};
-
 use openapiv3::OpenAPI;
 use serde_yaml;
 
@@ -22,8 +18,6 @@ use cmd_lib::run_cmd;
 
 extern crate regex;
 use regex::Regex;
-
-use std::fs;
 
 //
 #[derive(Debug, Clone)]
