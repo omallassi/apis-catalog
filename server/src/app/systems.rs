@@ -63,23 +63,24 @@ pub async fn get_all_systems() -> impl Responder {
 #[get("/v1/systems/{system}/layers/{layer}")]
 pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, String)>) -> impl Responder{
     let (system, layer) = path.into_inner();
-    info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} ", system, layer);
-    
-    let domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog_path, system, layer);
+
+    let domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog_path, &system, &layer);
+
+    info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} - got [{:?}] domains", &system, &layer, &domains.len());
 
     HttpResponse::Ok().json(domains)
 
 }
 
-fn get_domains_per_system_and_layer(path: &str, system: String, layer: String) -> HashSet<String>{
+fn get_domains_per_system_and_layer(path: &str, system: &String, layer: &String) -> HashSet<String>{
     let mut domains = HashSet::new();
 
     let all_specs = catalog::list_specs(path);
     //loop over the list and check system and layer equality
     for spec in all_specs{
-        match spec.systems.contains(&system){
+        match spec.systems.contains(&system.to_lowercase()){
             true => {
-                match spec.layer.eq(&layer) {
+                match spec.layer.eq(&layer.to_lowercase()) {
                     true => {
                         domains.insert(spec.domain);
                     }, 
@@ -178,11 +179,15 @@ mod tests {
         path.push("./tests/data/catalog/");
         let path_as_str = path.into_os_string().into_string().unwrap();
 
-        let sut = super::get_domains_per_system_and_layer(&path_as_str, String::from("bpaas"), String::from("application"));
+        let sut = super::get_domains_per_system_and_layer(&path_as_str, &String::from("bpaas"), &String::from("application"));
+        assert_eq!(sut.len(), 1);
+        assert_eq!(sut.iter().next().unwrap(), "/v1/audit/trails");
+        //same test as above but check case 
+        let sut = super::get_domains_per_system_and_layer(&path_as_str, &String::from("BPaas"), &String::from("application"));
         assert_eq!(sut.len(), 1);
         assert_eq!(sut.iter().next().unwrap(), "/v1/audit/trails");
 
-        let sut = super::get_domains_per_system_and_layer(&path_as_str, String::from("bpaas"), String::from("functional"));
+        let sut = super::get_domains_per_system_and_layer(&path_as_str, &String::from("bpaas"), &String::from("functional"));
         assert_eq!(sut.len(), 0);
     }
 }
