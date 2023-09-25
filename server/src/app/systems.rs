@@ -1,11 +1,15 @@
+use std::collections::HashSet;
+
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
 
-use actix_web::{get, Responder};
+use actix_web::{web, get, Responder};
 use actix_web::HttpResponse;
 
 use crate::app::dao::repo_layers::*;
 use crate::shared::settings::*;
+
+use super::dao::catalog;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct System {
@@ -45,7 +49,7 @@ pub struct Systems {
 
 #[get("/v1/systems")]
 pub async fn get_all_systems() -> impl Responder {
-    debug!("get_all_systems()");
+    info!("get_all_systems()");
     
     let all = self::get_all_layers_per_systems(&SETTINGS.systems_and_layers.systems_catalog_path);
     let mut all_as_vec: Vec<System> = Vec::new();
@@ -54,6 +58,45 @@ pub async fn get_all_systems() -> impl Responder {
     }
 
     HttpResponse::Ok().json(Systems{systems: all_as_vec})
+}
+
+#[get("/v1/systems/{system}/layers/{layer}")]
+pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, String)>) -> impl Responder{
+    let (system, layer) = path.into_inner();
+    info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} ", system, layer);
+    
+    let domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog_path, system, layer);
+
+    HttpResponse::Ok().json(domains)
+
+}
+
+fn get_domains_per_system_and_layer(path: &str, system: String, layer: String) -> HashSet<String>{
+    let mut domains = HashSet::new();
+
+    let all_specs = catalog::list_specs(path);
+    //loop over the list and check system and layer equality
+    for spec in all_specs{
+        match spec.systems.contains(&system){
+            true => {
+                match spec.layer.eq(&layer) {
+                    true => {
+                        domains.insert(spec.domain);
+                    }, 
+                    false => {
+                        debug!("spec [{:?}] matches system [{:?}] but not layer [{:?}]", spec.path, system, layer);
+                    }
+                }
+            
+            }, 
+            false => {
+                debug!("spec [{:?}] does not belong to system [{:?}] and layer [{:?}]", spec.path, system, layer);
+            }
+        }
+    }
+
+    domains
+
 }
 
 fn get_all_layers_per_systems(path: &str) -> std::collections::HashMap<System, Vec<Layer>>{
@@ -126,5 +169,20 @@ mod tests {
         assert_eq!(layers.is_none(), false);
         let layers = sut.get(&super::System {name: String::from("B"), layers: Vec::new()}).unwrap();
         assert_eq!(layers.len(), 2);
+    }
+
+    #[test]
+    fn test_get_domain_per_system_and_layer(){
+        let mut path = std::path::PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("./tests/data/catalog/");
+        let path_as_str = path.into_os_string().into_string().unwrap();
+
+        let sut = super::get_domains_per_system_and_layer(&path_as_str, String::from("bpaas"), String::from("application"));
+        assert_eq!(sut.len(), 1);
+        assert_eq!(sut.iter().next().unwrap(), "/v1/audit/trails");
+
+        let sut = super::get_domains_per_system_and_layer(&path_as_str, String::from("bpaas"), String::from("functional"));
+        assert_eq!(sut.len(), 0);
     }
 }

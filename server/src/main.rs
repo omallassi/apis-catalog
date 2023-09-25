@@ -119,6 +119,7 @@ async fn main() {
             .service(app::apis::get_merged_pr)
             .service(app::metrics::refresh_metrics)
             .service(app::systems::get_all_systems)
+            .service(app::systems::get_all_domains_per_system_and_layer)
             //Static resources mapping
             .route("/", web::get().to(index))
             .route("/static", web::get().to(index))
