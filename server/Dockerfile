@@ -2,7 +2,7 @@
 # Will build the base image (incl. apis-catalog server and script to start it)
 #
 
-FROM rust:1.58.1-buster AS builder
+FROM rust:1.72.1-buster AS builder
 RUN apt-get update
 
 WORKDIR /apis-catalog
@@ -12,7 +12,7 @@ RUN cargo build
 #
 #
 #
-FROM rust:1.58.1-buster AS runner
+FROM rust:1.72.1-buster AS runner
 RUN apt-get update && apt-get -y install gettext-base
 
 WORKDIR /apis-catalog
