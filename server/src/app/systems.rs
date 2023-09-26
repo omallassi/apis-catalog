@@ -60,15 +60,29 @@ pub async fn get_all_systems() -> impl Responder {
     HttpResponse::Ok().json(Systems{systems: all_as_vec})
 }
 
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+pub struct DomainsPerSystemAndLayer {
+    pub system: String,
+    pub layer: String, 
+    pub domains: Vec<String>,
+}
+
 #[get("/v1/systems/{system}/layers/{layer}")]
 pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, String)>) -> impl Responder{
     let (system, layer) = path.into_inner();
 
-    let domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog_path, &system, &layer);
+    let returned_domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog_path, &system, &layer);
 
-    info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} - got [{:?}] domains", &system, &layer, &domains.len());
+    info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} - got [{:?}] domains", &system, &layer, &returned_domains.len());
 
-    HttpResponse::Ok().json(domains)
+    let response = DomainsPerSystemAndLayer {
+        system : String::from(&system),
+        layer :  String::from(&layer),
+        domains: returned_domains.into_iter().collect()
+    };
+
+    HttpResponse::Ok().json(response)
 
 }
 
