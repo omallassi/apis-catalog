@@ -61,7 +61,7 @@ impl Settings {
             Err(_why) => String::from("server/config/local"),
         };
 
-        info!("Will load Configiuration from file - [{:?}]", config_file_path);
+        info!("Will load Configuration from file - [{:?}]", config_file_path);
 
         settings
             .merge(config::File::with_name(config_file_path.as_str()))

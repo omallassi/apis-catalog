@@ -22,9 +22,25 @@ extern crate lazy_static;
 /**
  * To server static pages
  */
-async fn index(_req: HttpRequest) -> Result<NamedFile, Error> {
+async fn index(req: HttpRequest) -> Result<NamedFile, Error> {
+    //info!("Requested Resource [{:?}]", req.match_info().query("filename") );
+
     let mut path: PathBuf = PathBuf::from(&SETTINGS.server.static_resources_path);
     path.push("index.html");
+
+    // match req.match_info().query("filename").parse::<PathBuf>() {
+    //     Ok(val) => {
+    //         if(val.eq(&PathBuf::from(""))){
+    //             path.push("index.html");
+    //         }
+    //         else{
+    //             path.push(val);
+    //         }
+    //     }
+    //     Err(_err) => {
+    //         path.push("index.html");
+    //     }
+    // }
 
     info!("Loading page [{:?}]", path);
 
@@ -121,12 +137,18 @@ async fn main() {
             .service(app::systems::get_all_systems)
             .service(app::systems::get_all_domains_per_system_and_layer)
             //Static resources mapping
-            .route("/", web::get().to(index))
-            .route("/static", web::get().to(index))
-            .route("/domains", web::get().to(index))
-            .route("/reviews", web::get().to(index))
-            .route("/apis", web::get().to(index))
-            .route("/envs", web::get().to(index))
+            .service(actix_files::Files::new("/",  &SETTINGS.server.static_resources_path)
+                .redirect_to_slash_directory()
+                //.show_files_listing()
+                .index_file("index.html"))
+            //.route("/", web::get().to(index))
+            //.route("/static/", web::get().to(index))
+            //.route("/domains", web::get().to(index))
+            //.route("/reviews", web::get().to(index))
+            //.route("/apis", web::get().to(index))
+            //.route("/envs", web::get().to(index))
+            //.route("/layers", web::get().to(index))
+            
             //keep it at last position (in URLs mappings)
             // .service(
             //     Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"),
