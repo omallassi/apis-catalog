@@ -7,7 +7,7 @@ use log::info;
 extern crate config;
 use config::ConfigError;
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 #[derive(Debug, Deserialize)]
 pub struct StashConfig {
@@ -72,6 +72,6 @@ impl Settings {
             .unwrap();
 
         info!("Configuration has been loaded - [{:?}]", settings);
-        settings.try_into()
+        settings.try_deserialize::<Settings>()
     }
 }
