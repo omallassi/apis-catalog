@@ -1,6 +1,6 @@
 extern crate glob;
 use glob::glob;
-use log::{debug, info, warn};
+use log::{debug, info, warn, error};
 
 extern crate yaml_rust;
 use yaml_rust::{Yaml, YamlLoader};
@@ -127,6 +127,13 @@ pub fn get_spec_short_path(catalog_dir_srt: String, spec: &SpecItem) -> &str {
 pub fn refresh_git_repo(path: &str) {
     //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
     //TODO be more proper on error management here.typical case: credentials to git pull are no longer working...
+
+
+    //git clone https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHLp@stash.murex.com/scm/paa/apis-catalog.git
+    //git pull https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHLp@stash.murex.com/scm/paa/apis-catalog.git
+
+    //git clone https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHL@stash.murex.com/projects/MX/repos/v3.1.build.git
+
     run_cmd!("cd {}; git pull", path).unwrap();
     info!("Refresh Git Repo with result [{:?}]", "result");
 }
@@ -174,7 +181,7 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
     {
         match doc.get(&Yaml::String(String::from("x-zally-ignore"))) {
             Some(val) => {
-                println!("x-zally-ignore {:?}", val);
+                info!("x-zally-ignore {:?}", val);
 
                 let paths = doc
                     .get(&Yaml::String(String::from("paths")))
@@ -182,11 +189,20 @@ fn get_zally_ignore_metrics(spec: &str, spec_name: &str) -> std::collections::Ha
                     .as_hash()
                     .unwrap();
 
-                println!("x-paths {:?}", paths);
+                info!("x-paths {:?}", paths);
 
                 for elt in val.as_vec().unwrap() {
-                    println!("tt {:?}", elt); //TODO some zally ignore are String . as exple - tt String("M010")
-                    stats.insert(elt.as_i64().unwrap(), paths.len());
+                    match elt.as_i64() {
+                        Some(val) => {
+                            stats.insert(val, paths.len());
+                        }, 
+                        None => {
+                            //some zally ignore are String . as exple - tt String("M010")
+                            warn!("unable to parse zally-ignore {:?}", elt);
+                        },
+                    };
+
+                    
                 }
             }
             None => info!("no global zally-ignore for spec {:?}", spec_name),
