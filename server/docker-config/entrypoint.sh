@@ -7,8 +7,8 @@ envsubst < "./config/local-template.toml" > "./config/local.toml"
 cat ./config/local.toml
 
 
-echo -e "\033[1;32m*** Cloning the api repo [$REPO_TO_CLONE] in [$CATALOG_PATH] ***\033[0m"
-git clone $REPO_TO_CLONE $CATALOG_PATH
+echo -e "\033[1;32m*** Cloning the api repo [$CATALOG_GIT_URL] in [$CATALOG_PATH] ***\033[0m"
+git clone $CATALOG_GIT_URL $CATALOG_PATH
 
 # Start the server
 echo -e "\033[1;32m*** Starting apis-catalog Server ***\033[0m"
