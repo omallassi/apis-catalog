@@ -31,6 +31,8 @@ pub struct SpecItem {
     pub systems: Vec<String>,
 }
 
+const DEFAULT_SYSTEM_LAYER: &str = "default";
+
 pub fn list_specs(path: &str) -> Vec<SpecItem> {
     let mut specs = Vec::new();
 
@@ -80,7 +82,7 @@ pub fn list_specs(path: &str) -> Vec<SpecItem> {
 fn get_audience_from_spec(spec: &OpenAPI) -> String {
     let audience:String  = match spec.info.extensions.get("x-audience"){
         Some(aud) => String::from(aud.as_str().unwrap()),
-        None => String::from("N/A"),
+        None => String::from(DEFAULT_SYSTEM_LAYER),
     };
 
     audience
@@ -89,7 +91,7 @@ fn get_audience_from_spec(spec: &OpenAPI) -> String {
 fn get_layer_from_spec(spec: &OpenAPI) -> String {
     let layer:String  = match spec.extensions.get("x-layer"){
         Some(layer) => String::from(layer.as_str().unwrap()),
-        None => String::from("N/A"),
+        None => String::from(DEFAULT_SYSTEM_LAYER),
     };
 
     layer
@@ -109,7 +111,7 @@ fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
         },
         None => {
             let mut systems: Vec<String> = Vec::new();
-            systems.push(String::from("N/A"));        
+            systems.push(String::from(DEFAULT_SYSTEM_LAYER));        
 
             systems
         }
@@ -642,9 +644,9 @@ mod tests {
         let spec: &SpecItem = results.get(0).unwrap();
         assert_eq!(spec.audience, "company");
         assert_eq!(spec.domain, "/v1/analytics/time-series");
-        assert_eq!(spec.layer, "N/A");
+        assert_eq!(spec.layer, super::DEFAULT_SYSTEM_LAYER);
         assert_eq!(spec.systems.len(), 1);
-        assert_eq!(spec.systems[0], "N/A");
+        assert_eq!(spec.systems[0], super::DEFAULT_SYSTEM_LAYER);
 
         let spec: &SpecItem = results.get(1).unwrap();
         assert_eq!(spec.audience, "company");
