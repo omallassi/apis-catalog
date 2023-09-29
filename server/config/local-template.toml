@@ -1,5 +1,7 @@
+[catalog]
 catalog_path = "$CATALOG_PATH"
 catalog_dir = "$CATALOG_DIR"
+catalog_git_url = "$CATALOG_GIT_URL"
 
 [stash_config]
 base_uri = "$STASH_CONFIG_BASE_URI"

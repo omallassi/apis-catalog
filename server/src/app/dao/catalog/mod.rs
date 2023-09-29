@@ -124,18 +124,24 @@ pub fn get_spec_short_path(catalog_dir_srt: String, spec: &SpecItem) -> &str {
     short_path
 }
 
-pub fn refresh_git_repo(path: &str) {
+pub fn refresh_git_repo(catalog_path: &str, catalog_git_url: &str) {
     //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
     //TODO be more proper on error management here.typical case: credentials to git pull are no longer working...
 
 
     //git clone https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHLp@stash.murex.com/scm/paa/apis-catalog.git
-    //git pull https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHLp@stash.murex.com/scm/paa/apis-catalog.git
+    //git pull  https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHLp@stash.murex.com/scm/paa/apis-catalog.git
 
     //git clone https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHL@stash.murex.com/projects/MX/repos/v3.1.build.git
 
-    run_cmd!("cd {}; git pull", path).unwrap();
-    info!("Refresh Git Repo with result [{:?}]", "result");
+    match run_cmd!("cd {}; git pull {}", &catalog_path, &catalog_git_url){
+        Ok(val) => {
+            info!("Refresh Git Repo [{:?}] on results [{:?}]", catalog_git_url, catalog_path);
+        }, 
+        Err(e) => {
+            error!("Error while refreshing Git Repo [{:?}] on results [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+        }
+    }
 }
 
 pub fn get_zally_ignore(all_specs: &Vec<SpecItem>) -> std::collections::HashMap<i64, usize> {

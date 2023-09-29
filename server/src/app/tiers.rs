@@ -1,12 +1,12 @@
 use actix_web::web::Json;
 use actix_web::{get, post, Responder};
-use actix_web::{HttpResponse};
+use actix_web::HttpResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::app::dao::repo_apis::*;
 use crate::shared::settings::*;
 
-use log::{debug, error, info};
+use log:: info;
 
 use uuid::Uuid;
 

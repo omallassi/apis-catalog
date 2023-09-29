@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 extern crate reqwest;
 
 use crate::app::dao::catalog::*;
-use crate::app::dao::repo_metrics::*;
 use crate::app::apis::*;
 use crate::shared::settings::*;
 
@@ -142,7 +141,7 @@ pub async fn get_all_metrics() -> impl Responder {
 #[post("/v1/metrics/refresh")]
 pub async fn refresh_metrics() -> impl Responder {
     info!("refresh metrics");
-    crate::app::dao::catalog::refresh_git_repo(&SETTINGS.catalog_path);
+    crate::app::dao::catalog::refresh_git_repo(&SETTINGS.catalog.catalog_path, &SETTINGS.catalog.catalog_git_url);
     //
     let pull_requests: PullRequests = get_pull_requests("OPEN");
 
@@ -165,7 +164,7 @@ pub async fn refresh_metrics() -> impl Responder {
     .unwrap();
 
     //get # of endpoints
-    let all_specs: Vec<SpecItem> = list_specs(SETTINGS.catalog_path.as_str());
+    let all_specs: Vec<SpecItem> = list_specs(SETTINGS.catalog.catalog_path.as_str());
 
     let all_specs_paths: Vec<String> = all_specs.iter().map(|val| val.path.to_string()).collect();
     info!(

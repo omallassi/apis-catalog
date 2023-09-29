@@ -7,7 +7,7 @@ use log::info;
 extern crate config;
 use config::ConfigError;
 
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct StashConfig {
@@ -38,9 +38,16 @@ pub struct SystemsAndLayers {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Settings {
+pub struct Catalog {
     pub catalog_path: String,
     pub catalog_dir: String,
+    pub catalog_git_url: String,
+}
+
+
+#[derive(Debug, Deserialize)]
+pub struct Settings {
+    pub catalog: Catalog,
     pub stash_config: StashConfig,
     pub database: Database,
     pub server: Server,

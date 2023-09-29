@@ -40,7 +40,7 @@ pub async fn get_endpoints(info: web::Path<String>) -> impl Responder {
     };
 
     //TODO - does not work for the specified api
-    let mut all_apis = list_specs(SETTINGS.catalog_path.as_str());
+    let mut all_apis = list_specs(SETTINGS.catalog.catalog_path.as_str());
 
     while let Some(api) = all_apis.pop() {
         info!("Analysing file [{:?}]", api.path);
@@ -76,11 +76,11 @@ pub async fn get_all_specs() -> impl Responder {
     debug!("get_all_specs()");
     let mut specs = Specs { specs: Vec::new() };
 
-    let mut all_specs = list_specs(SETTINGS.catalog_path.as_str());
+    let mut all_specs = list_specs(SETTINGS.catalog.catalog_path.as_str());
     while let Some(spec) = all_specs.pop() {
         info!("Analysing file [{:?}]", spec.path);
         let short_path =
-            get_spec_short_path(String::from(&SETTINGS.catalog_dir), &spec);
+            get_spec_short_path(String::from(&SETTINGS.catalog.catalog_dir), &spec);
         let spec = Spec {
             name: String::from(short_path),
             id: spec.id,

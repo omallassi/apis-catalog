@@ -72,7 +72,7 @@ pub struct DomainsPerSystemAndLayer {
 pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, String)>) -> impl Responder{
     let (system, layer) = path.into_inner();
 
-    let returned_domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog_path, &system, &layer);
+    let returned_domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog.catalog_path, &system, &layer);
 
     info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} - got [{:?}] domains", &system, &layer, &returned_domains.len());
 
@@ -127,7 +127,7 @@ fn get_all_layers_per_systems(path: &str) -> std::collections::HashMap<System, V
             layers: Vec::new(),
         };
 
-        match (systems_layers.contains_key(&system)) {
+        match systems_layers.contains_key(&system) {
             true => {
                 let layers = systems_layers.get_mut(&system).unwrap();
                 layers.push(Layer { 

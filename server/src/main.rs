@@ -9,7 +9,7 @@ mod app;
 mod shared;
 use shared::settings::*;
 
-use actix_files::{Files, NamedFile};
+use actix_files::NamedFile;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use actix_web::{HttpRequest, Result, Error};
 use std::path::PathBuf;
@@ -22,7 +22,7 @@ extern crate lazy_static;
 /**
  * To server static pages
  */
-async fn index(req: HttpRequest) -> Result<NamedFile, Error> {
+async fn index(_req: HttpRequest) -> Result<NamedFile, Error> {
     //info!("Requested Resource [{:?}]", req.match_info().query("filename") );
 
     let mut path: PathBuf = PathBuf::from(&SETTINGS.server.static_resources_path);
