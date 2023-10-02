@@ -32,15 +32,14 @@ pub struct Endpoint {
 }
 
 //#[get("/v1/endpoints/{api}")]
-pub async fn get_endpoints(info: web::Path<String>) -> impl Responder {
+pub async fn get_endpoints(_info: web::Path<String>) -> impl Responder {
 
-    let api = info.into_inner();
     let mut endpoints = Endpoints {
         endpoints: Vec::new(),
     };
 
     //TODO - does not work for the specified api
-    let mut all_apis = list_specs(&SETTINGS.catalogs[0]);
+    let mut all_apis = list_specs(&SETTINGS.catalogs);
 
     while let Some(api) = all_apis.pop() {
         info!("Analysing file [{:?}]", api.path);
@@ -76,11 +75,12 @@ pub async fn get_all_specs() -> impl Responder {
     debug!("get_all_specs()");
     let mut specs = Specs { specs: Vec::new() };
 
-    let mut all_specs = list_specs(&SETTINGS.catalogs[0]);
+    let mut all_specs = list_specs(&SETTINGS.catalogs);
     while let Some(spec) = all_specs.pop() {
         info!("Analysing file [{:?}]", spec.path);
-        let short_path =
-            get_spec_short_path(String::from(&SETTINGS.catalogs[0].catalog_dir), &spec);
+
+        let short_path = get_spec_short_path(String::from(&spec.catalog_dir), &spec);
+
         let spec = Spec {
             name: String::from(short_path),
             id: spec.id,

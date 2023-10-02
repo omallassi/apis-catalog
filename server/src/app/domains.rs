@@ -74,7 +74,7 @@ pub async fn get_domains_errors() -> impl Responder {
     info!("get domains errors");
 
     //get all specs
-    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs[0]);
+    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs);
     //at this stage data = {"N/A - servers not specified": 11, "/v1/settlement/operational-arrangement": 8, "/v1/market-risk/scenarios": 10,....
 
     let data: std::collections::HashMap<String, usize> = get_endpoints_num_per_subdomain(&all_specs);
@@ -94,7 +94,7 @@ pub async fn get_domains_errors() -> impl Responder {
     //make the check
     let mut errors: Vec<DomainError> = Vec::new();
     for spec in &all_specs {
-        let short_path = get_spec_short_path(String::from(&SETTINGS.catalogs[0].catalog_dir), &spec);
+        let short_path = get_spec_short_path(String::from(&spec.catalog_dir), &spec);
         let spec_domain = &spec.domain;
         //will loop over all_domains to check if domains "match or not". contains() cannot work as the yml contains /v1 and not the domain
         let mut is_contained = false;
@@ -147,7 +147,7 @@ pub async fn get_domains_errors() -> impl Responder {
 pub async fn get_domains_stats() -> impl Responder {
     info!("get domains stats");
 
-    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs[0]);
+    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs);
 
     let data: std::collections::HashMap<String, usize> = get_endpoints_num_per_subdomain(&all_specs);
 
@@ -234,7 +234,7 @@ pub async fn get_domains() -> impl Responder {
         };
 
 
-    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs[0]);
+    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs);
     let non_emtpy_domains: std::collections::HashMap<String, usize> = get_endpoints_num_per_subdomain(&all_specs);
 
     //TODO : crappy!! find a way to better handle the /v1 - maybe relying on servers attr in OAI is not the right way and having dedicated OAI attributes would be easier / proper (alos taking into sonsiderations code generation plugins)

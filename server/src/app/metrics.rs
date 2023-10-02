@@ -164,7 +164,7 @@ pub async fn refresh_metrics() -> impl Responder {
     .unwrap();
 
     //get # of endpoints
-    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs[0]);
+    let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs);
 
     let all_specs_paths: Vec<String> = all_specs.iter().map(|val| val.path.to_string()).collect();
     info!(

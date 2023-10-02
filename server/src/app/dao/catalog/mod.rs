@@ -31,53 +31,60 @@ pub struct SpecItem {
     pub domain: std::string::String,
     pub layer: String,
     pub systems: Vec<String>,
+    pub catalog_id: String,
+    pub catalog_dir: String,
 }
 
 const DEFAULT_SYSTEM_LAYER: &str = "default";
 
-pub fn list_specs(catalog: &Catalog) -> Vec<SpecItem> {
+pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
     let mut specs = Vec::new();
 
-    let path = catalog.catalog_path.as_str();
+    for catalog in catalogs{
+        let path = catalog.catalog_path.as_str();
 
-    info!("Is loading OAI specs files from [{:?}]", path);
-    let pattern = format!("{}{}", path, "/**/*.yaml");
-    for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
-        let path = entry.display().to_string();
-        let file_path = Path::new(&path);
+        info!("Is loading OAI specs files from catalog [{:?}] - [{:?}]", &catalog.catalog_id, path);
+        let pattern = format!("{}{}", path, "/**/*.yaml");
+        for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
+            let path = entry.display().to_string();
+            let file_path = Path::new(&path);
 
-        info!("getting spec file [{:?}]", file_path);
+            info!("getting spec file [{:?}]", file_path);
 
-        let f = std::fs::File::open(file_path).unwrap();
+            let f = std::fs::File::open(file_path).unwrap();
 
-        match serde_yaml::from_reader(f) {
-            Ok(openapi) => {
-                //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                let audience = get_audience_from_spec(&openapi);
-                let domain = get_domain_from_spec(&openapi);
-                let layer = get_layer_from_spec(&openapi);
-                let systems = get_systems_from_spec(&openapi);
+            match serde_yaml::from_reader(f) {
+                Ok(openapi) => {
+                    //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
+                    let audience = get_audience_from_spec(&openapi);
+                    let domain = get_domain_from_spec(&openapi);
+                    let layer = get_layer_from_spec(&openapi);
+                    let systems = get_systems_from_spec(&openapi);
 
-                //create the API Item and add it to the returned value
-                let mut hasher = std::collections::hash_map::DefaultHasher::new();
-                path.hash(&mut hasher);
-                let hash = hasher.finish();
-                
-                let spec = SpecItem {
-                    path: path,
-                    id: format!("{:?}", hash),
-                    api_spec: openapi.clone(),
-                    audience: audience,
-                    domain: domain.to_string(),
-                    layer: layer,
-                    systems: systems,
-                };
-                specs.push(spec);
-            }
-            Err(why) => {
-                warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
+                    //create the API Item and add it to the returned value
+                    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                    path.hash(&mut hasher);
+                    let hash = hasher.finish();
+                    
+                    let spec = SpecItem {
+                        path: path,
+                        id: format!("{:?}", hash),
+                        api_spec: openapi.clone(),
+                        audience: audience,
+                        domain: domain.to_string(),
+                        layer: layer,
+                        systems: systems,
+                        catalog_id: String::from(&catalog.catalog_id),
+                        catalog_dir: String::from(&catalog.catalog_dir)
+                    };
+                    specs.push(spec);
+                }
+                Err(why) => {
+                    warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
+                }
             }
         }
+
     }
 
     specs
@@ -433,6 +440,8 @@ mod tests {
             domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
             systems: Vec::new(),
+            catalog_id: String::from("not used here"),
+            catalog_dir: String::from("not used here"),
         };
 
         specs.push(spec_item);
@@ -465,6 +474,8 @@ mod tests {
             domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
             systems: Vec::new(),
+            catalog_id: String::from("not used here"),
+            catalog_dir: String::from("not used here"),
         };
 
         specs.push(spec_item);
@@ -490,6 +501,8 @@ mod tests {
             domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
             systems: Vec::new(),
+            catalog_id: String::from("not used here"),
+            catalog_dir: String::from("not used here"),
         };
 
         specs.push(spec_item);
@@ -644,8 +657,10 @@ mod tests {
             catalog_git_url: String::from("not used here"), 
             catalog_path: path.into_os_string().into_string().unwrap(),
         };
+        let mut catalogs = Vec::new();
+        catalogs.push(catalog);
 
-        let results = super::list_specs(&catalog);
+        let results = super::list_specs(&catalogs);
         assert_eq!(results.len(), 2);
         //
         let spec: &SpecItem = results.get(0).unwrap();
