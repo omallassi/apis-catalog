@@ -4,6 +4,7 @@ catalog_name = "the name you want"
 catalog_path = "$CATALOG_PATH"
 catalog_dir = "$CATALOG_DIR"
 catalog_git_url = "$CATALOG_GIT_URL"
+# repeat the whole section above if you want multiple catalogs
 
 [stash_config]
 base_uri = "$STASH_CONFIG_BASE_URI"

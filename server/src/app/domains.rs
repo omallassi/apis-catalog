@@ -12,6 +12,9 @@ use crate::shared::settings::*;
 use log::{debug, error, info};
 
 use uuid::Uuid;
+use std::collections::HashSet;
+
+use crate::app::dao::catalog;
 
 
 /*
@@ -67,6 +70,23 @@ pub struct DomainError {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DomainErrors {
     pub errors: Vec<DomainError>,
+}
+
+#[get("/v1/catalogs/all/domains")]
+pub async fn get_all_domains_for_all_catalogs() -> impl Responder {
+    info!("get all domains ");
+
+    let mut domains = HashSet::new();
+
+    let all_specs = catalog::list_specs(&SETTINGS.catalogs);
+    //loop over the list and check system and layer equality
+    for spec in all_specs{
+        domains.insert(String::from(spec.domain));
+    }
+
+    info!("Domain # from all catalogs [{:?}]", &domains.len());
+
+    HttpResponse::Ok().json(domains)
 }
 
 #[get("/v1/domains/errors")]

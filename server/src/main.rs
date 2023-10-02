@@ -136,6 +136,7 @@ async fn main() {
             .service(app::metrics::refresh_metrics)
             .service(app::systems::get_all_systems)
             .service(app::systems::get_all_domains_per_system_and_layer)
+            .service(app::domains::get_all_domains_for_all_catalogs)
             //Static resources mapping
             .service(actix_files::Files::new("/",  &SETTINGS.server.static_resources_path)
                 .redirect_to_slash_directory()

@@ -39,6 +39,7 @@ const DEFAULT_SYSTEM_LAYER: &str = "default";
 
 pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
     let mut specs = Vec::new();
+    let mut last_len = 0;
 
     for catalog in catalogs{
         let path = catalog.catalog_path.as_str();
@@ -84,8 +85,11 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                 }
             }
         }
-
+        debug!("OAI specs # from catalog [{:?}] - [{:?}] is [{:?}]", &catalog.catalog_id, path, specs.len() - last_len);
+        last_len = specs.len();
     }
+
+    info!("OAI specs # from all catalogs - [{:?}]", &specs.len());
 
     specs
 }

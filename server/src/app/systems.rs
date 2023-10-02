@@ -110,6 +110,8 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
         }
     }
 
+    info!("Domain # from all catalogs, system [{:?}] and layer [{:?}] - [{:?}]", &system, &layer, &domains.len());
+
     domains
 
 }
