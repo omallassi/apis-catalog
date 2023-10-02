@@ -1,6 +1,7 @@
 use actix_web::web::Json;
 use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
+use cmd_lib::warn;
 use serde::{Deserialize, Serialize};
 
 use std::hash::{Hash, Hasher};
@@ -63,6 +64,7 @@ impl Hash for Node {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DomainError {
     pub spec_domain: String,
+    pub spec_catalog_id: String,
     pub spec_path: String,
     pub resources: usize,
 }
@@ -149,6 +151,7 @@ pub async fn get_domains_errors() -> impl Responder {
         if !is_contained {
             let error = DomainError {
                 spec_domain: String::from(&spec.domain),
+                spec_catalog_id: String::from(&spec.catalog_id),
                 spec_path: String::from(short_path),
                 resources: *data.get(&spec.domain).unwrap(),
             };
@@ -260,7 +263,14 @@ pub async fn get_domains() -> impl Responder {
     //TODO : crappy!! find a way to better handle the /v1 - maybe relying on servers attr in OAI is not the right way and having dedicated OAI attributes would be easier / proper (alos taking into sonsiderations code generation plugins)
     let mut cleaned_non_empty_domain : std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for (key, value) in &non_emtpy_domains {
-        cleaned_non_empty_domain.insert(key[3..key.len()].to_string(), *value);
+        match &key.starts_with("/v"){
+            true => {
+                cleaned_non_empty_domain.insert(key[3..key.len()].to_string(), *value);
+            },
+            false => {
+                warn!("found a domain that does not follow conventions - [{:?}]", &key);
+            }
+        }
     }
     //end TODO
 

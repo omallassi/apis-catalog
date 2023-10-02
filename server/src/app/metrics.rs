@@ -141,7 +141,7 @@ pub async fn get_all_metrics() -> impl Responder {
 #[post("/v1/metrics/refresh")]
 pub async fn refresh_metrics() -> impl Responder {
     info!("refresh metrics");
-    crate::app::dao::catalog::refresh_git_repo(&SETTINGS.catalogs[0].catalog_path, &SETTINGS.catalogs[0].catalog_git_url);
+    crate::app::dao::catalog::refresh_catalogs(&SETTINGS.catalogs);
     //
     let pull_requests: PullRequests = get_pull_requests("OPEN");
 

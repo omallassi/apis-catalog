@@ -19,7 +19,8 @@ use cmd_lib::run_cmd;
 extern crate regex;
 use regex::Regex;
 
-use crate::shared::settings::Catalog;
+use crate::shared::settings::{Catalog, SETTINGS};
+
 
 //
 #[derive(Debug, Clone)]
@@ -38,58 +39,79 @@ pub struct SpecItem {
 const DEFAULT_SYSTEM_LAYER: &str = "default";
 
 pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
-    let mut specs = Vec::new();
-    let mut last_len = 0;
+    //quite counter intuitive to me but following the doc https://docs.rs/moka/0.12.0/moka/sync/struct.Cache.html 
+    //To share the same cache across the threads, clone it.
+    // This is a cheap operation.
+    let my_cache = CACHE.cache.clone();
+    let specs = match my_cache.get(&String::from("all")) {
+        Some(val) => {
+            info!("got [{:?}] specs from cache ", &val.len() );
+            val
+        },
+        None => {
+            info!("no specs from cache - will load the catalogs");
 
-    for catalog in catalogs{
-        let path = catalog.catalog_path.as_str();
-
-        info!("Is loading OAI specs files from catalog [{:?}] - [{:?}]", &catalog.catalog_id, path);
-        let pattern = format!("{}{}", path, "/**/*.yaml");
-        for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
-            let path = entry.display().to_string();
-            let file_path = Path::new(&path);
-
-            info!("getting spec file [{:?}]", file_path);
-
-            let f = std::fs::File::open(file_path).unwrap();
-
-            match serde_yaml::from_reader(f) {
-                Ok(openapi) => {
-                    //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                    let audience = get_audience_from_spec(&openapi);
-                    let domain = get_domain_from_spec(&openapi);
-                    let layer = get_layer_from_spec(&openapi);
-                    let systems = get_systems_from_spec(&openapi);
-
-                    //create the API Item and add it to the returned value
-                    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-                    path.hash(&mut hasher);
-                    let hash = hasher.finish();
-                    
-                    let spec = SpecItem {
-                        path: path,
-                        id: format!("{:?}", hash),
-                        api_spec: openapi.clone(),
-                        audience: audience,
-                        domain: domain.to_string(),
-                        layer: layer,
-                        systems: systems,
-                        catalog_id: String::from(&catalog.catalog_id),
-                        catalog_dir: String::from(&catalog.catalog_dir)
-                    };
-                    specs.push(spec);
+            let mut specs = Vec::new();
+            let mut last_len = 0;
+        
+        
+            for catalog in catalogs{
+                let path = catalog.catalog_path.as_str();
+        
+                info!("Is loading OAI specs files from catalog [{:?}] - [{:?}]", &catalog.catalog_id, path);
+                let pattern = format!("{}{}", path, "/**/*.yaml");
+                for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
+                    let path = entry.display().to_string();
+                    let file_path = Path::new(&path);
+        
+                    debug!("getting spec file [{:?}]", file_path);
+        
+                    let f = std::fs::File::open(file_path).unwrap();
+        
+                    match serde_yaml::from_reader(f) {
+                        Ok(openapi) => {
+                            //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
+                            let audience = get_audience_from_spec(&openapi);
+                            let domain = get_domain_from_spec(&openapi);
+                            let layer = get_layer_from_spec(&openapi);
+                            let systems = get_systems_from_spec(&openapi);
+        
+                            //create the API Item and add it to the returned value
+                            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                            path.hash(&mut hasher);
+                            let hash = hasher.finish();
+                            
+                            let spec = SpecItem {
+                                path: path,
+                                id: format!("{:?}", hash),
+                                api_spec: openapi.clone(),
+                                audience: audience,
+                                domain: domain.to_string(),
+                                layer: layer,
+                                systems: systems,
+                                catalog_id: String::from(&catalog.catalog_id),
+                                catalog_dir: String::from(&catalog.catalog_dir)
+                            };
+                            specs.push(spec);
+                        }
+                        Err(why) => {
+                            warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
+                        }
+                    }
                 }
-                Err(why) => {
-                    warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
-                }
+                debug!("OAI specs # from catalog [{:?}] - [{:?}] is [{:?}]", &catalog.catalog_id, path, specs.len() - last_len);
+                last_len = specs.len();
             }
-        }
-        debug!("OAI specs # from catalog [{:?}] - [{:?}] is [{:?}]", &catalog.catalog_id, path, specs.len() - last_len);
-        last_len = specs.len();
-    }
+        
+            info!("OAI specs # from all catalogs - [{:?}]", &specs.len());
+        
+            my_cache.insert(String::from("all"), specs.to_vec());
 
-    info!("OAI specs # from all catalogs - [{:?}]", &specs.len());
+            specs
+
+        }
+    };
+    
 
     specs
 }
@@ -163,19 +185,27 @@ fn get_domain_from_spec(spec: &OpenAPI) -> &str {
     base_url
 }
 
-pub fn refresh_git_repo(catalog_path: &str, catalog_git_url: &str) {
-    //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
-    //TODO be more proper on error management here.typical case: credentials to git pull are no longer working...
+pub fn refresh_catalogs(catalogs: &Vec<Catalog>) {
+    //TODO refresh all the repos and not the first one!!!!!
 
+    for catalog in catalogs {
+        let catalog_path = catalog.catalog_path.as_str();
+        let catalog_git_url = catalog.catalog_git_url.as_str();
 
-    match run_cmd!("cd {}; git pull {}", &catalog_path, &catalog_git_url){
-        Ok(val) => {
-            info!("Refresh Git Repo [{:?}] on results [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
-        }, 
-        Err(e) => {
-            error!("Error while refreshing Git Repo [{:?}] on results [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+        match run_cmd!("cd {}; git pull {}", &catalog_path, &catalog_git_url){
+            Ok(val) => {
+                info!("Refresh Git Repo [{:?}] on results [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
+            }, 
+            Err(e) => {
+                error!("Error while refreshing Git Repo [{:?}] on results [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+            }
         }
+
     }
+
+    //will force data back in cache
+    let _ = &CACHE.cache.clone().invalidate_all();
+    self::list_specs(&SETTINGS.catalogs);
 }
 
 pub fn get_zally_ignore(all_specs: &Vec<SpecItem>) -> std::collections::HashMap<i64, usize> {
@@ -411,6 +441,25 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
     debug!("endpoints per subdomain [{:?}]", data);
 
     data
+}
+
+struct Cache {
+    pub cache: moka::sync::Cache<String, Vec<SpecItem>>,
+}
+
+lazy_static! {
+    static ref CACHE: Cache = Cache::new();
+}
+
+impl Cache {
+    fn new() -> Self {
+        let cache = Cache{
+            cache: moka::sync::Cache::new(2),
+        };
+
+        cache
+    }
+
 }
 
 #[cfg(test)]

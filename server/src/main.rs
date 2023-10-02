@@ -79,6 +79,9 @@ async fn main() {
         .apply()
         .unwrap();
 
+    //do this call to warm up internal caches
+    app::dao::catalog::list_specs(&SETTINGS.catalogs);
+
     /*
      * HTTP Server
      */
@@ -155,7 +158,7 @@ async fn main() {
             //     Files::new("/", &SETTINGS.server.static_resources_path).index_file("index.html"),
             // )
     })
-    .workers(4)
+    .workers(12)
     .bind(&SETTINGS.server.bind_adress)
     .unwrap()
     .run()
