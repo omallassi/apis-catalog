@@ -39,6 +39,8 @@ pub struct SystemsAndLayers {
 
 #[derive(Debug, Deserialize)]
 pub struct Catalog {
+    pub catalog_id: String, 
+    pub catalog_name: String,
     pub catalog_path: String,
     pub catalog_dir: String,
     pub catalog_git_url: String,

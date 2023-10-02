@@ -1,4 +1,6 @@
 [catalog]
+catalog_id = "the uuid or whatever you want"
+catalog_name = "the name you want"
 catalog_path = "$CATALOG_PATH"
 catalog_dir = "$CATALOG_DIR"
 catalog_git_url = "$CATALOG_GIT_URL"

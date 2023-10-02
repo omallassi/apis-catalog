@@ -126,19 +126,36 @@ pub fn get_spec_short_path(catalog_dir_srt: String, spec: &SpecItem) -> &str {
     short_path
 }
 
+fn get_domain_from_spec(spec: &OpenAPI) -> &str {
+    let base_url = match &spec.servers.is_empty() {
+        true => "NA - servers attribute not specified",
+        false => {
+            //TODO can do better
+            //base_url could have the following form http://baseurl/v1/xva-management/xva
+            //will extract http://baseurl and keep the rest
+            lazy_static! {
+                static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
+            }
+
+            if let Some(cap) = RE.captures(&spec.servers[0].url) {
+                cap.get(2).unwrap().as_str()
+            } else {
+                &spec.servers[0].url
+            }
+        }
+    };
+
+    base_url
+}
+
 pub fn refresh_git_repo(catalog_path: &str, catalog_git_url: &str) {
     //TODO maybe a cleaner way https://github.com/rust-lang/git2-rs/commit/f3b87baed1e33d6c2d94fe1fa6aa6503a071d837
     //TODO be more proper on error management here.typical case: credentials to git pull are no longer working...
 
 
-    //git clone https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHLp@stash.murex.com/scm/paa/apis-catalog.git
-    //git pull  https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHLp@stash.murex.com/scm/paa/apis-catalog.git
-
-    //git clone https://omallassi:MTEzMjMxNzU2NzgyOt74+m7NoXXPHTECecNc+gDCbHL@stash.murex.com/projects/MX/repos/v3.1.build.git
-
     match run_cmd!("cd {}; git pull {}", &catalog_path, &catalog_git_url){
         Ok(val) => {
-            info!("Refresh Git Repo [{:?}] on results [{:?}]", catalog_git_url, catalog_path);
+            info!("Refresh Git Repo [{:?}] on results [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
         }, 
         Err(e) => {
             error!("Error while refreshing Git Repo [{:?}] on results [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
@@ -379,28 +396,6 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
     debug!("endpoints per subdomain [{:?}]", data);
 
     data
-}
-
-fn get_domain_from_spec(spec: &OpenAPI) -> &str {
-    let base_url = match &spec.servers.is_empty() {
-        true => "NA - servers attribute not specified",
-        false => {
-            //TODO can do better
-            //base_url could have the following form http://baseurl/v1/xva-management/xva
-            //will extract http://baseurl and keep the rest
-            lazy_static! {
-                static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
-            }
-
-            if let Some(cap) = RE.captures(&spec.servers[0].url) {
-                cap.get(2).unwrap().as_str()
-            } else {
-                &spec.servers[0].url
-            }
-        }
-    };
-
-    base_url
 }
 
 #[cfg(test)]
