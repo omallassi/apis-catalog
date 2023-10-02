@@ -72,7 +72,7 @@ pub struct DomainsPerSystemAndLayer {
 pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, String)>) -> impl Responder{
     let (system, layer) = path.into_inner();
 
-    let returned_domains = self::get_domains_per_system_and_layer(&SETTINGS.catalog.catalog_path, &system, &layer);
+    let returned_domains = self::get_domains_per_system_and_layer(&SETTINGS.catalogs[0], &system, &layer);
 
     info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} - got [{:?}] domains", &system, &layer, &returned_domains.len());
 
@@ -86,10 +86,10 @@ pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, Strin
 
 }
 
-fn get_domains_per_system_and_layer(path: &str, system: &String, layer: &String) -> HashSet<String>{
+fn get_domains_per_system_and_layer(catalog: &Catalog, system: &String, layer: &String) -> HashSet<String>{
     let mut domains = HashSet::new();
 
-    let all_specs = catalog::list_specs(path);
+    let all_specs = catalog::list_specs(&catalog);
     //loop over the list and check system and layer equality
     for spec in all_specs{
         match spec.systems.contains(&system.to_lowercase()){
@@ -160,6 +160,7 @@ fn get_all_layers_per_systems(path: &str) -> std::collections::HashMap<System, V
 
 #[cfg(test)]
 mod tests {
+    use crate::shared::settings::Catalog;
 
     #[test]
     fn test_get_all_layres_per_systems() {
@@ -191,17 +192,24 @@ mod tests {
         let mut path = std::path::PathBuf::new();
         path.push(env!("CARGO_MANIFEST_DIR"));
         path.push("./tests/data/catalog/");
-        let path_as_str = path.into_os_string().into_string().unwrap();
 
-        let sut = super::get_domains_per_system_and_layer(&path_as_str, &String::from("bpaas"), &String::from("application"));
+        let catalog = Catalog{
+            catalog_id: String::from("uuid"),
+            catalog_name: String::from("name"), 
+            catalog_dir: String::from("not used here"),
+            catalog_git_url: String::from("not used here"), 
+            catalog_path: path.into_os_string().into_string().unwrap(),
+        };
+
+        let sut = super::get_domains_per_system_and_layer(&catalog, &String::from("bpaas"), &String::from("application"));
         assert_eq!(sut.len(), 1);
         assert_eq!(sut.iter().next().unwrap(), "/v1/audit/trails");
         //same test as above but check case 
-        let sut = super::get_domains_per_system_and_layer(&path_as_str, &String::from("BPaas"), &String::from("application"));
+        let sut = super::get_domains_per_system_and_layer(&catalog, &String::from("BPaas"), &String::from("application"));
         assert_eq!(sut.len(), 1);
         assert_eq!(sut.iter().next().unwrap(), "/v1/audit/trails");
 
-        let sut = super::get_domains_per_system_and_layer(&path_as_str, &String::from("bpaas"), &String::from("functional"));
+        let sut = super::get_domains_per_system_and_layer(&catalog, &String::from("bpaas"), &String::from("functional"));
         assert_eq!(sut.len(), 0);
     }
 }

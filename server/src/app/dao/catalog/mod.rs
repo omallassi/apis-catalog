@@ -19,6 +19,8 @@ use cmd_lib::run_cmd;
 extern crate regex;
 use regex::Regex;
 
+use crate::shared::settings::Catalog;
+
 //
 #[derive(Debug, Clone)]
 pub struct SpecItem {
@@ -33,8 +35,10 @@ pub struct SpecItem {
 
 const DEFAULT_SYSTEM_LAYER: &str = "default";
 
-pub fn list_specs(path: &str) -> Vec<SpecItem> {
+pub fn list_specs(catalog: &Catalog) -> Vec<SpecItem> {
     let mut specs = Vec::new();
+
+    let path = catalog.catalog_path.as_str();
 
     info!("Is loading OAI specs files from [{:?}]", path);
     let pattern = format!("{}{}", path, "/**/*.yaml");
@@ -400,7 +404,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
 
 #[cfg(test)]
 mod tests {
-    use crate::app::dao::catalog::SpecItem;
+    use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
 
 
     #[test]
@@ -633,7 +637,15 @@ mod tests {
         path.push(env!("CARGO_MANIFEST_DIR"));
         path.push("./tests/data/catalog/");
 
-        let results = super::list_specs(path.into_os_string().into_string().unwrap().as_str());
+        let catalog = Catalog{
+            catalog_id: String::from("uuid"),
+            catalog_name: String::from("name"), 
+            catalog_dir: String::from("not used here"),
+            catalog_git_url: String::from("not used here"), 
+            catalog_path: path.into_os_string().into_string().unwrap(),
+        };
+
+        let results = super::list_specs(&catalog);
         assert_eq!(results.len(), 2);
         //
         let spec: &SpecItem = results.get(0).unwrap();

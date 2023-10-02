@@ -1,4 +1,4 @@
-[catalog]
+[[catalog]]
 catalog_id = "the uuid or whatever you want"
 catalog_name = "the name you want"
 catalog_path = "$CATALOG_PATH"

@@ -49,7 +49,7 @@ pub struct Catalog {
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
-    pub catalog: Catalog,
+    pub catalogs: Vec<Catalog>,
     pub stash_config: StashConfig,
     pub database: Database,
     pub server: Server,
