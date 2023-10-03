@@ -5,3 +5,5 @@ server/settings.toml
 server/config/local.toml
 logs.log
 server/docker-config/docker-local-env.list
+server/docker-config/materials/stash_id_ed25519
+server/docker-config/materials/stash_id_ed25519.pub

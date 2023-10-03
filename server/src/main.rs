@@ -80,7 +80,7 @@ async fn main() {
         .unwrap();
 
     //do this call to warm up internal caches
-    app::dao::catalog::refresh_catalogs(&SETTINGS.catalogs);
+    app::dao::catalog::refresh_catalogs(&SETTINGS.catalogs, true);
 
     /*
      * HTTP Server

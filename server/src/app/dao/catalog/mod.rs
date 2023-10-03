@@ -185,22 +185,33 @@ fn get_domain_from_spec(spec: &OpenAPI) -> &str {
     base_url
 }
 
-pub fn refresh_catalogs(catalogs: &Vec<Catalog>) {
-    //TODO refresh all the repos and not the first one!!!!!
-
+pub fn refresh_catalogs(catalogs: &Vec<Catalog>, init: bool) {
     for catalog in catalogs {
         let catalog_path = catalog.catalog_path.as_str();
         let catalog_git_url = catalog.catalog_git_url.as_str();
 
-        match run_cmd!("cd {}; git pull {}", &catalog_path, &catalog_git_url){
-            Ok(val) => {
-                info!("Refresh Git Repo [{:?}] on results [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
+        match init {
+            true => {
+                match run_cmd!("git clone {} {}", &catalog_git_url, catalog_path){
+                    Ok(val) => {
+                        info!("Clone Git Repo [{:?}] into [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
+                    }, 
+                    Err(e) => {
+                        error!("Error while cloning Git Repo [{:?}] into [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+                    }
+                }
             }, 
-            Err(e) => {
-                error!("Error while refreshing Git Repo [{:?}] on results [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+            false => {
+                match run_cmd!("cd {}; git pull {}", &catalog_path, &catalog_git_url){
+                    Ok(val) => {
+                        info!("Refresh Git Repo [{:?}] into [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
+                    }, 
+                    Err(e) => {
+                        error!("Error while refreshing Git Repo [{:?}] into [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+                    }
+                }
             }
-        }
-
+        };
     }
 
     //will force data back in cache

@@ -19,6 +19,7 @@ WORKDIR /apis-catalog
 COPY --from=builder /apis-catalog/target/debug/apis_catalog_server ./
 COPY --from=builder /apis-catalog/config/*.toml ./config/
 COPY --from=builder /apis-catalog/docker-config/entrypoint.sh ./docker-config/
+COPY --from=builder /apis-catalog/docker-config/materials/* ./docker-config/materials/
 
 RUN chmod a+rwx ./docker-config/entrypoint.sh
 
