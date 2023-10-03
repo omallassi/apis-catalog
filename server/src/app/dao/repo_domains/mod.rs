@@ -14,9 +14,6 @@ use log::{debug, error, info};
 
 use serde::{Deserialize, Serialize};
 
-lazy_static! {
-    static ref SETTINGS: Settings = Settings::new().unwrap();
-}
 
 /**
  * "public" part

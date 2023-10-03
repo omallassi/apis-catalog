@@ -9,35 +9,35 @@ use config::ConfigError;
 
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct StashConfig {
     pub base_uri: String,
     pub access_token: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Server {
     pub bind_adress: String,
     pub static_resources_path: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Database {
     pub rusqlite_path: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct DomainRepoType {
     pub domain_impl: String,
     pub domain_catalog_path: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SystemsAndLayers {
     pub systems_catalog_path: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Catalog {
     pub catalog_id: String, 
     pub catalog_name: String,
@@ -47,7 +47,7 @@ pub struct Catalog {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub catalogs: Vec<Catalog>,
     pub stash_config: StashConfig,
