@@ -3,15 +3,18 @@ catalog_id = "$CATALOG_ID_0"
 catalog_name = "$CATALOG_NAME_0"
 catalog_path = "$CATALOG_PATH_0"
 catalog_dir = "$CATALOG_DIR_0"
-catalog_git_url = "$CATALOG_GIT_URL_0"
-
+catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_0"
+catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_0"
+catalog_scm_clone = "$CATALOG_CLONE_0"
 
 [[catalogs]]
 catalog_id = "$CATALOG_ID_1"
 catalog_name = "$CATALOG_NAME_1"
 catalog_path = "$CATALOG_PATH_1"
 catalog_dir = "$CATALOG_DIR_1"
-catalog_git_url = "$CATALOG_GIT_URL_1"
+catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_1"
+catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_1"
+catalog_scm_clone = "$CATALOG_CLONE_1"
 # repeat the whole section above if you want multiple catalogs
 
 [stash_config]

@@ -1,7 +1,6 @@
 use actix_web::web::Json;
 use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
-use cmd_lib::warn;
 use serde::{Deserialize, Serialize};
 
 use std::hash::{Hash, Hasher};
@@ -10,7 +9,7 @@ use crate::app::dao::repo_domains::*;
 use crate::app::dao::catalog::*;
 use crate::shared::settings::*;
 
-use log::{debug, error, info};
+use log::{debug, warn, error, info};
 
 use uuid::Uuid;
 use std::collections::HashSet;

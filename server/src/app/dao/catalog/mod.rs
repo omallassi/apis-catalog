@@ -186,28 +186,48 @@ fn get_domain_from_spec(spec: &OpenAPI) -> &str {
 }
 
 pub fn refresh_catalogs(catalogs: &Vec<Catalog>, init: bool) {
-    for catalog in catalogs {
-        let catalog_path = catalog.catalog_path.as_str();
-        let catalog_git_url = catalog.catalog_git_url.as_str();
 
+    for catalog in catalogs {
         match init {
             true => {
-                match run_cmd!("git clone {} {}", &catalog_git_url, catalog_path){
-                    Ok(val) => {
-                        info!("Clone Git Repo [{:?}] into [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
+
+                match catalog.catalog_scm_clone {
+                    true => {
+                        let catalog_scm_cmd = catalog.catalog_scm_clone_cmd.to_owned();
+                        let catalog_path = catalog.catalog_path.to_owned();
+        
+                        let cmd = format!("{catalog_scm_cmd} {catalog_path}" );
+                        cmd_lib::set_debug(true);
+                        match run_cmd!{ 
+                            //var a considered as String here; bash -c will make it work (refer to man bash)
+                            bash -c ${cmd}; 
+                        }
+                        {
+                            Ok(val) => {
+                                info!("Clone Git Repo [{:?}] into [{:?}] - got [{:?}]", catalog_scm_cmd, catalog_path, val);
+                            }, 
+                            Err(e) => {
+                                error!("Error while cloning Git Repo [{:?}] into [{:?}] - [{:?}]", catalog_scm_cmd, catalog_path, e);
+                            }
+                        }
                     }, 
-                    Err(e) => {
-                        error!("Error while cloning Git Repo [{:?}] into [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+                    false => {
+                        warn!("Catalog [{:?}] - [{:?}] will not be cloned", catalog.catalog_id, catalog.catalog_name);
                     }
                 }
             }, 
             false => {
-                match run_cmd!("cd {}; git pull {}", &catalog_path, &catalog_git_url){
+                let catalog_scm_cmd = catalog.catalog_scm_pull_cmd.as_str();
+                let catalog_path = catalog.catalog_path.as_str();
+                
+                cmd_lib::set_debug(true);
+
+                match run_cmd!{ cd ${catalog_path}; bash -c ${catalog_scm_cmd} }{
                     Ok(val) => {
-                        info!("Refresh Git Repo [{:?}] into [{:?}] - got [{:?}]", catalog_git_url, catalog_path, val);
+                        info!("Refresh Git Repo [{:?}] into [{:?}] - got [{:?}]", catalog_scm_cmd, catalog_path, val);
                     }, 
                     Err(e) => {
-                        error!("Error while refreshing Git Repo [{:?}] into [{:?}] - [{:?}]", catalog_git_url, catalog_path, e);
+                        error!("Error while refreshing Git Repo [{:?}] into [{:?}] - [{:?}]", catalog_scm_cmd, catalog_path, e);
                     }
                 }
             }
@@ -718,8 +738,10 @@ mod tests {
             catalog_id: String::from("uuid"),
             catalog_name: String::from("name"), 
             catalog_dir: String::from("not used here"),
-            catalog_git_url: String::from("not used here"), 
+            catalog_scm_clone_cmd: String::from("not used here"), 
+            catalog_scm_pull_cmd: String::from("not used here"), 
             catalog_path: path.into_os_string().into_string().unwrap(),
+            catalog_scm_clone: false,
         };
         let mut catalogs = Vec::new();
         catalogs.push(catalog);

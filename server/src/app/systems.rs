@@ -199,8 +199,10 @@ mod tests {
             catalog_id: String::from("uuid"),
             catalog_name: String::from("name"), 
             catalog_dir: String::from("not used here"),
-            catalog_git_url: String::from("not used here"), 
+            catalog_scm_clone_cmd: String::from("not used here"), 
+            catalog_scm_pull_cmd: String::from("not used here"),
             catalog_path: path.into_os_string().into_string().unwrap(),
+            catalog_scm_clone: false,
         };
         let mut catalogs = Vec::new();
         catalogs.push(catalog);
