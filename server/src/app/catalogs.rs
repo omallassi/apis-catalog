@@ -1,5 +1,5 @@
 
-use actix_web::{get, Responder};
+use actix_web::{get, post, Responder};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -51,4 +51,13 @@ pub async fn get_all_catalog() -> impl Responder{
     }
 
     HttpResponse::Ok().json(&returned_catalog)
+}
+
+#[post("/v1/catalogs/refresh")]
+pub async fn refresh_all_catalogs() -> impl Responder{
+    info!("refresh_all_catalogs");
+
+    crate::app::dao::catalog::refresh_catalogs(&SETTINGS.catalogs, false);
+
+    HttpResponse::Ok().json(())
 }
