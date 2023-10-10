@@ -71,6 +71,7 @@ pub struct DomainsPerSystemAndLayer {
 #[get("/v1/systems/{system}/layers/{layer}")]
 pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, String)>) -> impl Responder{
     let (system, layer) = path.into_inner();
+    
 
     let returned_domains = self::get_domains_per_system_and_layer(&SETTINGS.catalogs, &system, &layer);
 
@@ -96,6 +97,7 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
             true => {
                 match spec.layer.eq(&layer.to_lowercase()) {
                     true => {
+                        debug!("spec [{:?}] matches system [{:?}] *and* layer [{:?}]", spec.path, system, layer);
                         domains.insert(spec.domain);
                     }, 
                     false => {

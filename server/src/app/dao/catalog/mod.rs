@@ -131,7 +131,7 @@ fn get_layer_from_spec(spec: &OpenAPI) -> String {
         None => String::from(DEFAULT_SYSTEM_LAYER),
     };
 
-    layer
+    layer.to_lowercase()
 }
 
 fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
@@ -141,7 +141,7 @@ fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
             let mut returned_systems: Vec<String> = Vec::new();
             for system in systems.as_array().unwrap(){
                 //did not find a way to use into_iter().collect::Vec<String>>
-                returned_systems.push(String::from(system.as_str().unwrap()));
+                returned_systems.push(String::from(system.as_str().unwrap()).to_lowercase());
             }
 
             returned_systems
