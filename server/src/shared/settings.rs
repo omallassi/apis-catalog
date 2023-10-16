@@ -46,6 +46,7 @@ pub struct Catalog {
     pub catalog_scm_clone_cmd: String,
     pub catalog_scm_pull_cmd: String,
     pub catalog_scm_clone: bool,
+    pub catalog_http_base_uri: String,
 }
 
 

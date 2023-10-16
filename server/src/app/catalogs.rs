@@ -14,6 +14,7 @@ use log::info;
 pub struct Catalog {
     pub id: String,
     pub name: String,
+    pub http_base_uri: String, 
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -33,7 +34,8 @@ pub async fn get_catalog_by_id(path: web::Path<(String)>) -> impl Responder{
 
     let returned_catalog = self::Catalog {
         id: String::from(&curr_catalog.catalog_id),
-        name: String::from(&curr_catalog.catalog_name)
+        name: String::from(&curr_catalog.catalog_name),
+        http_base_uri: String::from(&curr_catalog.catalog_http_base_uri)
     };
 
     HttpResponse::Ok().json(&returned_catalog)
@@ -47,7 +49,10 @@ pub async fn get_all_catalog() -> impl Responder{
     
     let mut returned_catalog: Vec<Catalog> = Vec::new();
     for cat in catalog_as_vec{
-        returned_catalog.push(Catalog{id: String::from(&cat.catalog_id), name: String::from(&cat.catalog_name)});
+        returned_catalog.push(Catalog{ 
+            id: String::from(&cat.catalog_id), 
+            name: String::from(&cat.catalog_name), 
+            http_base_uri: String::from(&cat.catalog_http_base_uri) });
     }
 
     HttpResponse::Ok().json(&returned_catalog)

@@ -6,6 +6,7 @@ catalog_dir = "$CATALOG_DIR_0"
 catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_0"
 catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_0"
 catalog_scm_clone = "$CATALOG_CLONE_0"
+catalog_http_base_uri = "$STASH_CONFIG_BASE_URI_0"
 
 [[catalogs]]
 catalog_id = "$CATALOG_ID_1"
@@ -15,6 +16,7 @@ catalog_dir = "$CATALOG_DIR_1"
 catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_1"
 catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_1"
 catalog_scm_clone = "$CATALOG_CLONE_1"
+catalog_http_base_uri = "$STASH_CONFIG_BASE_URI_1"
 
 [[catalogs]]
 catalog_id = "$CATALOG_ID_2"
@@ -24,6 +26,7 @@ catalog_dir = "$CATALOG_DIR_2"
 catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_2"
 catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_2"
 catalog_scm_clone = "$CATALOG_CLONE_2"
+catalog_http_base_uri = "$STASH_CONFIG_BASE_URI_2"
 # repeat the whole section above if you want multiple catalogs
 
 [stash_config]

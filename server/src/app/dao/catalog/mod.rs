@@ -742,6 +742,7 @@ mod tests {
             catalog_scm_pull_cmd: String::from("not used here"), 
             catalog_path: path.into_os_string().into_string().unwrap(),
             catalog_scm_clone: false,
+            catalog_http_base_uri: String::from("not used here")
         };
         let mut catalogs = Vec::new();
         catalogs.push(catalog);
