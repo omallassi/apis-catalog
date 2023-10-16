@@ -5,3 +5,4 @@ pub mod repo_domains;
 pub mod repo_envs;
 pub mod repo_metrics;
 pub mod repo_layers;
+pub mod search;
