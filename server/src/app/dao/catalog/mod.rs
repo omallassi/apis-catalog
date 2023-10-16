@@ -81,7 +81,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                             path.hash(&mut hasher);
                             let hash = hasher.finish();
                             
-                            let spec = SpecItem {
+                            let spec: SpecItem = SpecItem {
                                 path: path,
                                 id: format!("{:?}", hash),
                                 api_spec: openapi.clone(),
@@ -157,8 +157,9 @@ fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
     systems
 }
 
-pub fn get_spec_short_path(catalog_dir_srt: String, spec: &SpecItem) -> &str {
-    let short_path = &spec.path[catalog_dir_srt.as_str().len()..spec.path.len()];
+pub fn get_spec_short_path(spec: &SpecItem) -> &str {
+    let catalog_dir_srt = &spec.catalog_dir;
+    let short_path = &spec.path[ catalog_dir_srt.as_str().len()..spec.path.len() ];
 
     short_path
 }
@@ -495,6 +496,8 @@ impl Cache {
 
 #[cfg(test)]
 mod tests {
+    use openapiv3::OpenAPI;
+
     use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
 
 
@@ -762,5 +765,36 @@ mod tests {
         assert_eq!(spec.domain, "/v1/audit/trails");
         assert_eq!(spec.layer, "application");
         assert_eq!(spec.systems[0], "bpaas");
+    }
+
+
+    #[test]
+    fn test_get_spec_short_path() {
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.0.0".to_string(),
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+
+        let spec = SpecItem {
+            path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
+            id: String::from("not used"),
+            api_spec: openapi_spec, 
+            audience: String::from("not used here"),
+            domain: String::from("not used here"), 
+            layer: String::from("not used here"), 
+            systems: Vec::new(),
+            catalog_id: String::from("not used here"),
+            catalog_dir: String::from("/home/catalog/")
+        };
+
+        let sut = super::get_spec_short_path(&spec);
+        assert_eq!("code/openapi-specifications/specifications/manual-tasks/openapi.yaml", sut);
+
     }
 }

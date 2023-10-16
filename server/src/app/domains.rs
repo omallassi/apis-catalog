@@ -115,7 +115,7 @@ pub async fn get_domains_errors() -> impl Responder {
     //make the check
     let mut errors: Vec<DomainError> = Vec::new();
     for spec in &all_specs {
-        let short_path = get_spec_short_path(String::from(&spec.catalog_dir), &spec);
+        let short_path = get_spec_short_path( &spec);
         let spec_domain = &spec.domain;
         //will loop over all_domains to check if domains "match or not". contains() cannot work as the yml contains /v1 and not the domain
         let mut is_contained = false;

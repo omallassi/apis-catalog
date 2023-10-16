@@ -79,7 +79,7 @@ pub async fn get_all_specs() -> impl Responder {
     while let Some(spec) = all_specs.pop() {
         info!("Analysing file [{:?}]", spec.path);
 
-        let short_path = get_spec_short_path(String::from(&spec.catalog_dir), &spec);
+        let short_path = get_spec_short_path(&spec);
 
         let spec = Spec {
             name: String::from(short_path),
