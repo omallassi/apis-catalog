@@ -92,4 +92,16 @@ impl Settings {
         info!("Configuration has been loaded - [{:?}]", settings);
         settings.try_deserialize::<Settings>()
     }
+
+    pub fn get_catalog_by_id(&self, id: &str) -> Option<Catalog> {
+        let mut val = None;
+        for catalog in &SETTINGS.catalogs {
+            if String::from(id) == catalog.catalog_id{
+                val = Some(catalog);
+                break;
+            }
+        };
+
+        val.cloned()
+    }
 }

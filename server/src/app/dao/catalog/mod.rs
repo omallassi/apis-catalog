@@ -159,8 +159,17 @@ fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
 
 pub fn get_spec_short_path(spec: &SpecItem) -> &str {
     let catalog_dir_srt = &spec.catalog_dir;
-    let short_path = &spec.path[ catalog_dir_srt.as_str().len()..spec.path.len() ];
+    let short_path = extact_relative_path(&spec.path, &catalog_dir_srt);
 
+    short_path
+}
+
+pub fn extact_relative_path<'a>(spec_path: &'a String, catalog_dir_srt: &'a String) -> &'a str {
+    let catalog_dir = catalog_dir_srt.as_str().len();
+    let len = spec_path.len();
+
+    let short_path = &spec_path[ catalog_dir..len ];
+    
     short_path
 }
 
