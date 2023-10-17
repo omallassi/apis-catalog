@@ -33,6 +33,9 @@ catalog_http_base_uri = "$STASH_CONFIG_BASE_URI_2"
 base_uri = "$STASH_CONFIG_BASE_URI"
 access_token = "$STASH_CONFIG_ACCESS_TOKEN"
 
+[search]
+index_path="$SEARCH_CONFIG_INDEX_DIR"
+
 [server]
 bind_adress = "$SERVER_BIND_ADRESS"
 static_resources_path = "$SERVER_STATIC_RESOURCES_PATH"

@@ -49,6 +49,11 @@ pub struct Catalog {
     pub catalog_http_base_uri: String,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct Search {
+    pub index_path: String,
+}
+
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
@@ -58,6 +63,7 @@ pub struct Settings {
     pub server: Server,
     pub domain_repo_type: DomainRepoType,
     pub systems_and_layers: SystemsAndLayers,
+    pub search: Search,
 }
 
 lazy_static! {

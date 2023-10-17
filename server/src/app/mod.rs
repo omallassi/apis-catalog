@@ -6,5 +6,6 @@ pub mod metrics;
 pub mod tiers;
 pub mod systems;
 pub mod catalogs;
+pub mod search;
 
 pub mod dao;

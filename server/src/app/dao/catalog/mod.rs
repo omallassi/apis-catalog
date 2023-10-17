@@ -496,10 +496,7 @@ impl Cache {
 
 #[cfg(test)]
 mod tests {
-    use openapiv3::OpenAPI;
-
     use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
-
 
     #[test]
     fn test_get_endpoints_num_per_subdomain_1() {

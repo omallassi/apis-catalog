@@ -7,8 +7,9 @@ use std::collections::HashMap;
 extern crate reqwest;
 use crate::shared::settings::Catalog as RepoCatalog;
 use crate::shared::settings::SETTINGS;
+use crate::app::dao::search::*;
 
-use log::info;
+use log::{info, error};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Catalog {
@@ -61,8 +62,19 @@ pub async fn get_all_catalog() -> impl Responder{
 #[post("/v1/catalogs/refresh")]
 pub async fn refresh_all_catalogs() -> impl Responder{
     info!("refresh_all_catalogs");
-
-    crate::app::dao::catalog::refresh_catalogs(&SETTINGS.catalogs, false);
-
+    resfresh_caches_and_indexes(false);
     HttpResponse::Ok().json(())
+}
+
+pub fn resfresh_caches_and_indexes(init: bool) {
+    crate::app::dao::catalog::refresh_catalogs(&SETTINGS.catalogs, init);
+    let specs = crate::app::dao::catalog::list_specs(&SETTINGS.catalogs);
+    match crate::app::dao::search::build_index(&SETTINGS.search.index_path, &specs){
+        Ok(_results) => {
+            //does nothing, logs have already been written
+        },
+        Err(e) => {
+            error!("Error while indexing all specs - [{:?}]", e);
+        }
+    };
 }

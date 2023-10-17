@@ -80,7 +80,7 @@ async fn main() {
         .unwrap();
 
     //do this call to warm up internal caches
-    app::dao::catalog::refresh_catalogs(&SETTINGS.catalogs, true);
+    crate::app::catalogs::resfresh_caches_and_indexes(true);
 
     /*
      * HTTP Server
@@ -143,6 +143,7 @@ async fn main() {
             .service(app::catalogs::get_catalog_by_id)
             .service(app::catalogs::get_all_catalog)
             .service(app::catalogs::refresh_all_catalogs)
+            .service(app::search::search_specs)
             //Static resources mapping
             .service(actix_files::Files::new("/",  &SETTINGS.server.static_resources_path)
                 .redirect_to_slash_directory()

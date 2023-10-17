@@ -2,6 +2,7 @@ extern crate tantivy;
 use crate::app::dao::catalog::SpecItem;
 use std::time::Instant;
 use std::path::Path;
+use std::fs;
 use tantivy::schema::*;
 use tantivy::directory::MmapDirectory;
 use tantivy::query::QueryParser;
@@ -10,14 +11,19 @@ use tantivy::ReloadPolicy;
 use tantivy::collector::TopDocs;
 use tantivy::doc;
 use serde::{Serialize, Deserialize};
-use log::{debug, info, warn};
+use log::{debug, info, warn, error};
 
 pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<()> {
     info!("Building Index in folder [{}]", index_path);
 
     let now = Instant::now();
 
+    if let Err(err) = fs::create_dir_all(&index_path) {
+        error!("Failed to create directory {:?} - {:?}", &index_path, err);
+    }
+
     let index_path = Path::new(index_path);
+
 
     let mut schema_builder = Schema::builder();
     schema_builder.add_text_field("audience", TEXT | STORED);
@@ -29,8 +35,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
     schema_builder.add_text_field("catalog_id", TEXT | STORED);
     schema_builder.add_text_field("operation", TEXT);
     schema_builder.add_text_field("spec_path", TEXT | STORED);
-    //schema_builder.add_text_field("system", TEXT);
-    //TODO add the OAI Spec    
+    //TODO schema_builder.add_text_field("system", TEXT);
     let schema = schema_builder.build();
 
     let mmap_directory = MmapDirectory::open(index_path)?;
@@ -164,8 +169,7 @@ pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantiv
 
 #[cfg(test)]
 mod tests {
-    use std::{env, path::PathBuf};
-    use std::fs;
+    use std::{env};
 
     #[test]
     fn test_build_and_search_index() {
@@ -173,10 +177,6 @@ mod tests {
         dir.push("apis-catalog-test");
         let binding = &dir.into_os_string();
         let index_path = binding.to_str().unwrap();
-
-        if let Err(err) = fs::create_dir_all(&index_path) {
-            eprintln!("Failed to create directory: {}", err);
-        }
 
         let spec = "
         openapi: 3.0.0
