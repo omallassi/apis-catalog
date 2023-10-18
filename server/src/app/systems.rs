@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
@@ -7,9 +7,8 @@ use actix_web::{web, get, Responder};
 use actix_web::HttpResponse;
 
 use crate::app::dao::repo_layers::*;
+use crate::app::dao::catalog::*;
 use crate::shared::settings::*;
-
-use super::dao::catalog;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct System {
@@ -71,7 +70,13 @@ pub struct DomainsPerSystemAndLayer {
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Domain {
     pub name: String, 
+    pub specs: Vec<Spec>
+}
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+pub struct Spec {
     pub catalog_id: String,
+    pub spec_path: String,
 }
 
 #[get("/v1/systems/{system}/layers/{layer}")]
@@ -96,19 +101,30 @@ pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, Strin
 fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, layer: &String) -> HashSet<Domain>{
     let mut domains: HashSet<Domain> = HashSet::new();
 
-    let all_specs = catalog::list_specs(&catalogs);
+    let mut specs_per_domain: HashMap<String, HashSet<(String, String)>> = HashMap::new();
+
+    let all_specs = list_specs(&catalogs);
     //loop over the list and check system and layer equality
     for spec in all_specs{
         match spec.systems.contains(&system.to_lowercase()){
             true => {
                 match spec.layer.eq(&layer.to_lowercase()) {
                     true => {
-                        debug!("spec [{:?}] matches system [{:?}] *and* layer [{:?}]", spec.path, system, layer);
-                        domains.insert( Domain {
-                                name: spec.domain,
-                                catalog_id: spec.catalog_id
+                        debug!("spec [{:?}] matches system [{:?}] *and* layer [{:?}]", &spec.path, &system, &layer);
+
+                        let spec_domain = String::from(spec.domain);
+                        match specs_per_domain.get(&spec_domain) {
+                            Some(related_specs) => {
+                                let mut specs = related_specs.clone();
+                                specs.insert( (shorten_spec_path(spec.path, catalogs, String::from(&spec.catalog_id)), String::from(&spec.catalog_id)) );
+                                specs_per_domain.insert(String::from(&spec_domain), specs);
+                            },
+                            None => {
+                                let mut related_specs = HashSet::new();
+                                related_specs.insert( (shorten_spec_path(spec.path, catalogs, String::from(&spec.catalog_id)), String::from(&spec.catalog_id)) );
+                                specs_per_domain.insert(String::from(&spec_domain), related_specs);
                             }
-                        );
+                        }                
                     }, 
                     false => {
                         debug!("spec [{:?}] matches system [{:?}] but not layer [{:?}]", spec.path, system, layer);
@@ -124,8 +140,34 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
 
     info!("Domain # from all catalogs, system [{:?}] and layer [{:?}] - [{:?}]", &system, &layer, &domains.len());
 
+    for (domain_name, specs) in specs_per_domain {
+            //create the vec of spec
+        let mut specs_object: Vec<Spec> = Vec::new();
+        for item in specs {
+            specs_object.push(Spec{ spec_path: item.0, catalog_id: item.1 })
+        }
+        
+        domains.insert( Domain {
+            name: String::from(domain_name),
+            specs: specs_object
+        }
+    );
+    }
+
     domains
 
+}
+
+
+fn shorten_spec_path (spec_path: String, catalogs: &Vec<Catalog>, catalog_id: String) -> String {
+    let returned_catalog = get_catalog_by_id(&catalogs, &catalog_id);
+    let mut short_spec_path = String::from(&spec_path);
+    if let Some(catalog) = returned_catalog{
+        let tmp = extact_relative_path(&spec_path, &catalog.catalog_dir);
+        short_spec_path = String::from(tmp);
+    }
+
+    short_spec_path
 }
 
 fn get_all_layers_per_systems(path: &str) -> std::collections::HashMap<System, Vec<Layer>>{
@@ -174,7 +216,7 @@ fn get_all_layers_per_systems(path: &str) -> std::collections::HashMap<System, V
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::settings::Catalog;
+    use crate::shared::settings::*;
 
     #[test]
     fn test_get_all_layres_per_systems() {
@@ -220,7 +262,7 @@ mod tests {
         let mut catalogs = Vec::new();
         catalogs.push(catalog);
 
-        let sut = super::get_domains_per_system_and_layer(&catalogs, &String::from("bpaas"), &String::from("application"));
+        let sut = super::get_domains_per_system_and_layer( &catalogs, &String::from("bpaas"), &String::from("application"));
         assert_eq!(sut.len(), 1);
         assert_eq!(sut.iter().next().unwrap().name, "/v1/audit/trails");
         //same test as above but check case 

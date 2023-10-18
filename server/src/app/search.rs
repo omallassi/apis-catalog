@@ -33,7 +33,7 @@ pub async fn search_specs(query: Json<Query>) -> impl Responder{
             let mut tmp = Vec::new();
             for result in results {
                 let catalog_id = &result.catalog_id[0];
-                let returned_catalog = &SETTINGS.get_catalog_by_id(&catalog_id);
+                let returned_catalog = get_catalog_by_id(&SETTINGS.catalogs, &catalog_id);
 
                 let mut new_spec_path = String::from(&result.spec_path[0]);
                 if let Some(catalog) = returned_catalog{

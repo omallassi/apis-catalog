@@ -1,6 +1,6 @@
 use std::env;
 extern crate log;
-use log::info;
+use log::{info};
 
 //extern crate env_logger;
 
@@ -79,29 +79,37 @@ impl Settings {
             Err(_why) => String::from("server/config/local"),
         };
 
-        info!("Will load Configuration from file - [{:?}]", config_file_path);
+        // config_file_path = match fs::metadata(&config_file_path){
+        //     Ok(_) => {
+        //         info!("Will load Configuration from file - [{:?}]", config_file_path);
+        //         config_file_path
+        //     }, 
+        //     Err(_e) => {
+        //         error!("Unable to load config file [{:?}] - will load test file [server/config/test/test]", &config_file_path);
+        //         String::from("server/config/test/test")
+        //     }
+        // };
 
-        settings
-            .merge(config::File::with_name(config_file_path.as_str()))
-            .unwrap()
+        let mut config = settings.merge(config::File::with_name(config_file_path.as_str())).unwrap();
+        config = config
             // Add in settings from the environment (with a prefix of API)
             // Eg.. `API_DEBUG=1 ./target/app` would set the `debug` key
             .merge(config::Environment::with_prefix("API"))
             .unwrap();
-
+        
         info!("Configuration has been loaded - [{:?}]", settings);
         settings.try_deserialize::<Settings>()
     }
+}
 
-    pub fn get_catalog_by_id(&self, id: &str) -> Option<Catalog> {
-        let mut val = None;
-        for catalog in &SETTINGS.catalogs {
-            if String::from(id) == catalog.catalog_id{
-                val = Some(catalog);
-                break;
-            }
-        };
+pub fn get_catalog_by_id(catalogs: &Vec<Catalog>, id: &str) -> Option<Catalog> {
+    let mut val = None;
+    for catalog in catalogs {
+        if String::from(id) == catalog.catalog_id{
+            val = Some(catalog);
+            break;
+        }
+    };
 
-        val.cloned()
-    }
+    val.cloned()
 }
