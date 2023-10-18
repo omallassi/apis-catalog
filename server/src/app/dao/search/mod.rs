@@ -28,12 +28,13 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
     let mut schema_builder = Schema::builder();
     schema_builder.add_text_field("audience", TEXT | STORED);
     schema_builder.add_text_field("domain", TEXT | STORED);
+    schema_builder.add_text_field("systems", TEXT | STORED);
     schema_builder.add_text_field("layer", TEXT | STORED);
     schema_builder.add_text_field("path", TEXT | STORED);
+    schema_builder.add_text_field("operations", TEXT | STORED);
     schema_builder.add_text_field("summary", TEXT);
     schema_builder.add_text_field("description", TEXT);
     schema_builder.add_text_field("catalog_id", TEXT | STORED);
-    schema_builder.add_text_field("operation", TEXT);
     schema_builder.add_text_field("spec_path", TEXT | STORED);
     //TODO schema_builder.add_text_field("system", TEXT);
     let schema = schema_builder.build();
@@ -47,21 +48,23 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
 
     let audience = schema.get_field("audience").unwrap();
     let domain = schema.get_field("domain").unwrap();
+    let systems = schema.get_field("systems").unwrap();
     let layer = schema.get_field("layer").unwrap();
     let path = schema.get_field("path").unwrap();
+    let operations = schema.get_field("operations").unwrap();
     let summary = schema.get_field("summary").unwrap();
     let description = schema.get_field("description").unwrap();
     let catalog_id = schema.get_field("catalog_id").unwrap();
-    let operation = schema.get_field("operation").unwrap();
     let spec_path = schema.get_field("spec_path").unwrap();
 
     //  will index all specs
     for spec in specs {
+        let systems_as_text = spec.systems.join(" ");
         let paths = &spec.api_spec.paths;
         for (path_value, path_item) in paths.iter() {
             match path_item.as_item() {
                 Some(item) => {
-
+                    //need to get the http method fro the PathItem
                     let http_methods: [(&str, &Option<openapiv3::Operation>); 7] = [
                         ("GET", &item.get),
                         ("POST", &item.post),
@@ -72,21 +75,33 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
                         ("PATCH", &item.patch),
                     ];
 
+                    let mut ope_summaries = String::from("");
+                    let mut ope_descriptions = String::from("");
+                    let mut opes = String::from("");
+
                     for (method, operation_option) in &http_methods {
                         if let Some(ref ope) = operation_option {
-                            index_writer.add_document(doc!(
-                                audience => String::from(&spec.audience),
-                                domain => String::from(&spec.domain), 
-                                layer => String::from(&spec.layer),
-                                path => String::from(path_value),
-                                summary => format!("{:?}", ope.summary),
-                                description => format!("{:?}", ope.description),
-                                catalog_id => String::from(&spec.catalog_id), 
-                                operation => format!("{:?}", method),
-                                spec_path => String::from(&spec.path),
-                            )).ok();
+                            ope_summaries.push_str( ope.summary.clone().unwrap_or("N/A".to_string()).as_str() );
+                            ope_summaries.push_str(" ");
+                            ope_descriptions.push_str( ope.description.clone().unwrap_or("N/A".to_string()).as_str() );
+                            ope_descriptions.push_str(" ");
+                            opes.push_str(*method);
+                            opes.push_str(" ");
                         }
                     }
+                    //add the doc to the index 
+                    index_writer.add_document(doc!(
+                        audience => String::from(&spec.audience),
+                        domain => String::from(&spec.domain), 
+                        systems => String::from(&systems_as_text),
+                        layer => String::from(&spec.layer),
+                        path => String::from(path_value),
+                        operations => opes,
+                        summary => ope_summaries,
+                        description => ope_descriptions,
+                        catalog_id => String::from(&spec.catalog_id), 
+                        spec_path => String::from(&spec.path),
+                    )).ok();
                 },
                 None => {
                     warn!("No path to index for spec {:?}", spec.path);
@@ -104,8 +119,10 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
 pub struct SearchResult {
     pub audience: [String; 1],
     pub domain: [String; 1],
+    pub systems: [String; 1],
     pub layer: [String; 1],
     pub path: [String; 1],
+    pub operations: [String; 1],
     pub catalog_id: [String; 1],
     pub spec_path: [String; 1],
 }
@@ -121,23 +138,25 @@ pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantiv
     let mut schema_builder = Schema::builder();
     schema_builder.add_text_field("audience", TEXT | STORED);
     schema_builder.add_text_field("domain", TEXT | STORED);
+    schema_builder.add_text_field("systems", TEXT | STORED);
     schema_builder.add_text_field("layer", TEXT | STORED);
     schema_builder.add_text_field("path", TEXT | STORED);
+    schema_builder.add_text_field("operations", TEXT | STORED);
     schema_builder.add_text_field("summary", TEXT);
     schema_builder.add_text_field("description", TEXT);
     schema_builder.add_text_field("catalog_id", TEXT | STORED);
-    schema_builder.add_text_field("operation", TEXT);
     schema_builder.add_text_field("spec_path", TEXT | STORED);
     let schema = schema_builder.build();
 
     let audience = schema.get_field("audience").unwrap();
     let domain = schema.get_field("domain").unwrap();
+    let systems = schema.get_field("systems").unwrap();
     let layer = schema.get_field("layer").unwrap();
     let path = schema.get_field("path").unwrap();
+    let operations = schema.get_field("operations").unwrap();
     let summary = schema.get_field("summary").unwrap();
     let description = schema.get_field("description").unwrap();
     let catalog_id = schema.get_field("catalog_id").unwrap();
-    let operation = schema.get_field("operation").unwrap();
     let spec_path = schema.get_field("spec_path").unwrap();
 
     let reader = index
@@ -146,7 +165,7 @@ pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantiv
         .try_into()?;
 
     let searcher = reader.searcher();
-    let query_parser = QueryParser::for_index(&index, vec![audience, domain, layer, path, summary, description, catalog_id, operation, spec_path]);
+    let query_parser = QueryParser::for_index(&index, vec![audience, domain, systems, layer, path, operations, summary, description, catalog_id, spec_path]);
     let query = match query_parser.parse_query(&query_as_string){
         Ok(e) => e,
         Err(why) => panic!("Search | Error while parsing {:?}", why),

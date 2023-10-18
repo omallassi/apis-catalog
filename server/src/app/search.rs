@@ -17,8 +17,10 @@ pub struct Query {
 pub struct Result {
     pub audience: String,
     pub domain: String,
+    pub systems: Vec<String>,
     pub layer: String,
     pub path: String,
+    pub operations: Vec<String>,
     pub catalog_id: String,
     pub spec_path: String,
 }
@@ -41,11 +43,17 @@ pub async fn search_specs(query: Json<Query>) -> impl Responder{
                     new_spec_path = String::from(tmp);
                 }
 
+
+                let systems_as_vec: Vec<String> = String::from(&result.systems[0]).split_whitespace().map(String::from).collect();
+                let operations_as_vec: Vec<String> = String::from(&result.operations[0]).split_whitespace().map(String::from).collect();
+
                 tmp.push(Result{
                     audience: String::from(&result.audience[0]),
                     domain: String::from(&result.domain[0]),
+                    systems: systems_as_vec,
                     layer: String::from(&result.layer[0]),
                     path: String::from(&result.path[0]),
+                    operations: operations_as_vec,
                     catalog_id: String::from(catalog_id),
                     spec_path: new_spec_path,
                 });
