@@ -11,6 +11,7 @@ use log::{info, error};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Query {
     pub query: String,
+    pub limit: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -27,9 +28,9 @@ pub struct Result {
 
 #[post("/v1/search")]
 pub async fn search_specs(query: Json<Query>) -> impl Responder{
-    info!("search_specs [{:?}]", query.query);
+    info!("search_specs [{:?}] with limit [{:?}]", query.query, query.limit);
 
-    let search_results = search(&SETTINGS.search.index_path, String::from(&query.query), 10000);
+    let search_results = search(&SETTINGS.search.index_path, String::from(&query.query), query.limit);
     let results = match search_results {
         Ok(results) => {
             let mut tmp = Vec::new();
