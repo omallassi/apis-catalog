@@ -88,7 +88,7 @@ pub async fn get_all_metrics() -> impl Responder {
         };
 
     //will combine PR informations with metrics
-    let merged_prs: Vec<PullRequest> = get_pull_requests("MERGED").values;
+    let merged_prs: Vec<PullRequest> = get_pull_requests("MERGED").await.values;
     let merged_prs: Vec<(DateTime<Utc>, PullRequest)> = merged_prs
         .into_iter()
         .map(|val| {
@@ -142,7 +142,7 @@ pub async fn get_all_metrics() -> impl Responder {
 pub async fn refresh_metrics() -> impl Responder {
     info!("refresh metrics");
     //
-    let pull_requests: PullRequests = get_pull_requests("OPEN");
+    let pull_requests: PullRequests = get_pull_requests("OPEN").await;
 
     //keep metric pr_num
     let metrics = get_metrics_pull_requests_number(&pull_requests);

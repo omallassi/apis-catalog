@@ -6,7 +6,6 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 extern crate reqwest;
-use reqwest::Client;
 
 use crate::app::dao::repo_apis::*;
 use crate::app::dao::repo_domains::*;
@@ -307,7 +306,7 @@ pub async fn get_oldest_pr(param: web::Query<OldestPrLimit>) -> impl Responder {
     };
 
     info!("get oldest pull-request with limit {:?}", limit);
-    let pull_requests: PullRequests = get_pull_requests("OPEN");
+    let pull_requests: PullRequests = get_pull_requests("OPEN").await;
 
     let current_epoch = std::time::SystemTime::now();
     let current_epoch = current_epoch.duration_since(std::time::UNIX_EPOCH).unwrap();
@@ -340,16 +339,16 @@ pub async fn get_oldest_pr(param: web::Query<OldestPrLimit>) -> impl Responder {
 #[get("/v1/merged-pull-requests")]
 pub async fn get_merged_pr() -> impl Responder {
     info!("get merged pull-request");
-    let pull_requests: PullRequests = get_pull_requests("MERGED");
+    let pull_requests: PullRequests = get_pull_requests("MERGED").await;
 
     let pull_requests: Vec<_> = pull_requests.values;
     //
     HttpResponse::Ok().json(pull_requests)
 }
 
-pub fn get_pull_requests(status: &str) -> PullRequests {
+pub async fn get_pull_requests(status: &str) -> PullRequests {
     let access_token = SETTINGS.stash_config.access_token.clone();
-    let client = Client::new();
+    let client = reqwest::Client::new();
 
     let url = format!(
         "{}/pull-requests?state={}&limit=1000",
@@ -359,11 +358,12 @@ pub fn get_pull_requests(status: &str) -> PullRequests {
         .get(url.as_str())
         .header("Authorization", format!("Bearer {}", access_token))
         .send()
+        .await
         .unwrap();
 
     debug!("Calling {} - got HTTP Status {:?}", url, resp.status());
     //TODO manage unwrap withe resp.status().is_success() or is_server_error()
-    let pull_requests: PullRequests = resp.json().unwrap();
+    let pull_requests: PullRequests = resp.json().await.unwrap();
 
     pull_requests
 }
@@ -439,11 +439,11 @@ pub async fn list_all_reviews() -> impl Responder {
     let mut reviews = Vec::new();
 
     //get all Opened PRs
-    let pull_requests: PullRequests = get_pull_requests("OPEN");
+    let pull_requests: PullRequests = get_pull_requests("OPEN").await;
 
     //for each PR, get diff
     let access_token = SETTINGS.stash_config.access_token.clone();
-    let client = Client::new();
+    let client = reqwest::blocking::Client::new();
 
     for pr in pull_requests.values {
         let pr_id: i32 = pr.id;

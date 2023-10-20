@@ -7,7 +7,7 @@ use prettytable::format;
 use prettytable::{Table};
 
 extern crate reqwest;
-use reqwest::{Client, Response};
+use reqwest::blocking::{Client, Response};
 use serde::{Deserialize, Serialize};
 
 extern crate env_logger;

@@ -29,6 +29,6 @@ impl Settings {
             .unwrap();
 
         info!("Configuration has been loaded - [{:?}]", settings);
-        settings.try_into()
+        settings.try_deserialize::<Settings>()
     }
 }
