@@ -66,4 +66,4 @@ jobs:
         with: 
           context: ./server/
           push: true
-          tags: ghcr.io/omallassi/apis-catalog:latest
+          tags: ghcr.io/omallassi/apis-catalog:master
