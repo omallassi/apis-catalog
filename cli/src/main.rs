@@ -1,5 +1,5 @@
 extern crate clap;
-use clap::{App, AppSettings, Arg, SubCommand};
+use clap::{arg, command, value_parser, ArgAction, Command};
 
 #[macro_use]
 extern crate prettytable;
@@ -27,68 +27,64 @@ extern crate lazy_static;
 mod settings;
 use settings::*;
 
-//
-#[derive(Serialize, Deserialize, Debug)]
-struct Endpoints {
-    endpoints: Vec<Endpoint>,
-}
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Endpoint {
-    name: String,
-}
 
-fn get_endpoints(api: &str) -> Result<(), reqwest::Error> {
-    let client = Client::new();
-    let url = format!(
-        "http://{address}/v1/endpoints/{api}",
-        address = &SETTINGS.server.address,
-        api = &api
-    );
-    let mut resp = client.get(&url).send()?;
-    debug!("body: {:?}", resp.status());
-    let endpoints: Endpoints = resp.json()?;
-    //
-    let mut table = Table::new();
-    table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row![b -> "Endpoints", b -> "Deployed Version"]);
-    for val in endpoints.endpoints {
-        table.add_row(row![val.name, "..."]);
+
+fn main() {
+    env_logger::init();
+    
+    let matches = command!() 
+        .subcommand(
+        Command::new("catalogs")
+            .about("everything related to catalogs")
+            .arg(
+                arg!(-l --list "lists all configured catalogs").action(ArgAction::SetTrue)
+            )
+            .arg(
+                arg!(-r --refresh "refresh all configured catalogs").action(ArgAction::SetTrue)
+            ),
+        )
+        .get_matches();
+
+    if let Some(matches) = matches.subcommand_matches("catalogs") {
+        // "$ myapp test" was run
+        if matches.get_flag("list") {
+            let _ = list_all_catalogs();
+        } 
+        if matches.get_flag("refresh") {
+            refresh_all_catalogs();
+        } 
+
     }
-
-    // Print the table to stdout
-    table.printstd();
-
-    Ok(())
 }
+
+
 
 //
-#[derive(Serialize, Deserialize)]
-struct Specs {
-    specs: Vec<Spec>,
+#[derive(Deserialize)]
+struct Catalog {
+    name: String, 
+    id: String, 
+    http_base_uri: String
 }
 
-#[derive(Serialize, Deserialize)]
-struct Spec {
-    name: String,
-    id: String,
-}
 
-fn get_specs() -> Result<(), reqwest::Error> {
+fn list_all_catalogs() -> Result<(), reqwest::Error> {
     let client = Client::new();
     let url = format!(
-        "http://{address}/v1/specs",
+        "http://{address}/v1/catalogs",
         address = &SETTINGS.server.address
     );
-    let mut resp = client.get(&url).send()?;
-    debug!("body: {:?}", resp.status());
-    let specs: Specs = resp.json()?;
+
+    let resp = client.get(&url).send()?;
+    debug!("body: {:?}", &resp.status());
+    let catalogs: Vec<Catalog> = resp.json()?;
     //
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row![b -> "Id", b -> "Specs"]);
-    for val in specs.specs {
-        table.add_row(row![val.id, val.name]);
+    table.set_titles(row![b -> "Id", b -> "Name", b -> "Base URI"]);
+    for val in catalogs {
+        table.add_row(row![val.id, val.name, val.http_base_uri]);
     }
 
     // Print the table to stdout
@@ -96,6 +92,19 @@ fn get_specs() -> Result<(), reqwest::Error> {
 
     Ok(())
 }
+
+fn refresh_all_catalogs() -> Result<(), reqwest::Error> {
+    let client = Client::new();
+    let url = format!(
+        "http://{address}/v1/catalogs/refresh",
+        address = &SETTINGS.server.address
+    );
+
+    let resp = client.post(&url).send()?;
+    println!("Refreshed Catalogs with status {:?}", &resp.status());
+    Ok(())
+}
+
 
 //
 #[derive(Serialize, Deserialize, Debug)]
@@ -165,81 +174,7 @@ fn get_deployments(api: Option<&str>) -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Domain {
-    name: String,
-    id: Uuid,
-    description: String,
-    owner: String,
-}
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Domains {
-    domains: Vec<Domain>,
-}
-
-fn get_domains() -> Result<(), reqwest::Error> {
-    let client = Client::new();
-    let url = format!(
-        "http://{address}/v1/domains",
-        address = &SETTINGS.server.address
-    );
-    let mut resp = client.get(&url).send()?;
-    debug!("body: {:?}", resp.status());
-    let domains: Domains = resp.json()?;
-    //
-    let mut table = Table::new();
-    table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(
-        row![b -> "Id", b -> "Domain Name", b -> "Domain Description", b -> "Domain Owner"],
-    );
-    for domain in domains.domains {
-        table.add_row(row![
-            domain.id,
-            domain.name,
-            domain.description,
-            domain.owner
-        ]);
-    }
-
-    // Print the table to stdout
-    table.printstd();
-
-    Ok(())
-}
-
-fn create_domain(name: &str, description: &str, owner: &str) -> Result<(), reqwest::Error> {
-    let client = Client::new();
-
-    let domain = Domain {
-        id: Uuid::nil(),
-        name: name.to_string(),
-        description: description.to_string(),
-        owner: owner.to_string(),
-    };
-    let url = format!(
-        "http://{address}/v1/domains",
-        address = &SETTINGS.server.address
-    );
-    let resp = client.post(&url).json(&domain).send()?;
-    debug!("body: {:?}", resp.status());
-
-    Ok(())
-}
-
-fn delete_domain(id: &str) -> Result<(), reqwest::Error> {
-    let client = Client::new();
-
-    let url = format!(
-        "http://{address}/v1/domains/{id}",
-        address = &SETTINGS.server.address,
-        id = id
-    );
-    let resp = client.delete(&url).send()?;
-    debug!("Got Response [{:?}]", resp);
-
-    Ok(())
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tier {
@@ -471,367 +406,4 @@ fn create_env(name: &str, description: &str) -> Result<(), reqwest::Error> {
 
 lazy_static! {
     static ref SETTINGS: settings::Settings = Settings::new().unwrap();
-}
-
-fn main() {
-    env_logger::init();
-
-    let matches = App::new("catalog")
-        .version("0.1.0")
-        .about("a CLI tool to get information on apis-catalog")
-        .subcommand(
-            App::new("domains")
-                .about("Manage Domains")
-                .setting(AppSettings::SubcommandRequiredElseHelp)
-                .subcommand(SubCommand::with_name("list").about("List All the Domains"))
-                .subcommand(
-                    SubCommand::with_name("create")
-                        .about("Create a new Domain")
-                        .arg(
-                            Arg::with_name("name")
-                                .short("n")
-                                .long("name")
-                                .takes_value(true)
-                                .required(true)
-                                .help("The name of the domain"),
-                        )
-                        .arg(
-                            Arg::with_name("description")
-                                .short("d")
-                                .long("description")
-                                .takes_value(true)
-                                .required(false)
-                                .help("Some description, if you want to..."),
-                        )
-                        .arg(
-                            Arg::with_name("owner")
-                                .short("o")
-                                .long("owner")
-                                .takes_value(true)
-                                .required(false)
-                                .help("The name of the owner of this domain"),
-                        ),
-                )
-                .subcommand(
-                    SubCommand::with_name("delete")
-                        .about("Delete a new Domain")
-                        .arg(
-                            Arg::with_name("id")
-                                .long("id")
-                                .takes_value(true)
-                                .required(true)
-                                .help("The name of the domain"),
-                        ),
-                ),
-        )
-        .subcommand(
-            App::new("specs")
-                .about("Manage Specifications")
-                .setting(AppSettings::SubcommandRequiredElseHelp)
-                .subcommand(SubCommand::with_name("list").about("List All the Specs")),
-        )
-        .subcommand(
-            App::new("tiers")
-                .about("Manage Tiers and Layers")
-                .setting(AppSettings::SubcommandRequiredElseHelp)
-                .subcommand(
-                    SubCommand::with_name("create")
-                        .about("Create a new Tier")
-                        .arg(
-                            Arg::with_name("name")
-                                .short("n")
-                                .long("name")
-                                .takes_value(true)
-                                .required(true)
-                                .help("The name of the tier"),
-                        ),
-                )
-                .subcommand(SubCommand::with_name("list").about("List All the Tiers")),
-        )
-        .subcommand(
-            App::new("apis")
-                .about("Manage APIs")
-                .setting(AppSettings::SubcommandRequiredElseHelp)
-                .subcommand(
-                    SubCommand::with_name("list")
-                        .about("List all available apis")
-                        .version("0.1"),
-                )
-                .subcommand(
-                    SubCommand::with_name("create")
-                        .about("Create a new API")
-                        .arg(
-                            Arg::with_name("name")
-                                .short("n")
-                                .long("name")
-                                .takes_value(true)
-                                .required(true)
-                                .help("The name of the api"),
-                        )
-                        .arg(
-                            Arg::with_name("domain-id")
-                                .long("domain-id")
-                                .takes_value(true)
-                                .required(true)
-                                .help("The id of the domain the API belongs to"),
-                        )
-                        .arg(
-                            Arg::with_name("spec-ids")
-                                .long("spec-ids")
-                                .takes_value(true)
-                                .required(true)
-                                .min_values(1)
-                                .help("The id(s) of the spec(s) to add to the api"),
-                        ),
-                )
-                .subcommand(
-                    SubCommand::with_name("status")
-                        .about("set the status of the api")
-                        .arg(
-                            Arg::with_name("value")
-                                .short("v")
-                                .long("value")
-                                .takes_value(true)
-                                .possible_values(&["validated", "deprecated", "retired"])
-                                .required(true),
-                        )
-                        .arg(
-                            Arg::with_name("api")
-                                .short("a")
-                                .long("api")
-                                .takes_value(true)
-                                .required(true),
-                        ),
-                )
-                .subcommand(
-                    SubCommand::with_name("tier")
-                        .about("set the tier of the api")
-                        .arg(
-                            Arg::with_name("tier")
-                                .short("t")
-                                .long("tier")
-                                .takes_value(true)
-                                .required(true),
-                        )
-                        .arg(
-                            Arg::with_name("api")
-                                .short("a")
-                                .long("api")
-                                .takes_value(true)
-                                .required(true),
-                        ),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("endpoints")
-                .about("Give access to list of items")
-                .version("0.1")
-                .arg(
-                    Arg::with_name("spec")
-                        .short("s")
-                        .long("spec")
-                        .takes_value(true)
-                        .required(true)
-                        .help("List all available endpoints for specified spec"),
-                ),
-        )
-        .subcommand(
-            App::new("deployments")
-                .about("Manage deployments")
-                .setting(AppSettings::SubcommandRequiredElseHelp)
-                .subcommand(
-                    SubCommand::with_name("list")
-                        .about("List all deployments (for the specified api)")
-                        .arg(
-                            Arg::with_name("api")
-                                .long("api")
-                                .takes_value(true)
-                                .required(false)
-                                .help("The id of the api"),
-                        ),
-                )
-                .subcommand(
-                    SubCommand::with_name("create")
-                        .about("Create a new deployment (for the specified api)")
-                        .arg(
-                            Arg::with_name("api")
-                                .long("api")
-                                .takes_value(true)
-                                .required(false)
-                                .help("The id of the api"),
-                        )
-                        .arg(
-                            Arg::with_name("env")
-                                .short("e")
-                                .long("env")
-                                .takes_value(true)
-                                .required(true)
-                                .help("env id"),
-                        ),
-                ),
-        )
-        .subcommand(
-            App::new("env")
-                .about("Manage environments")
-                .setting(AppSettings::SubcommandRequiredElseHelp)
-                .subcommand(SubCommand::with_name("list").about("List all env"))
-                .subcommand(
-                    SubCommand::with_name("create")
-                        .about("Create a new env")
-                        .arg(
-                            Arg::with_name("name")
-                                .long("name")
-                                .takes_value(true)
-                                .required(true)
-                                .help("The name of the env"),
-                        )
-                        .arg(
-                            Arg::with_name("description")
-                                .long("description")
-                                .takes_value(true)
-                                .required(true)
-                                .help("A description associated to the env"),
-                        ),
-                ),
-        )
-        // .subcommand(
-        //     App::new("xxx - extensions: layers, services etc....").about("DO WE NEED THIS HERE?")
-        // )
-        .get_matches();
-
-    if let Some(matches) = matches.subcommand_matches("endpoints") {
-        if matches.is_present("spec") {
-            match get_endpoints(matches.value_of("spec").unwrap()){
-                Ok(_) => info!("operation ended normally"),
-                Err(e) => error!("Operation failed - {:?}", e),
-            };
-        }
-    }
-
-    match matches.subcommand() {
-        ("domains", Some(domains_matches)) => match domains_matches.subcommand() {
-            ("list", Some(_matches)) => {
-                match get_domains(){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            ("create", Some(matches)) => {
-                let description = match matches.value_of("description") {
-                    Some(description) => description,
-                    None => "N/A",
-                };
-
-                let owner = match matches.value_of("owner") {
-                    Some(owner) => owner,
-                    None => "N/A",
-                };
-
-                match create_domain(matches.value_of("name").unwrap(), description, owner){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            ("delete", Some(matches)) => {
-                match delete_domain(matches.value_of("id").unwrap()){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            _ => unreachable!(),
-        },
-        ("tiers", Some(tiers_matches)) => match tiers_matches.subcommand() {
-            ("create", Some(matches)) => {
-                match create_tier(matches.value_of("name").unwrap()){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            ("list", Some(_matches)) => {
-                match get_tiers(){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            _ => unreachable!(),
-        },
-        ("specs", Some(matches)) => match matches.subcommand() {
-            ("list", Some(_matches)) => {
-                match get_specs(){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            // ("deploy", Some(matches)) => {
-            //     deploy(matches.value_of("spec-id").unwrap(), matches.value_of("env").unwrap());
-            // }
-            _ => unreachable!(),
-        },
-        ("deployments", Some(deployments)) => match deployments.subcommand() {
-            ("list", Some(matches)) => {
-                match get_deployments(matches.value_of("api")){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),};
-            }
-            ("create", Some(matches)) => {
-                match deploy(matches.value_of("api").unwrap(), matches.value_of("env").unwrap()){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-
-            _ => unreachable!(),
-        },
-        ("env", Some(deployments)) => match deployments.subcommand() {
-            ("list", Some(_matches)) => {
-                match list_env(){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            ("create", Some(matches)) => {
-                create_env(
-                    matches.value_of("name").unwrap(),
-                    matches.value_of("description").unwrap(),
-                )
-                .unwrap();
-            }
-            _ => unreachable!(),
-        },
-        ("apis", Some(deployments)) => match deployments.subcommand() {
-            ("create", Some(matches)) => {
-                let specs: Vec<_> = matches.values_of("spec-ids").unwrap().collect();
-                let name = matches.value_of("name").unwrap();
-                let domain_id = matches.value_of("domain-id").unwrap();
-
-                create_api(name, domain_id, specs).unwrap();
-            }
-            ("list", Some(_matches)) => {
-                list_all_apis().unwrap();
-            }
-            ("status", Some(matches)) => {
-                match update_api_status(
-                    matches.value_of("api").unwrap(),
-                    matches.value_of("value").unwrap(),
-                ){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-            ("tier", Some(matches)) => {
-                match update_api_tier(
-                    matches.value_of("api").unwrap(),
-                    matches.value_of("tier").unwrap(),
-                ){
-                    Ok(_) => info!("operation ended normally"),
-                    Err(e) => error!("Operation failed - {:?}", e),
-                };
-            }
-
-            _ => unreachable!(),
-        },
-
-        ("", None) => println!("No subcommand was used"), // If no subcommand was usd it'll match the tuple ("", None)
-        _ => unreachable!(), // If all subcommands are defined above, anything else is unreachabe!()
-    }
 }

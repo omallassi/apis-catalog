@@ -7,9 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "2.31.2"
+clap = {version = "4.4.6", features=["derive", "cargo"] }
 reqwest = { version = "0.11.22", features = ["blocking", "json"] }
-serde = "1.0.104"
+serde = { version = "1.0.189", features = ["derive"] }
 log = "0.4.8"
 env_logger = "0.9.0"
 crossterm = "0.27.0"
