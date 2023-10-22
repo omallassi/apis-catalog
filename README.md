@@ -22,6 +22,8 @@ A lot of great solutions exists in these spaces and the goal here is not to repl
 The goals are 
 
 * to ease keeping track of your endpoints and APIs (be thy OpenAPI, WSDL, AsyncAPI etc...) : from inception to production and end of life
+* to help having an overview of the specs accross all possible [catalogs](https://github.com/omallassi/apis-catalog/blob/master/server/config/local-template.toml) of your organisation, the volumes of endpoints, 
+* to help you understanding your domains, how they spread per layers and systems etc.
 * to help you monitoring the efficiency of your governance process (whatever it is)
 
 With the following principles in mind: 
@@ -48,7 +50,7 @@ Refer to [this page](https://github.com/omallassi/apis-catalog/wiki/stats-overvi
 
 There are two clients that can be used
 
-* a [CLI](https://github.com/omallassi/apis-catalog/wiki/CLI-overview) that provides way to manage the artefacts of the catalog (_ie._ create domains, env, deployments etc...).
+* a [CLI](https://github.com/omallassi/apis-catalog/wiki/CLI-overview).
 * a [Web UI](https://github.com/omallassi/apis-catalog/wiki/Web-UI-Overview) that provides part of the `CLI`capabilities in terms of management but provides [additional reports](https://github.com/omallassi/apis-catalog-web) and [statistics](https://github.com/omallassi/apis-catalog/wiki/stats-overview).
 
 ## Getting Started
