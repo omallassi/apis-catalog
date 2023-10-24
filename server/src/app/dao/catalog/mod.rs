@@ -1,5 +1,3 @@
-extern crate glob;
-use glob::glob;
 use log::{debug, info, warn, error};
 
 extern crate yaml_rust;
@@ -58,11 +56,21 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
             for catalog in catalogs{
                 let path = catalog.catalog_path.as_str();
         
-                info!("Is loading OAI specs files from catalog [{:?}] - [{:?}]", &catalog.catalog_id, path);
-                let pattern = format!("{}{}", path, "/**/*.yaml");
-                for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
-                    let path = entry.display().to_string();
-                    let file_path = Path::new(&path);
+                info!("Is loading OAI specs files from catalog [{:?}] - [{:?}] with glob pattern {:?}", &catalog.catalog_id, path, &catalog.catalog_include_glob_pattern);
+                //let pattern = format!("{}{}", path, "/**/*.yaml");
+
+                let walker = globwalk::GlobWalkerBuilder::from_patterns(
+                    path,
+                    &catalog.catalog_include_glob_pattern //&["**/*.{yml,yaml}", "!**/{test,tests}/*"],
+                    )
+                    .build()
+                    .unwrap()
+                    .into_iter()
+                    .filter_map(Result::ok);
+
+                for entry in walker {
+                    let file_path = entry.path();
+                    //let file_path = Path::new(&path);
         
                     debug!("getting spec file [{:?}]", file_path);
         
@@ -82,7 +90,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                             let hash = hasher.finish();
                             
                             let spec: SpecItem = SpecItem {
-                                path: path,
+                                path: String::from(file_path.to_str().unwrap()),
                                 id: format!("{:?}", hash),
                                 api_spec: openapi.clone(),
                                 audience: audience,
@@ -741,12 +749,13 @@ mod tests {
     fn test_list_all_specs() {
         let mut path = std::path::PathBuf::new();
         path.push(env!("CARGO_MANIFEST_DIR"));
-        path.push("./tests/data/catalog/");
+        path.push("tests/data/catalog/");
 
         let catalog = Catalog{
             catalog_id: String::from("uuid"),
             catalog_name: String::from("name"), 
             catalog_dir: String::from("not used here"),
+            catalog_include_glob_pattern: vec![ String::from("**/*.{yml,yaml}"), String::from("!**/{test,tests}/*") ],
             catalog_scm_clone_cmd: String::from("not used here"), 
             catalog_scm_pull_cmd: String::from("not used here"), 
             catalog_path: path.into_os_string().into_string().unwrap(),
@@ -803,4 +812,6 @@ mod tests {
         assert_eq!("code/openapi-specifications/specifications/manual-tasks/openapi.yaml", sut);
 
     }
+
 }
+

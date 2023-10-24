@@ -43,6 +43,7 @@ pub struct Catalog {
     pub catalog_name: String,
     pub catalog_path: String,
     pub catalog_dir: String,
+    pub catalog_include_glob_pattern: Vec<String>,
     pub catalog_scm_clone_cmd: String,
     pub catalog_scm_pull_cmd: String,
     pub catalog_scm_clone: bool,

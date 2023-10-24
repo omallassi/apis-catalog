@@ -34,6 +34,17 @@ fn main() {
     env_logger::init();
     
     let matches = command!() 
+        // .subcommand(
+        //     Command::new("toto")
+        //     .arg(
+        //         arg!(
+        //             -c --config <FILE> "Sets a custom config file"
+        //         )
+        //         // We don't have syntax yet for optional options, so manually calling `required`
+        //         .required(false)
+        //         //.value_parser(value_parser!(PathBuf)),
+        //     )
+        // )
         .subcommand(
         Command::new("catalogs")
             .about("everything related to catalogs")
@@ -45,6 +56,15 @@ fn main() {
             ),
         )
         .get_matches();
+
+
+        // if let Some(matches) = matches.subcommand_matches("toto") {
+        // if let Some(config_path) = matches.get_one::<String>("config") {
+        //     println!("Value for config: {:?}", config_path);
+        // }
+        // }
+
+
 
     if let Some(matches) = matches.subcommand_matches("catalogs") {
         // "$ myapp test" was run

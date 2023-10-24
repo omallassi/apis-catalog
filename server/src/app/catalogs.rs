@@ -7,7 +7,6 @@ use std::collections::HashMap;
 extern crate reqwest;
 use crate::shared::settings::Catalog as RepoCatalog;
 use crate::shared::settings::SETTINGS;
-use crate::app::dao::search::*;
 
 use log::{info, error};
 
