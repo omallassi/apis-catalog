@@ -1,22 +1,20 @@
 [[catalogs]]
-# make a arrayt of table https://toml.io/en/v1.0.0#array-of-tables
 catalog_id = "$CATALOG_ID_0"
 catalog_name = "$CATALOG_NAME_0"
 catalog_path = "$CATALOG_PATH_0"
 catalog_dir = "$CATALOG_DIR_0"
-catalog_include_glob_pattern = "$CATALOG_INCLUDE_GLOB_PATTERN_0"
+catalog_include_glob_pattern = $CATALOG_INCLUDE_GLOB_PATTERN_0
 catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_0"
 catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_0"
 catalog_scm_clone = "$CATALOG_CLONE_0"
 catalog_http_base_uri = "$STASH_CONFIG_BASE_URI_0"
 
 [[catalogs]]
-# make a arrayt of table https://toml.io/en/v1.0.0#array-of-tables
 catalog_id = "$CATALOG_ID_1"
 catalog_name = "$CATALOG_NAME_1"
 catalog_path = "$CATALOG_PATH_1"
 catalog_dir = "$CATALOG_DIR_1"
-catalog_include_glob_pattern = "CATALOG_INCLUDE_GLOB_PATTERN_1"
+catalog_include_glob_pattern = $CATALOG_INCLUDE_GLOB_PATTERN_1
 catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_1"
 catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_1"
 catalog_scm_clone = "$CATALOG_CLONE_1"
@@ -27,7 +25,7 @@ catalog_id = "$CATALOG_ID_2"
 catalog_name = "$CATALOG_NAME_2"
 catalog_path = "$CATALOG_PATH_2"
 catalog_dir = "$CATALOG_DIR_2"
-catalog_include_glob_pattern = "$CATALOG_INCLUDE_GLOB_PATTERN_2"
+catalog_include_glob_pattern = $CATALOG_INCLUDE_GLOB_PATTERN_2
 catalog_scm_clone_cmd = "$CATALOG_GIT_CLONE_2"
 catalog_scm_pull_cmd = "$CATALOG_GIT_PULL_2"
 catalog_scm_clone = "$CATALOG_CLONE_2"

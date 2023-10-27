@@ -6,7 +6,6 @@ use yaml_rust::{Yaml, YamlLoader};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
-use std::path::Path;
 use std::vec::Vec;
 
 use openapiv3::OpenAPI;
