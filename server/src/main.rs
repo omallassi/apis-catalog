@@ -144,6 +144,7 @@ async fn main() {
             .service(app::catalogs::get_all_catalog)
             .service(app::catalogs::refresh_all_catalogs)
             .service(app::search::search_specs)
+            .service(app::config::get_config_for_ui)
             //Static resources mapping
             .service(actix_files::Files::new("/",  &SETTINGS.server.static_resources_path)
                 .redirect_to_slash_directory()

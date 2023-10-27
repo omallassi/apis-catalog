@@ -38,6 +38,14 @@ pub struct SystemsAndLayers {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct UiConfig {
+    pub api_doc_url: String, 
+    pub pact_url: String,
+    pub stash_base_url: String, 
+    pub beta: bool
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Catalog {
     pub catalog_id: String, 
     pub catalog_name: String,
@@ -64,6 +72,7 @@ pub struct Settings {
     pub server: Server,
     pub domain_repo_type: DomainRepoType,
     pub systems_and_layers: SystemsAndLayers,
+    pub ui_config: UiConfig,
     pub search: Search,
 }
 
