@@ -1,0 +1,70 @@
+asyncapi: "1.2.0"
+info:
+  title: "Portfolio Management - Full Revaluation - Business action"
+  version: "1.0"
+topics:
+  v1.portfolio-management.full-revaluation.business-action-request:
+    publish:
+      $ref: "#/components/messages/business-action-request"
+  v1.portfolio-management.full-revaluation.business-action-request-subscription:
+    subscribe:
+      $ref: "#/components/messages/business-action-request"
+    x-murex-binding-key: "#"
+    x-murex-destination: v1.portfolio-management.full-revaluation.business-action-request
+  v1.portfolio-management.full-revaluation.business-action-response:
+    publish:
+      $ref: "#/components/messages/business-action-response"
+  v1.portfolio-management.full-revaluation.business-action-response-subscription:
+    subscribe:
+      $ref: "#/components/messages/business-action-response"
+    x-murex-binding-key: "#"
+    x-murex-destination: v1.portfolio-management.full-revaluation.business-action-response
+    x-murex-distribution: multicast
+components:
+  messages:
+    business-action-request:
+      summary: "business action request message"
+      headers:
+        properties:
+          requestId:
+            type: string
+          requestType:
+            enum:
+            - positionsplit
+            - positiontransfer
+            type: string
+          processingUser:
+            type: string
+          processingGroup:
+            type: string
+          processingDesk:
+            type: string
+          processingDeskDate:
+            type: string
+          clientId:
+            type: string
+          messagingConnectionID:
+            type: string
+        type: object
+      payload:
+        properties: ~
+        type: object
+    business-action-response:
+      summary: "business action response message"
+      header:
+        properties:
+          requestId:
+            type: string
+          responseType:
+            enum:
+            - processing
+            - result
+            type: string
+          clientId:
+            type: string
+          messagingConnectionID:
+            type: string
+        type: object
+      payload:
+        properties: ~
+        type: object
