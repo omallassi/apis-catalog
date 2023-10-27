@@ -443,7 +443,7 @@ pub async fn list_all_reviews() -> impl Responder {
 
     //for each PR, get diff
     let access_token = SETTINGS.stash_config.access_token.clone();
-    let client = reqwest::blocking::Client::new();
+    let client = reqwest::Client::new();
 
     for pr in pull_requests.values {
         let pr_id: i32 = pr.id;
@@ -456,9 +456,10 @@ pub async fn list_all_reviews() -> impl Responder {
             .get(url.as_str())
             .header("Authorization", format!("Bearer {}", access_token))
             .send()
+            .await
             .unwrap();
 
-        let response: PullRequestDiffs = resp.json().unwrap();
+        let response: PullRequestDiffs = resp.json().await.unwrap();
 
         let mut diffs: Vec<Diff> = Vec::new();
         for diff in &response.diffs {
