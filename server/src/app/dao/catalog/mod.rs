@@ -4,7 +4,6 @@ extern crate yaml_rust;
 use yaml_rust::{Yaml, YamlLoader};
 
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 
 use std::vec::Vec;
 
@@ -24,6 +23,7 @@ use crate::shared::settings::{Catalog, SETTINGS};
 pub struct SpecItem {
     pub path: std::string::String,
     pub id: std::string::String,
+    pub version: std::string::String,
     pub api_spec: OpenAPI,
     pub audience: std::string::String,
     pub domain: std::string::String,
@@ -83,15 +83,13 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                             let layer = get_layer_from_spec(&openapi);
                             let systems = get_systems_from_spec(&openapi);
                             let api_id = get_api_id_from_spec(&openapi);
+                            let version = get_version_from_spec(&openapi);
         
                             //create the API Item and add it to the returned value
-                            // let mut hasher = std::collections::hash_map::DefaultHasher::new();
-                            // path.hash(&mut hasher);
-                            // let hash = hasher.finish();
-                            
                             let spec: SpecItem = SpecItem {
                                 path: String::from(file_path.to_str().unwrap()),
                                 id: api_id.to_string(),
+                                version: version,
                                 api_spec: openapi.clone(),
                                 audience: audience,
                                 domain: domain.to_string(),
@@ -140,6 +138,10 @@ fn get_api_id_from_spec(spec: &OpenAPI) -> String {
     };
 
     api_id
+}
+
+fn get_version_from_spec(spec: &OpenAPI) -> String {
+    spec.info.version.clone()
 }
 
 fn get_layer_from_spec(spec: &OpenAPI) -> String {
@@ -523,6 +525,7 @@ impl Cache {
 #[cfg(test)]
 mod tests {
     use diesel::ExpressionMethods;
+    use serde_yaml::Value;
 
     use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
 
@@ -547,6 +550,7 @@ mod tests {
         let spec_item = super::SpecItem {
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
+            version: String::from("1.0.0"),
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
@@ -581,6 +585,7 @@ mod tests {
         let spec_item = super::SpecItem {
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
+            version: String::from("1.0.0"),
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
@@ -608,6 +613,7 @@ mod tests {
         let spec_item = super::SpecItem {
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
+            version: String::from("1.0.0"),
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
@@ -810,6 +816,7 @@ mod tests {
         let spec = SpecItem {
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             id: String::from("not used"),
+            version: String::from("1.0.0"),
             api_spec: openapi_spec, 
             audience: String::from("not used here"),
             domain: String::from("not used here"), 
@@ -864,6 +871,35 @@ mod tests {
         let sut = super::get_api_id_from_spec(&openapi_spec);
         assert_eq!(sut, "134");
     }
+
+    #[test]
+    fn test_play_with_async_api(){
+        let mut path = std::path::PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("tests/data/catalog/async-api-sample.yaml");
+
+        let spec_file = std::fs::File::open(path).unwrap();
+
+        let spec_as_object: serde_yaml::Value = serde_yaml::from_reader(spec_file).unwrap();
+
+        println!("title {:?}", &spec_as_object["info"]["title"]);
+        println!("title {:?}", &spec_as_object["info"]["version"]);
+
+        let channels: &Value = &spec_as_object["channels"];
+        //println!("channels {:?}", &spec_as_object["channels"]);
+        println!("channels {:?}", spec_as_object.get("channels") );
+
+        let tot = spec_as_object.get("channels").unwrap();
+        let toto = tot.as_mapping().unwrap();
+        for (k, v) in toto.into_iter(){
+            //println!("**** {:?} - {:?}", k, v);
+            println!("**** {:?}", k.as_str().unwrap());
+        }
+        
+
+       
+    }
+
 
 }
 

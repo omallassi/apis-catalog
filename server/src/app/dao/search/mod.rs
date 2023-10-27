@@ -36,6 +36,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
     schema_builder.add_text_field("description", TEXT);
     schema_builder.add_text_field("catalog_id", TEXT | STORED);
     schema_builder.add_text_field("spec_path", TEXT | STORED);
+    schema_builder.add_text_field("version", TEXT | STORED);
     //TODO schema_builder.add_text_field("system", TEXT);
     let schema = schema_builder.build();
 
@@ -56,6 +57,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
     let description = schema.get_field("description").unwrap();
     let catalog_id = schema.get_field("catalog_id").unwrap();
     let spec_path = schema.get_field("spec_path").unwrap();
+    let spec_version = schema.get_field("version").unwrap();
 
     //  will index all specs
     for spec in specs {
@@ -101,6 +103,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
                         description => ope_descriptions,
                         catalog_id => String::from(&spec.catalog_id), 
                         spec_path => String::from(&spec.path),
+                        spec_version => String::from(&spec.version),
                     )).ok();
                 },
                 None => {
@@ -125,6 +128,7 @@ pub struct SearchResult {
     pub operations: [String; 1],
     pub catalog_id: [String; 1],
     pub spec_path: [String; 1],
+    pub version: [String; 1],
 }
 
 pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantivy::Result<Vec<SearchResult>> {
@@ -146,6 +150,8 @@ pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantiv
     schema_builder.add_text_field("description", TEXT);
     schema_builder.add_text_field("catalog_id", TEXT | STORED);
     schema_builder.add_text_field("spec_path", TEXT | STORED);
+    schema_builder.add_text_field("version", TEXT | STORED);
+    
     let schema = schema_builder.build();
 
     let audience = schema.get_field("audience").unwrap();
@@ -158,6 +164,7 @@ pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantiv
     let description = schema.get_field("description").unwrap();
     let catalog_id = schema.get_field("catalog_id").unwrap();
     let spec_path = schema.get_field("spec_path").unwrap();
+    let spec_version = schema.get_field("version").unwrap();
 
     let reader = index
         .reader_builder()
@@ -165,7 +172,7 @@ pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantiv
         .try_into()?;
 
     let searcher = reader.searcher();
-    let query_parser = QueryParser::for_index(&index, vec![audience, domain, systems, layer, path, operations, summary, description, catalog_id, spec_path]);
+    let query_parser = QueryParser::for_index(&index, vec![audience, domain, systems, layer, path, operations, summary, description, catalog_id, spec_path, spec_version]);
     let query = match query_parser.parse_query(&query_as_string){
         Ok(e) => e,
         Err(why) => panic!("Search | Error while parsing {:?}", why),
@@ -194,6 +201,9 @@ mod tests {
     fn test_build_and_search_index() {
         let mut dir = env::temp_dir();
         dir.push("apis-catalog-test");
+
+        println!("** test - will use {:?} dir for index", dir);
+
         let binding = &dir.into_os_string();
         let index_path = binding.to_str().unwrap();
 
@@ -217,6 +227,7 @@ mod tests {
         let spec_item = super::SpecItem {
             path: String::from("/path/to/spec.yaml"),
             id: String::from("id-12"),
+            version: String::from("1.0.0"),
             api_spec: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("public"),
             domain: String::from("/the/domain"),

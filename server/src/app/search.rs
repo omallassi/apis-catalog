@@ -24,6 +24,7 @@ pub struct Result {
     pub operations: Vec<String>,
     pub catalog_id: String,
     pub spec_path: String,
+    pub spec_version: String,
 }
 
 #[post("/v1/search")]
@@ -57,6 +58,7 @@ pub async fn search_specs(query: Json<Query>) -> impl Responder{
                     operations: operations_as_vec,
                     catalog_id: String::from(catalog_id),
                     spec_path: new_spec_path,
+                    spec_version: String::from(&result.version[0]),
                 });
             }
             //TODO to map to another struct from this layer 
