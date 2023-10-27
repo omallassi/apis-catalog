@@ -85,17 +85,21 @@ pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, Strin
     
 
     let returned_domains = self::get_domains_per_system_and_layer(&SETTINGS.catalogs, &system, &layer);
+    let returned_domain_length = &returned_domains.len();
+    let mut returned_domains_as_vec: Vec<Domain> = returned_domains.into_iter().collect();
+    returned_domains_as_vec.sort_by( |a, b| {
+        a.name.cmp(&b.name)
+    });
 
-    info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} - got [{:?}] domains", &system, &layer, &returned_domains.len());
+    info!("get_all_domains_per_system_and_layer() for system {:?} and layer {:?} - got [{:?}] domains", &system, &layer, returned_domain_length);
 
     let response = DomainsPerSystemAndLayer {
         system : String::from(&system),
         layer :  String::from(&layer),
-        domains: returned_domains.into_iter().collect()
+        domains: returned_domains_as_vec
     };
 
     HttpResponse::Ok().json(response)
-
 }
 
 fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, layer: &String) -> HashSet<Domain>{
