@@ -82,15 +82,16 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                             let domain = get_domain_from_spec(&openapi);
                             let layer = get_layer_from_spec(&openapi);
                             let systems = get_systems_from_spec(&openapi);
+                            let api_id = get_api_id_from_spec(&openapi);
         
                             //create the API Item and add it to the returned value
-                            let mut hasher = std::collections::hash_map::DefaultHasher::new();
-                            path.hash(&mut hasher);
-                            let hash = hasher.finish();
+                            // let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                            // path.hash(&mut hasher);
+                            // let hash = hasher.finish();
                             
                             let spec: SpecItem = SpecItem {
                                 path: String::from(file_path.to_str().unwrap()),
-                                id: format!("{:?}", hash),
+                                id: api_id.to_string(),
                                 api_spec: openapi.clone(),
                                 audience: audience,
                                 domain: domain.to_string(),
@@ -130,6 +131,15 @@ fn get_audience_from_spec(spec: &OpenAPI) -> String {
     };
 
     audience
+}
+
+fn get_api_id_from_spec(spec: &OpenAPI) -> String {
+    let api_id: String = match spec.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
+        Some(id)=> String::from(id.as_str().unwrap()),
+        None => String::from("0"),
+    };
+
+    api_id
 }
 
 fn get_layer_from_spec(spec: &OpenAPI) -> String {
@@ -512,6 +522,8 @@ impl Cache {
 
 #[cfg(test)]
 mod tests {
+    use diesel::ExpressionMethods;
+
     use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
 
     #[test]
@@ -810,6 +822,47 @@ mod tests {
         let sut = super::get_spec_short_path(&spec);
         assert_eq!("code/openapi-specifications/specifications/manual-tasks/openapi.yaml", sut);
 
+    }
+
+    #[test]
+    fn test_get_api_id_from_spec_wo_ext(){
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.0.0".to_string(),
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+
+        let sut = super::get_api_id_from_spec(&openapi_spec);
+        assert_eq!(sut, "0");
+    }
+
+    #[test]
+    fn test_get_api_id_from_spec_w_ext(){
+        let mut custom_extension = indexmap::IndexMap::new();
+        custom_extension.insert(
+            "x-api-id".to_string(),
+            serde_json::Value::String("134".to_string()),
+        );
+
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.0.0".to_string(),
+                extensions: custom_extension,
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+
+        let sut = super::get_api_id_from_spec(&openapi_spec);
+        assert_eq!(sut, "134");
     }
 
 }
