@@ -96,6 +96,30 @@ pub async fn get_all_specs() -> impl Responder {
     HttpResponse::Ok().json(specs)
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct SpecError {
+    pub spec_path: String,
+    pub error: String,
+}
+
+#[get("/v1/specs/errors")]
+pub async fn get_all_errors() -> impl Responder{
+    info!("get all errors");
+
+    let errors = crate::app::dao::catalog::list_all_errors();
+
+    let mut all_errors = Vec::new();
+
+    for error in errors {
+        all_errors.push( SpecError{
+            spec_path: error.file_path.to_string(),
+            error: error.reason.to_string(),
+        } );
+    }
+
+    HttpResponse::Ok().json(&all_errors)
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Api {
     pub id: Uuid,

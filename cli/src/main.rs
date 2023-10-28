@@ -55,6 +55,20 @@ fn main() {
                 arg!(-r --refresh "refresh all configured catalogs").action(ArgAction::SetTrue)
             ),
         )
+        .subcommand(
+            Command::new("specs")
+            .about("everything relateed to the specs")
+            .arg(
+                arg!(-l --list "lists all specs").action(ArgAction::SetTrue)
+            )
+            .subcommand(
+                Command::new("errors")
+                .about("list all errors while parsing the specs")
+                .arg(
+                    arg!(-l --list "lists all errors").action(ArgAction::SetTrue)
+                )
+            )
+        )
         .get_matches();
 
 
@@ -75,6 +89,17 @@ fn main() {
             refresh_all_catalogs();
         } 
 
+    }
+    if let Some(matches) = matches.subcommand_matches("specs") {
+        // "$ myapp test" was run
+        if matches.get_flag("list") {
+            println!("to implement but will call GET /v1/specs")
+        } 
+        if let Some(matches) = matches.subcommand_matches("errors") {
+            if matches.get_flag("list") {
+                let _ = get_all_specs_in_errors();
+            } 
+        }
     }
 }
 
@@ -122,6 +147,37 @@ fn refresh_all_catalogs() -> Result<(), reqwest::Error> {
 
     let resp = client.post(&url).send()?;
     println!("Refreshed Catalogs with status {:?}", &resp.status());
+    Ok(())
+}
+
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct SpecError {
+    pub spec_path: String,
+    pub error: String,
+}
+
+fn get_all_specs_in_errors()-> Result<(), reqwest::Error> {
+    let client = Client::new();
+    let url = format!(
+        "http://{address}/v1/specs/errors",
+        address = &SETTINGS.server.address
+    );
+
+    let resp = client.get(&url).send()?;
+    debug!("body: {:?}", &resp.status());
+    let errors: Vec<SpecError> = resp.json()?;
+    //
+    let mut table = Table::new();
+    table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    table.set_titles(row![b -> "path", b -> "Reason"]);
+    for val in errors {
+        table.add_row(row![val.spec_path, val.error]);
+    }
+
+    // Print the table to stdout
+    table.printstd();
+
     Ok(())
 }
 

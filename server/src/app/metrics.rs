@@ -264,6 +264,7 @@ fn get_metrics_endpoints_num(all_specs: &Vec<SpecItem>) -> (DateTime<Utc>, i32) 
     (Utc::now(), total)
 }
 
+
 #[cfg(test)]
 mod tests {
     use chrono::DateTime;

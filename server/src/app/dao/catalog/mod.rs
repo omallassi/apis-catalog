@@ -33,6 +33,19 @@ pub struct SpecItem {
     pub catalog_dir: String,
 }
 
+
+impl SpecItem {
+    pub fn get_dunno_what(&self) -> &str {
+        &self.api_spec.info.version
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SpecInError {
+    pub file_path: String, 
+    pub reason: String,
+}
+
 const DEFAULT_SYSTEM_LAYER: &str = "default";
 
 pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
@@ -40,6 +53,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
     //To share the same cache across the threads, clone it.
     // This is a cheap operation.
     let my_cache = CACHE.cache.clone();
+    let errors_cache = CACHE.errors.clone();
     let specs = match my_cache.get(&String::from("all")) {
         Some(val) => {
             info!("got [{:?}] specs from cache ", &val.len() );
@@ -51,6 +65,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
             let mut specs = Vec::new();
             let mut last_len = 0;
         
+            let mut specs_in_error: Vec<SpecInError> = Vec::new();
         
             for catalog in catalogs{
                 let path = catalog.catalog_path.as_str();
@@ -101,7 +116,8 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                             specs.push(spec);
                         }
                         Err(why) => {
-                            warn!("Unable to parse file [{:?}] - reason [{:?}]", path, why);
+                            warn!("Unable to parse file [{:?}] - reason [{:?}]", &file_path, &why);
+                            specs_in_error.push(SpecInError { file_path: format!("{:?}", file_path) , reason: format!("{:?}", why) })
                         }
                     }
                 }
@@ -112,6 +128,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
             info!("OAI specs # from all catalogs - [{:?}]", &specs.len());
         
             my_cache.insert(String::from("all"), specs.to_vec());
+            errors_cache.insert(String::from("all"), specs_in_error.to_vec());
 
             specs
 
@@ -120,6 +137,19 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
     
 
     specs
+}
+
+pub fn list_all_errors() -> Vec<SpecInError> {
+    let errors_cache = CACHE.errors.clone();
+    let errors = match errors_cache.get(&String::from("all")) {
+        Some(val) => val,
+        None => {
+            error!("Unable to get all errors from cache");
+            Vec::new()
+        }
+    };
+
+    errors
 }
 
 fn get_audience_from_spec(spec: &OpenAPI) -> String {
@@ -264,7 +294,8 @@ pub fn refresh_catalogs(catalogs: &Vec<Catalog>, init: bool) {
     }
 
     //will force data back in cache
-    let _ = &CACHE.cache.clone().invalidate_all();
+    let _ = &CACHE.invalidate_all();
+    
     self::list_specs(&SETTINGS.catalogs);
 }
 
@@ -504,7 +535,9 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
 }
 
 struct Cache {
-    pub cache: moka::sync::Cache<String, Vec<SpecItem>>,
+    //TODO there is likely a way to have a Cache that can Store Any - but I am struggling with + Send + Sync
+    cache: moka::sync::Cache<String, Vec<SpecItem>>,
+    errors: moka::sync::Cache<String, Vec<SpecInError>>,
 }
 
 lazy_static! {
@@ -515,16 +548,20 @@ impl Cache {
     fn new() -> Self {
         let cache = Cache{
             cache: moka::sync::Cache::new(2),
+            errors: moka::sync::Cache::new(2),
         };
 
         cache
     }
 
+    fn invalidate_all(&self){
+        let _ = self.cache.clone().invalidate_all();
+        let _ = self.errors.clone().invalidate_all();
+    } 
 }
 
 #[cfg(test)]
 mod tests {
-    use diesel::ExpressionMethods;
     use serde_yaml::Value;
 
     use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
@@ -898,6 +935,36 @@ mod tests {
         
 
        
+    }
+
+    #[test]
+    fn test_struct_impl(){
+
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.4.0".to_string(),
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+
+        let spec: SpecItem = SpecItem { path: "a path".to_string(), 
+            id: "an id".to_string(), 
+            version: "5.6.0".to_string(), 
+            api_spec: openapi_spec, 
+            audience: "audience".to_string(), 
+            domain: "domain".to_string(), 
+            layer: "layer".to_string(), 
+            systems: Vec::new(), 
+            catalog_id: "rr".to_string(), 
+            catalog_dir: "fff".to_string() 
+        };
+
+        println!("oliv {:?}", spec.get_dunno_what());
+
     }
 
 
