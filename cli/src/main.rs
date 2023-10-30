@@ -86,7 +86,7 @@ fn main() {
             let _ = list_all_catalogs();
         } 
         if matches.get_flag("refresh") {
-            refresh_all_catalogs();
+            let _ = refresh_all_catalogs();
         } 
 
     }

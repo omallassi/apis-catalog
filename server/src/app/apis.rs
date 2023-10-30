@@ -16,43 +16,6 @@ use log::{debug, error, info};
 
 use uuid::Uuid;
 
-/*
- * APIs & specs related APIs
- */
-
-#[derive(Serialize, Deserialize)]
-pub struct Endpoints {
-    endpoints: Vec<Endpoint>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Endpoint {
-    name: String,
-}
-
-//#[get("/v1/endpoints/{api}")]
-pub async fn get_endpoints(_info: web::Path<String>) -> impl Responder {
-
-    let mut endpoints = Endpoints {
-        endpoints: Vec::new(),
-    };
-
-    //TODO - does not work for the specified api
-    let mut all_apis = list_specs(&SETTINGS.catalogs);
-
-    while let Some(api) = all_apis.pop() {
-        info!("Analysing file [{:?}]", api.path);
-
-        let openapi: OpenAPI = api.api_spec;
-        for val in openapi.paths.paths.keys() {
-            let endpoint = Endpoint {
-                name: String::from(val),
-            };
-            endpoints.endpoints.push(endpoint);
-        }
-    }
-    HttpResponse::Ok().json(endpoints)
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct Specs {
@@ -82,13 +45,10 @@ pub async fn get_all_specs() -> impl Responder {
 
         let spec = Spec {
             name: String::from(short_path),
-            id: spec.id,
-            title: spec.api_spec.info.title,
-            version: spec.api_spec.info.version,
-            description: match spec.api_spec.info.description {
-                Some(d) => d,
-                None => String::from(""),
-            },
+            id: String::from(&spec.id),
+            title: String::from(&spec.get_title().to_string()),
+            version: String::from(&spec.get_version().to_string()),
+            description: String::from(&spec.get_description().to_string()),
             audience: spec.audience,
         };
         specs.specs.push(spec);
@@ -378,7 +338,7 @@ pub async fn get_pull_requests(status: &str) -> PullRequests {
         "{}/pull-requests?state={}&limit=1000",
         SETTINGS.stash_config.base_uri, status
     );
-    let mut resp = client
+    let resp = client
         .get(url.as_str())
         .header("Authorization", format!("Bearer {}", access_token))
         .send()

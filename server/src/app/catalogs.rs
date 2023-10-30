@@ -23,7 +23,7 @@ pub struct Catalogs {
 }
 
 #[get("/v1/catalogs/{id}")]
-pub async fn get_catalog_by_id(path: web::Path<(String)>) -> impl Responder{
+pub async fn get_catalog_by_id(path: web::Path<String>) -> impl Responder{
     let id: String = path.into_inner();
     info!("get catalog for id [{:?}]", &id);
 

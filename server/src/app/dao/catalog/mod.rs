@@ -24,7 +24,7 @@ pub struct SpecItem {
     pub path: std::string::String,
     pub id: std::string::String,
     pub version: std::string::String,
-    pub api_spec: OpenAPI,
+    pub api_spec: OpenAPI, //TODO need to have it public because of a test in search but should be private
     pub audience: std::string::String,
     pub domain: std::string::String,
     pub layer: String,
@@ -33,10 +33,89 @@ pub struct SpecItem {
     pub catalog_dir: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct Path {
+    pub path: String, 
+    pub methods: Vec<Method>
+}
+
+#[derive(Debug, Clone)]
+pub struct Method {
+    pub method: String, 
+    pub description: String, 
+    pub summary: String
+}
 
 impl SpecItem {
-    pub fn get_dunno_what(&self) -> &str {
+    pub fn get_version(&self) -> &str {
         &self.api_spec.info.version
+    }
+
+    pub fn get_title(&self) -> &str {
+        &self.api_spec.info.title
+    }
+
+    pub fn get_description(&self) -> &str {
+        let description = match &self.api_spec.info.description {
+            Some(d) => d,
+            None => "",
+        };
+
+        &description
+    }
+
+    pub fn get_paths_len(&self) -> usize {
+        * &self.api_spec.paths.paths.len()
+    }
+
+    pub fn get_paths(&self) -> Vec<Path> {
+        let mut all_paths = Vec::new();
+
+        let paths = &self.api_spec.paths;
+        for (path_value, path_item) in paths.iter() {
+            match path_item.as_item() {
+                Some(item) => {
+                    //need to get the http method fro the PathItem
+                    let http_methods: [(&str, &Option<openapiv3::Operation>); 7] = [
+                        ("GET", &item.get),
+                        ("POST", &item.post),
+                        ("PUT", &item.put),
+                        ("DELETE", &item.delete),
+                        ("OPTIONS", &item.options),
+                        ("HEAD", &item.head),
+                        ("PATCH", &item.patch),
+                    ];
+
+
+                    let mut all_methods = Vec::new();
+
+                    for (method, operation_option) in &http_methods {
+                        if let Some(ref ope) = operation_option {
+                            let mut ope_summary = String::from("");
+                            let mut ope_description = String::from("");
+                            let mut ope_method = String::from("");
+
+                            ope_summary.push_str( ope.summary.clone().unwrap_or("N/A".to_string()).as_str() );
+                            ope_description.push_str( ope.description.clone().unwrap_or("N/A".to_string()).as_str()  );
+                            ope_method.push_str( * method );
+
+                            all_methods.push(Method{
+                                method: String::from(* method),
+                                description: ope_description, 
+                                summary: ope_summary
+                            });
+                        }
+                    }
+
+                    all_paths.push(Path { path: String::from(path_value), methods: all_methods })
+                }
+                None => {
+                    warn!("No path to index for spec {:?}", &self.path);
+                }
+            }
+        }
+
+        all_paths
     }
 }
 
@@ -562,6 +641,7 @@ impl Cache {
 
 #[cfg(test)]
 mod tests {
+    use openapiv3::Paths;
     use serde_yaml::Value;
 
     use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
@@ -939,17 +1019,27 @@ mod tests {
 
     #[test]
     fn test_struct_impl(){
-
-        let openapi_spec = openapiv3::OpenAPI {
+        let mut path_item = openapiv3::PathItem::default();
+        let mut get_operation = openapiv3::Operation::default();
+        get_operation.summary = Some("Get example".to_string());
+        path_item.get = Some(get_operation);
+        let mut post_operation = openapiv3::Operation::default();
+        post_operation.summary = Some("Post Example".to_string());
+        path_item.post = Some(post_operation);
+        
+        let mut openapi_spec = openapiv3::OpenAPI {
             openapi: "3.0.0".to_string(),
             info: openapiv3::Info {
                 title: "My API".to_string(),
                 version: "1.4.0".to_string(),
                 ..Default::default()
             },
-            paths: Default::default(),
             ..Default::default()
         };
+
+        let mut paths = indexmap::IndexMap::new();//openapiv3::Paths::default();
+        paths.insert("/example".to_string(), openapiv3::ReferenceOr::Item((path_item)));
+        openapi_spec.paths.paths = paths;
 
         let spec: SpecItem = SpecItem { path: "a path".to_string(), 
             id: "an id".to_string(), 
@@ -963,7 +1053,14 @@ mod tests {
             catalog_dir: "fff".to_string() 
         };
 
-        println!("oliv {:?}", spec.get_dunno_what());
+        assert_eq!(spec.get_version(), "1.4.0");
+        assert_eq!(spec.get_title(), "My API");
+        assert_eq!(spec.get_description(), "");
+        assert_eq!(spec.get_paths_len(), 1);
+
+
+        assert_eq!(spec.get_paths()[0].methods[0].method, "GET");
+        assert_eq!(spec.get_paths()[0].methods[1].method, "POST");
 
     }
 

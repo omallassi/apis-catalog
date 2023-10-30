@@ -248,7 +248,7 @@ fn get_metrics_endpoints_num(all_specs: &Vec<SpecItem>) -> (DateTime<Utc>, i32) 
     let endpoints_per_spec: Vec<_> = all_specs
         .iter()
         .map(|spec| {
-            let num = spec.api_spec.paths.paths.len();
+            let num = spec.get_paths_len();
             debug!("# of paths - spec [{:?}] got [{:?}] paths", spec.path, num);
 
             num

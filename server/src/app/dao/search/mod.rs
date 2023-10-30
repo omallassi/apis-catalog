@@ -62,54 +62,35 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
     //  will index all specs
     for spec in specs {
         let systems_as_text = spec.systems.join(" ");
-        let paths = &spec.api_spec.paths;
-        for (path_value, path_item) in paths.iter() {
-            match path_item.as_item() {
-                Some(item) => {
-                    //need to get the http method fro the PathItem
-                    let http_methods: [(&str, &Option<openapiv3::Operation>); 7] = [
-                        ("GET", &item.get),
-                        ("POST", &item.post),
-                        ("PUT", &item.put),
-                        ("DELETE", &item.delete),
-                        ("OPTIONS", &item.options),
-                        ("HEAD", &item.head),
-                        ("PATCH", &item.patch),
-                    ];
+        let paths = &spec.get_paths();
+        for path_item in paths.iter() {
 
-                    let mut ope_summaries = String::from("");
-                    let mut ope_descriptions = String::from("");
-                    let mut opes = String::from("");
+            let mut ope_summary = String::from("");
+            let mut ope_description = String::from("");
+            let mut ope_methods = String::from("");
 
-                    for (method, operation_option) in &http_methods {
-                        if let Some(ref ope) = operation_option {
-                            ope_summaries.push_str( ope.summary.clone().unwrap_or("N/A".to_string()).as_str() );
-                            ope_summaries.push_str(" ");
-                            ope_descriptions.push_str( ope.description.clone().unwrap_or("N/A".to_string()).as_str() );
-                            ope_descriptions.push_str(" ");
-                            opes.push_str(*method);
-                            opes.push_str(" ");
-                        }
-                    }
-                    //add the doc to the index 
-                    index_writer.add_document(doc!(
-                        audience => String::from(&spec.audience),
-                        domain => String::from(&spec.domain), 
-                        systems => String::from(&systems_as_text),
-                        layer => String::from(&spec.layer),
-                        path => String::from(path_value),
-                        operations => opes,
-                        summary => ope_summaries,
-                        description => ope_descriptions,
-                        catalog_id => String::from(&spec.catalog_id), 
-                        spec_path => String::from(&spec.path),
-                        spec_version => String::from(&spec.version),
-                    )).ok();
-                },
-                None => {
-                    warn!("No path to index for spec {:?}", spec.path);
-                }
+            for path_method in &path_item.methods{
+                ope_summary.push_str( path_method.summary.as_str() );
+                ope_summary.push_str( " " );
+                ope_description.push_str( path_method.description.as_str()  );
+                ope_description.push_str( " " );
+                ope_methods.push_str( path_method.method.as_str() );
+                ope_methods.push_str( " " );
             }
+            //add the doc to the index 
+            index_writer.add_document(doc!(
+                audience => String::from(&spec.audience),
+                domain => String::from(&spec.domain), 
+                systems => String::from(&systems_as_text),
+                layer => String::from(&spec.layer),
+                path => String::from(&path_item.path),
+                operations => ope_methods,
+                summary => ope_summary,
+                description => ope_description,
+                catalog_id => String::from(&spec.catalog_id), 
+                spec_path => String::from(&spec.path),
+                spec_version => String::from(&spec.version),
+            )).ok();
         }
     }
     index_writer.commit()?;

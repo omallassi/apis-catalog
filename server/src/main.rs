@@ -105,10 +105,8 @@ async fn main() {
                 web::resource("/{id}").route(web::delete().to(app::domains::delete_domain)),
             ))
             //APIs and Specs related endpoints
-            .route("/v1/endpoints", web::get().to(app::apis::get_endpoints))
-            .service(
-                web::resource("/v1/endpoints/{api}").route(web::get().to(app::apis::get_endpoints)),
-            ) //TODO rework url
+            //.route("/v1/endpoints", web::get().to(app::apis::get_endpoints))
+            //.service(web::resource("/v1/endpoints/{api}").route(web::get().to(app::apis::get_endpoints)),)
             .service(app::apis::list_all_reviews)
             .service(app::apis::get_all_specs)
             .service(app::apis::create_api)
