@@ -1,30 +1,31 @@
-use log::{debug, info, warn, error};
+///sub module declaration
+mod handlers;
 
+///import
+use log::{debug, info, warn, error};
 extern crate yaml_rust;
 use yaml_rust::{Yaml, YamlLoader};
-
 use std::collections::HashMap;
-
 use std::vec::Vec;
-
 use openapiv3::OpenAPI;
 use serde_yaml;
-
 use cmd_lib::run_cmd;
-
 extern crate regex;
 use regex::Regex;
-
 use crate::shared::settings::{Catalog, SETTINGS};
+use crate::app::dao::catalog::handlers::{Method, Path, SpecType};
+use crate::app::dao::catalog::handlers::SpecHandler;
+use crate::app::dao::catalog::handlers::implem::opanapi::v3;
 
 
 //
 #[derive(Debug, Clone)]
 pub struct SpecItem {
+    pub spec_type: SpecType,
     pub path: std::string::String,
     pub id: std::string::String,
     pub version: std::string::String,
-    api_spec: OpenAPI,
+    spec_handler: OpenAPI,
     pub audience: std::string::String,
     pub domain: std::string::String,
     pub layer: String,
@@ -33,30 +34,17 @@ pub struct SpecItem {
     pub catalog_dir: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct Path {
-    pub path: String, 
-    pub methods: Vec<Method>
-}
-
-#[derive(Debug, Clone)]
-pub struct Method {
-    pub method: String, 
-    pub description: String, 
-    pub summary: String
-}
-
 impl SpecItem {
     pub fn get_version(&self) -> &str {
-        &self.api_spec.info.version
+        &self.spec_handler.info.version
     }
 
     pub fn get_title(&self) -> &str {
-        &self.api_spec.info.title
+        &self.spec_handler.info.title
     }
 
     pub fn get_description(&self) -> &str {
-        let description = match &self.api_spec.info.description {
+        let description = match &self.spec_handler.info.description {
             Some(d) => d,
             None => "",
         };
@@ -65,13 +53,13 @@ impl SpecItem {
     }
 
     pub fn get_paths_len(&self) -> usize {
-        * &self.api_spec.paths.paths.len()
+        * &self.spec_handler.paths.paths.len()
     }
 
     pub fn get_paths(&self) -> Vec<Path> {
         let mut all_paths = Vec::new();
 
-        let paths = &self.api_spec.paths;
+        let paths = &self.spec_handler.paths;
         for (path_value, path_item) in paths.iter() {
             match path_item.as_item() {
                 Some(item) => {
@@ -110,7 +98,7 @@ impl SpecItem {
                     all_paths.push(Path { path: String::from(path_value), methods: all_methods })
                 }
                 None => {
-                    warn!("No path to index for spec {:?}", &self.path);
+                    warn!("No path found for spec {:?}", &self.path);
                 }
             }
         }
@@ -181,10 +169,11 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
         
                             //create the API Item and add it to the returned value
                             let spec: SpecItem = SpecItem {
+                                spec_type: SpecType::OpenApi,
                                 path: String::from(file_path.to_str().unwrap()),
                                 id: api_id.to_string(),
                                 version: version,
-                                api_spec: openapi.clone(),
+                                spec_handler: openapi.clone(),
                                 audience: audience,
                                 domain: domain.to_string(),
                                 layer: layer,
@@ -602,8 +591,8 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
             "get_endpoints_num_per_subdomain - parsing spec [{:?}]",
             spec.path
         );
-        let base_url = get_domain_from_spec(&spec.api_spec);
-        let num = spec.api_spec.paths.paths.len();
+        let base_url = get_domain_from_spec(&spec.spec_handler);
+        let num = spec.spec_handler.paths.paths.len();
 
         *data.entry(base_url.to_string()).or_insert(0) += num;
     }
@@ -641,8 +630,6 @@ impl Cache {
 
 #[cfg(test)]
 pub mod tests {
-    use serde_yaml::Value;
-
     use crate::{app::dao::catalog::SpecItem, shared::settings::Catalog};
 
     /// This method will return a mocked Vec<SpecItem> that can be used for 
@@ -672,10 +659,11 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
+            spec_type: super::SpecType::OpenApi,
             path: String::from("/path/to/spec.yaml"),
             id: String::from("id-12"),
             version: String::from("1.0.0"),
-            api_spec: serde_yaml::from_str(spec).unwrap(),
+            spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("public"),
             domain: String::from("/the/domain"),
             layer: String::from("functional"),
@@ -708,10 +696,11 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
+            spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
             version: String::from("1.0.0"),
-            api_spec: serde_yaml::from_str(spec).unwrap(),
+            spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
@@ -743,10 +732,11 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
+            spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
             version: String::from("1.0.0"),
-            api_spec: serde_yaml::from_str(spec).unwrap(),
+            spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
@@ -771,10 +761,11 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
+            spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
             version: String::from("1.0.0"),
-            api_spec: serde_yaml::from_str(spec).unwrap(),
+            spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
@@ -974,10 +965,11 @@ pub mod tests {
         };
 
         let spec = SpecItem {
+            spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             id: String::from("not used"),
             version: String::from("1.0.0"),
-            api_spec: openapi_spec, 
+            spec_handler: openapi_spec, 
             audience: String::from("not used here"),
             domain: String::from("not used here"), 
             layer: String::from("not used here"), 
@@ -1033,35 +1025,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_play_with_async_api(){
-        let mut path = std::path::PathBuf::new();
-        path.push(env!("CARGO_MANIFEST_DIR"));
-        path.push("tests/data/catalog/async-api-sample.yaml");
-
-        let spec_file = std::fs::File::open(path).unwrap();
-
-        let spec_as_object: serde_yaml::Value = serde_yaml::from_reader(spec_file).unwrap();
-
-        println!("title {:?}", &spec_as_object["info"]["title"]);
-        println!("title {:?}", &spec_as_object["info"]["version"]);
-
-        let channels: &Value = &spec_as_object["channels"];
-        //println!("channels {:?}", &spec_as_object["channels"]);
-        println!("channels {:?}", spec_as_object.get("channels") );
-
-        let tot = spec_as_object.get("channels").unwrap();
-        let toto = tot.as_mapping().unwrap();
-        for (k, v) in toto.into_iter(){
-            //println!("**** {:?} - {:?}", k, v);
-            println!("**** {:?}", k.as_str().unwrap());
-        }
-        
-
-       
-    }
-
-    #[test]
-    fn test_struct_impl(){
+    fn test_spec_item_struct_impl(){
         let mut path_item = openapiv3::PathItem::default();
         let mut get_operation = openapiv3::Operation::default();
         get_operation.summary = Some("Get example".to_string());
@@ -1084,10 +1048,11 @@ pub mod tests {
         paths.insert("/example".to_string(), openapiv3::ReferenceOr::Item((path_item)));
         openapi_spec.paths.paths = paths;
 
-        let spec: SpecItem = SpecItem { path: "a path".to_string(), 
+        let spec: SpecItem = SpecItem { spec_type: super::SpecType::OpenApi,
+            path: "a path".to_string(), 
             id: "an id".to_string(), 
             version: "5.6.0".to_string(), 
-            api_spec: openapi_spec, 
+            spec_handler: openapi_spec, 
             audience: "audience".to_string(), 
             domain: "domain".to_string(), 
             layer: "layer".to_string(), 
