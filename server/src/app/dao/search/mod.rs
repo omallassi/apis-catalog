@@ -176,7 +176,7 @@ pub fn search(index_path: &str, query_as_string: String, limit: usize) -> tantiv
 
 #[cfg(test)]
 mod tests {
-    use std::{env};
+    use std::env;
 
     #[test]
     fn test_build_and_search_index() {
@@ -188,40 +188,9 @@ mod tests {
         let binding = &dir.into_os_string();
         let index_path = binding.to_str().unwrap();
 
-        let spec = "
-        openapi: 3.0.0
-        info:
-          version: 1.0.0
-          title: sample
-        paths:
-          /resource_1:
-            summary: Update an existing pet
-            get:
-              summary: Update an existing pet
-              description: Update an existing pet by Id
-              operationId: updatePet
-              responses:
-                '206':
-                  description: Partial Content
-        ";
-
-        let spec_item = super::SpecItem {
-            path: String::from("/path/to/spec.yaml"),
-            id: String::from("id-12"),
-            version: String::from("1.0.0"),
-            api_spec: serde_yaml::from_str(spec).unwrap(),
-            audience: String::from("public"),
-            domain: String::from("/the/domain"),
-            layer: String::from("functional"),
-            systems: Vec::new(),
-            catalog_id: String::from("an id"),
-            catalog_dir: String::from("not used here"),
-        };
-        let mut specs = Vec::new();
-        specs.push(spec_item);
+        let specs = crate::app::dao::catalog::tests::get_mocked_specs();
 
         let _ = super::build_index(index_path, &specs);
-
 
         let mut returned_value = super::search(index_path, String::from("resource"), 10).unwrap();
         assert_eq!(returned_value.len(), 1);
