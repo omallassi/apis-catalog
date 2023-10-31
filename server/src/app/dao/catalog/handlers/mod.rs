@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 pub mod implem;
 
-pub trait SpecHandler {
+pub trait SpecHandler: Send + Sync + Debug + Clone{
     fn get_version(&self) -> String;
 
     fn get_title(&self) -> String;

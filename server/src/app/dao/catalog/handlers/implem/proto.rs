@@ -31,13 +31,26 @@ impl crate::app::dao::catalog::handlers::SpecHandler for Proto3{
     }
 }
 
+impl std::fmt::Debug for Proto3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Debug not implemented"
+        )
+    }
+}
+
+impl Clone for Proto3 {
+    fn clone(&self) -> Self {
+        Proto3 {
+            spec: self.spec.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::app::dao::catalog::handlers::SpecHandler;
-
-    fn process_spec(spec: &dyn crate::app::dao::catalog::handlers::SpecHandler){
-        println!("spec version {:?}", spec.get_version());
-    }
 
     #[test]
     fn test_play_with_trait(){
