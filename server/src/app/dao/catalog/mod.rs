@@ -69,7 +69,6 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                     match serde_yaml::from_reader(f) {
                         Ok(openapi) => {
                             //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                            let audience = SpecItem::get_audience(&openapi);
                             let domain = SpecItem::get_domain_from_spec(&openapi);
                             let layer = SpecItem::get_layer_from_spec(&openapi);
                             let systems = SpecItem::get_systems_from_spec(&openapi);
@@ -764,7 +763,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let sut = super::SpecItem::get_api_id_from_spec(&openapi_spec);
+        let sut = super::SpecItem::get_api_id(&openapi_spec);
         assert_eq!(sut, "0");
     }
 
@@ -788,7 +787,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let sut = super::SpecItem::get_api_id_from_spec(&openapi_spec);
+        let sut = super::SpecItem::get_api_id(&openapi_spec);
         assert_eq!(sut, "134");
     }
 

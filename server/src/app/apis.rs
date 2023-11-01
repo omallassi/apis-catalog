@@ -46,7 +46,7 @@ pub async fn get_all_specs() -> impl Responder {
 
         let spec = Spec {
             name: String::from(short_path),
-            id: SpecItem::get_api_id_from_spec(&spec.spec_handler),
+            id: SpecItem::get_api_id(&spec.spec_handler),
             title: String::from(&spec.get_title().to_string()),
             version: String::from(&spec.get_version().to_string()),
             description: String::from(&spec.get_description().to_string()),
