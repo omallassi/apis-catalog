@@ -710,14 +710,14 @@ pub mod tests {
         let spec: &SpecItem = results.get(0).unwrap();
         assert_eq!( &spec.get_audience(), "company");
         assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/analytics/time-series");
-        assert_eq!( SpecItem::get_layer(&spec.spec_handler), super::DEFAULT_SYSTEM_LAYER);
+        assert_eq!( &spec.get_layer(), super::DEFAULT_SYSTEM_LAYER);
         assert_eq!( SpecItem::get_systems(&spec.spec_handler).len(), 1);
         assert_eq!( SpecItem::get_systems(&spec.spec_handler)[0], super::DEFAULT_SYSTEM_LAYER);
 
         let spec: &SpecItem = results.get(1).unwrap();
         assert_eq!( &spec.get_audience(), "company");
         assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/audit/trails");
-        assert_eq!( SpecItem::get_layer(&spec.spec_handler), "application");
+        assert_eq!( &spec.get_layer(), "application");
         assert_eq!( SpecItem::get_systems(&spec.spec_handler)[0], "bpaas");
     }
 

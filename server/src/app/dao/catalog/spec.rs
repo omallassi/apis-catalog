@@ -126,8 +126,8 @@ impl SpecItem {
         api_id
     }
     
-    pub fn get_layer(spec: &OpenAPI) -> String {
-        let layer:String  = match spec.extensions.get("x-layer"){
+    pub fn get_layer(&self) -> String {
+        let layer:String  = match self.spec_handler.extensions.get("x-layer"){
             Some(layer) => String::from(layer.as_str().unwrap()),
             None => String::from(DEFAULT_SYSTEM_LAYER),
         };

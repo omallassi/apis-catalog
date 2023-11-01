@@ -82,7 +82,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
                 audience => String::from( &spec.get_audience() ),
                 domain => String::from( SpecItem::get_domain(&spec.spec_handler) ), 
                 systems => String::from(&systems_as_text),
-                layer => String::from( SpecItem::get_layer(&spec.spec_handler) ),
+                layer => String::from( &spec.get_layer() ),
                 path => String::from(&path_item.path),
                 operations => ope_methods,
                 summary => ope_summary,
