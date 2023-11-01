@@ -117,8 +117,8 @@ impl SpecItem {
         audience
     }
 
-    pub fn get_api_id(spec: &OpenAPI) -> String {
-        let api_id: String = match spec.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
+    pub fn get_api_id(&self) -> String {
+        let api_id: String = match self.spec_handler.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
             Some(id)=> String::from(id.as_str().unwrap()),
             None => String::from("0"),
         };

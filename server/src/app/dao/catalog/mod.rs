@@ -734,7 +734,9 @@ pub mod tests {
             ..Default::default()
         };
 
-        let sut = super::SpecItem::get_api_id(&openapi_spec);
+        let spec = super::SpecItem::new("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), openapi_spec.clone());
+
+        let sut = spec.get_api_id();
         assert_eq!(sut, "0");
     }
 
@@ -758,7 +760,8 @@ pub mod tests {
             ..Default::default()
         };
 
-        let sut = super::SpecItem::get_api_id(&openapi_spec);
+        let spec = super::SpecItem::new("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), openapi_spec.clone());
+        let sut = spec.get_api_id();
         assert_eq!(sut, "134");
     }
 
