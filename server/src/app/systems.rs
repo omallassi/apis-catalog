@@ -168,7 +168,7 @@ fn shorten_spec_path (spec_path: String, catalogs: &Vec<Catalog>, catalog_id: St
     let returned_catalog = get_catalog_by_id(&catalogs, &catalog_id);
     let mut short_spec_path = String::from(&spec_path);
     if let Some(catalog) = returned_catalog{
-        let tmp = SpecItem::extact_relative_path(&spec_path, &catalog.catalog_dir);
+        let tmp = spec::extact_relative_path(&spec_path, &catalog.catalog_dir);
         short_spec_path = String::from(tmp);
     }
 

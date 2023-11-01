@@ -41,7 +41,7 @@ pub async fn search_specs(query: Json<Query>) -> impl Responder{
 
                 let mut new_spec_path = String::from(&result.spec_path[0]);
                 if let Some(catalog) = returned_catalog{
-                    let tmp = crate::app::dao::catalog::spec::SpecItem::extact_relative_path(&result.spec_path[0], &catalog.catalog_dir);
+                    let tmp = crate::app::dao::catalog::spec::extact_relative_path(&result.spec_path[0], &catalog.catalog_dir);
                     new_spec_path = String::from(tmp);
                 }
 
