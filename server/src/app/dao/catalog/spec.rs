@@ -41,10 +41,6 @@ impl SpecItem {
 
     }
 
-    // pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: OpenAPI) -> Result<SpecItem, &'static str> {
-    //     Ok(SpecItem { spec_handler: (), path: (), catalog_id: (), catalog_dir: () })
-    // }
-
     pub fn get_file_path(&self) -> &str {
         &self.path
     }
@@ -247,5 +243,97 @@ pub mod tests {
         let sut = super::SpecItem::get_spec_short_path(&spec);
         assert_eq!("code/openapi-specifications/specifications/manual-tasks/openapi.yaml", sut);
 
+    }
+
+    #[test]
+    fn test_spec_item_struct_impl(){
+        let mut path_item = openapiv3::PathItem::default();
+        let mut get_operation = openapiv3::Operation::default();
+        get_operation.summary = Some("Get example".to_string());
+        path_item.get = Some(get_operation);
+        let mut post_operation = openapiv3::Operation::default();
+        post_operation.summary = Some("Post Example".to_string());
+        path_item.post = Some(post_operation);
+        
+        let mut openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.4.0".to_string(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let mut paths = indexmap::IndexMap::new();//openapiv3::Paths::default();
+        paths.insert("/example".to_string(), openapiv3::ReferenceOr::Item((path_item)));
+        openapi_spec.paths.paths = paths;
+
+        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+
+        let catalog_id ="rr".to_string();
+        let catalog_dir = "fff".to_string(); 
+        let path = "a path".to_string();
+
+        ///
+        let spec = SpecItem::from_str(path, catalog_id, catalog_dir, spec_as_str.as_str()).unwrap();
+
+        assert_eq!(spec.get_version(), "1.4.0");
+        assert_eq!(spec.get_title(), "My API");
+        assert_eq!(spec.get_description(), "");
+        assert_eq!(spec.get_paths_len(), 1);
+
+        assert_eq!(spec.get_paths()[0].methods[0].method, "GET");
+        assert_eq!(spec.get_paths()[0].methods[1].method, "POST");
+
+    }
+
+    #[test]
+    fn test_get_api_id_from_spec_w_ext(){
+        let mut custom_extension = indexmap::IndexMap::new();
+        custom_extension.insert(
+            "x-api-id".to_string(),
+            serde_json::Value::String("134".to_string()),
+        );
+
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.0.0".to_string(),
+                extensions: custom_extension,
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+
+        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+
+        let spec = super::SpecItem::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
+        let sut = spec.get_api_id();
+        assert_eq!(sut, "134");
+    }
+
+    #[test]
+    fn test_get_api_id_from_spec_wo_ext(){
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.0.0".to_string(),
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+
+        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+
+        //
+        let spec = super::SpecItem::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
+
+        let sut = spec.get_api_id();
+        assert_eq!(sut, "0");
     }
 }
