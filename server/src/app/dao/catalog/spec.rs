@@ -158,8 +158,8 @@ impl SpecItem {
         systems
     }
 
-    pub fn get_domain(spec: &OpenAPI) -> &str {
-        let base_url = match &spec.servers.is_empty() {
+    pub fn get_domain(&self) -> &str {
+        let base_url = match self.spec_handler.servers.is_empty() {
             true => "NA - servers attribute not specified",
             false => {
                 //TODO can do better
@@ -169,10 +169,10 @@ impl SpecItem {
                     static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
                 }
     
-                if let Some(cap) = RE.captures(&spec.servers[0].url) {
+                if let Some(cap) = RE.captures(&self.spec_handler.servers[0].url) {
                     cap.get(2).unwrap().as_str()
                 } else {
-                    &spec.servers[0].url
+                    &self.spec_handler.servers[0].url
                 }
             }
         };

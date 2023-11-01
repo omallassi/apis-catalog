@@ -392,7 +392,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
             "get_endpoints_num_per_subdomain - parsing spec [{:?}]",
             spec.get_file_path()
         );
-        let base_url = SpecItem::get_domain(&spec.spec_handler);
+        let base_url = spec.get_domain();
         let num = spec.spec_handler.paths.paths.len();
 
         *data.entry(base_url.to_string()).or_insert(0) += num;
@@ -708,14 +708,14 @@ pub mod tests {
         //
         let spec: &SpecItem = results.get(0).unwrap();
         assert_eq!( &spec.get_audience(), "company");
-        assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/analytics/time-series");
+        assert_eq!( spec.get_domain(), "/v1/analytics/time-series");
         assert_eq!( &spec.get_layer(), super::DEFAULT_SYSTEM_LAYER);
         assert_eq!( spec.get_systems().len(), 1);
         assert_eq!( &spec.get_systems()[0], super::DEFAULT_SYSTEM_LAYER);
 
         let spec: &SpecItem = results.get(1).unwrap();
         assert_eq!( &spec.get_audience(), "company");
-        assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/audit/trails");
+        assert_eq!( spec.get_domain(), "/v1/audit/trails");
         assert_eq!( &spec.get_layer(), "application");
         assert_eq!( &spec.get_systems()[0], "bpaas");
     }

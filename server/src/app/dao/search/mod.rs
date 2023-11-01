@@ -80,7 +80,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
             //add the doc to the index 
             index_writer.add_document(doc!(
                 audience => String::from( &spec.get_audience() ),
-                domain => String::from( SpecItem::get_domain(&spec.spec_handler) ), 
+                domain => String::from( spec.get_domain() ), 
                 systems => String::from(systems_as_text),
                 layer => String::from( &spec.get_layer() ),
                 path => String::from(&path_item.path),

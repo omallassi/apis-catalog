@@ -83,7 +83,7 @@ pub async fn get_all_domains_for_all_catalogs() -> impl Responder {
     let all_specs = catalog::list_specs(&SETTINGS.catalogs);
     //loop over the list and check system and layer equality
     for spec in all_specs{
-        domains.insert(String::from( SpecItem::get_domain(&spec.spec_handler) ));
+        domains.insert(String::from( spec.get_domain() ));
     }
 
     info!("Domain # from all catalogs [{:?}]", &domains.len());
@@ -117,7 +117,7 @@ pub async fn get_domains_errors() -> impl Responder {
     let mut errors: Vec<DomainError> = Vec::new();
     for spec in &all_specs {
         let short_path = SpecItem::get_spec_short_path( &spec);
-        let spec_domain = SpecItem::get_domain( &spec.spec_handler );
+        let spec_domain = spec.get_domain();
         //will loop over all_domains to check if domains "match or not". contains() cannot work as the yml contains /v1 and not the domain
         let mut is_contained = false;
         for domain in &all_domains {
@@ -150,10 +150,10 @@ pub async fn get_domains_errors() -> impl Responder {
 
         if !is_contained {
             let error = DomainError {
-                spec_domain: String::from( SpecItem::get_domain(&spec.spec_handler) ),
+                spec_domain: String::from( spec.get_domain() ),
                 spec_catalog_id: String::from(spec.get_catalog_id()),
                 spec_path: String::from(short_path),
-                resources: *data.get( SpecItem::get_domain(&spec.spec_handler) ).unwrap(),
+                resources: *data.get( spec.get_domain() ).unwrap(),
             };
 
             errors.push(error);

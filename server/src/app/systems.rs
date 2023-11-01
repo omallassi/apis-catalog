@@ -117,7 +117,7 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
                     true => {
                         debug!("spec [{:?}] matches system [{:?}] *and* layer [{:?}]", &spec.get_file_path(), &system, &layer);
 
-                        let spec_domain = String::from( SpecItem::get_domain(&spec.spec_handler) );
+                        let spec_domain = String::from( spec.get_domain() );
                         match specs_per_domain.get(&spec_domain) {
                             Some(related_specs) => {
                                 let mut specs = related_specs.clone();
