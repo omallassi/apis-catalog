@@ -6,13 +6,36 @@ use regex::Regex;
 #[derive(Debug, Clone)]
 pub struct SpecItem {
     // pub spec_type: SpecType,
-    pub path: std::string::String,
     pub spec_handler: OpenAPI, //TODO should be private again
-    pub catalog_id: String,
-    pub catalog_dir: String,
+    path: std::string::String,
+    catalog_id: String,
+    catalog_dir: String,
 }
 
 impl SpecItem {
+
+    pub fn new(path: std::string::String, catalog_id: String, catalog_dir: String, spec: OpenAPI) -> SpecItem {
+        let spec = SpecItem{
+            path: path.clone(), 
+            catalog_id: catalog_id.clone(),
+            catalog_dir: catalog_dir.clone(),
+            spec_handler: spec,
+        };
+
+        spec
+    }
+
+    pub fn get_file_path(&self) -> &str {
+        &self.path
+    }
+
+    pub fn get_catalog_id(&self) -> &str {
+        &self.catalog_id
+    }
+
+    pub fn get_catalog_dir(&self) -> &str {
+        &self.catalog_dir
+    }
 
     pub fn get_version(&self) -> &str {
         &self.spec_handler.info.version

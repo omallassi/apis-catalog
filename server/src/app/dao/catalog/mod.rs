@@ -14,8 +14,6 @@ use crate::shared::settings::{Catalog, SETTINGS};
 
 use self::spec::SpecItem;
 
-
-
 #[derive(Debug, Clone)]
 pub struct SpecInError {
     pub file_path: String, 
@@ -68,17 +66,14 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
         
                     match serde_yaml::from_reader(f) {
                         Ok(openapi) => {
-                            //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
                             let systems = SpecItem::get_systems(&openapi);
-        
+
                             //create the API Item and add it to the returned value
-                            let spec: SpecItem = SpecItem {
-                                // spec_type: SpecType::OpenApi,
-                                path: String::from(file_path.to_str().unwrap()),
-                                spec_handler: openapi.clone(),
-                                catalog_id: String::from(&catalog.catalog_id),
-                                catalog_dir: String::from(&catalog.catalog_dir)
-                            };
+                            let path = String::from(file_path.to_str().unwrap());
+                            let catalog_id = String::from(&catalog.catalog_id);
+                            let catalog_dir = String::from(&catalog.catalog_dir);
+
+                            let spec: SpecItem = SpecItem::new(path, catalog_id, catalog_dir, openapi.clone());
                             specs.push(spec);
                         }
                         Err(why) => {
@@ -180,8 +175,8 @@ pub fn get_zally_ignore(all_specs: &Vec<SpecItem>) -> std::collections::HashMap<
     // let specs = list_specs(path);
     for spec in all_specs.iter() {
         //need to load the yaml file as OpenAPI crate will remove the x-zally-ignore...
-        let yaml_spec_as_string = std::fs::read_to_string(spec.path.as_str()).unwrap();
-        let stats = get_zally_ignore_metrics(yaml_spec_as_string.as_str(), spec.path.as_str());
+        let yaml_spec_as_string = std::fs::read_to_string(spec.get_file_path()).unwrap();
+        let stats = get_zally_ignore_metrics(yaml_spec_as_string.as_str(), spec.get_file_path());
 
         //some the maps
         for (key, val) in stats.iter() {
@@ -316,10 +311,10 @@ pub fn get_endpoints_num_per_audience(
 
     for spec in all_specs.iter() {
         //need to load the yaml file as OpenAPI crate will remove the x-zally-ignore...
-        let yaml_spec_as_string = std::fs::read_to_string(spec.path.as_str()).unwrap();
+        let yaml_spec_as_string = std::fs::read_to_string(spec.get_file_path()).unwrap();
         let stats = get_endpoints_num_per_audience_metrics(
             yaml_spec_as_string.as_str(),
-            spec.path.as_str(),
+            spec.get_file_path(),
         );
 
         //sum the maps
@@ -396,7 +391,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
     for spec in all_specs {
         debug!(
             "get_endpoints_num_per_subdomain - parsing spec [{:?}]",
-            spec.path
+            spec.get_file_path()
         );
         let base_url = SpecItem::get_domain(&spec.spec_handler);
         let num = spec.spec_handler.paths.paths.len();
@@ -465,13 +460,12 @@ pub mod tests {
                   description: Partial Content
         ";
 
-        let spec_item = super::SpecItem {
-            // spec_type: super::SpecType::OpenApi,
-            path: String::from("/path/to/spec.yaml"),
-            spec_handler: serde_yaml::from_str(spec).unwrap(),
-            catalog_id: String::from("an id"),
-            catalog_dir: String::from("not used here"),
-        };
+        let path = String::from("/path/to/spec.yaml");
+        let catalog_id = String::from("an id");
+        let catalog_dir = String::from("not used here");
+
+        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
+
         let mut specs = Vec::new();
         specs.push(spec_item);
 
@@ -496,13 +490,11 @@ pub mod tests {
                   description: Partial Content
         ";
 
-        let spec_item = super::SpecItem {
-            // spec_type: super::SpecType::OpenApi,
-            path: String::from("std::string::String"),
-            spec_handler: serde_yaml::from_str(spec).unwrap(),
-            catalog_id: String::from("not used here"),
-            catalog_dir: String::from("not used here"),
-        };
+        let path = String::from("std::string::String");
+        let catalog_id = String::from("not used here");
+        let catalog_dir = String::from("not used here");
+
+        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
 
         specs.push(spec_item);
 
@@ -526,13 +518,11 @@ pub mod tests {
                   description: Partial Content
         ";
 
-        let spec_item = super::SpecItem {
-            // spec_type: super::SpecType::OpenApi,
-            path: String::from("std::string::String"),
-            spec_handler: serde_yaml::from_str(spec).unwrap(),
-            catalog_id: String::from("not used here"),
-            catalog_dir: String::from("not used here"),
-        };
+        let catalog_id = String::from("not used here");
+        let catalog_dir = String::from("not used here");
+        let path = String::from("std::string::String");
+
+        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
 
         specs.push(spec_item);
 
@@ -549,13 +539,11 @@ pub mod tests {
                   description: Partial Content
         ";
 
-        let spec_item = super::SpecItem {
-            // spec_type: super::SpecType::OpenApi,
-            path: String::from("std::string::String"),
-            spec_handler: serde_yaml::from_str(spec).unwrap(),
-            catalog_id: String::from("not used here"),
-            catalog_dir: String::from("not used here"),
-        };
+        let path = String::from("std::string::String");
+        let catalog_id = String::from("not used here");
+        let catalog_dir = String::from("not used here");
+
+        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
 
         specs.push(spec_item);
 
@@ -798,13 +786,11 @@ pub mod tests {
         paths.insert("/example".to_string(), openapiv3::ReferenceOr::Item((path_item)));
         openapi_spec.paths.paths = paths;
 
-        let spec: SpecItem = SpecItem { 
-            // spec_type: super::SpecType::OpenApi,
-            path: "a path".to_string(), 
-            spec_handler: openapi_spec, 
-            catalog_id: "rr".to_string(), 
-            catalog_dir: "fff".to_string() 
-        };
+        let catalog_id ="rr".to_string();
+        let catalog_dir = "fff".to_string(); 
+        let path = "a path".to_string();
+
+        let spec = SpecItem::new(path, catalog_id, catalog_dir, openapi_spec);
 
         assert_eq!(spec.get_version(), "1.4.0");
         assert_eq!(spec.get_title(), "My API");

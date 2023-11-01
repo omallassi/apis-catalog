@@ -166,7 +166,7 @@ pub async fn refresh_metrics() -> impl Responder {
     //get # of endpoints
     let all_specs: Vec<SpecItem> = list_specs(&SETTINGS.catalogs);
 
-    let all_specs_paths: Vec<String> = all_specs.iter().map(|val| val.path.to_string()).collect();
+    let all_specs_paths: Vec<String> = all_specs.iter().map(|val| val.get_file_path().to_string()).collect();
     info!(
         "List of retrieved and parsed OpenAPI Specifications [{:?}]",
         all_specs_paths
@@ -250,7 +250,7 @@ fn get_metrics_endpoints_num(all_specs: &Vec<SpecItem>) -> (DateTime<Utc>, i32) 
         .iter()
         .map(|spec| {
             let num = spec.get_paths_len();
-            debug!("# of paths - spec [{:?}] got [{:?}] paths", spec.path, num);
+            debug!("# of paths - spec [{:?}] got [{:?}] paths", spec.get_file_path(), num);
 
             num
         })

@@ -87,8 +87,8 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
                 operations => ope_methods,
                 summary => ope_summary,
                 description => ope_description,
-                catalog_id => String::from(&spec.catalog_id), 
-                spec_path => String::from(&spec.path),
+                catalog_id => String::from(spec.get_catalog_id()), 
+                spec_path => String::from(spec.get_file_path()),
                 spec_version => String::from(spec.get_version()),
             )).ok();
         }

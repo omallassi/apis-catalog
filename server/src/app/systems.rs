@@ -115,30 +115,30 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
             true => {
                 match SpecItem::get_layer( &spec.spec_handler ).eq(&layer.to_lowercase()) {
                     true => {
-                        debug!("spec [{:?}] matches system [{:?}] *and* layer [{:?}]", &spec.path, &system, &layer);
+                        debug!("spec [{:?}] matches system [{:?}] *and* layer [{:?}]", &spec.get_file_path(), &system, &layer);
 
                         let spec_domain = String::from( SpecItem::get_domain(&spec.spec_handler) );
                         match specs_per_domain.get(&spec_domain) {
                             Some(related_specs) => {
                                 let mut specs = related_specs.clone();
-                                specs.insert( (shorten_spec_path(spec.path, catalogs, String::from(&spec.catalog_id)), String::from(&spec.catalog_id)) );
+                                specs.insert( (shorten_spec_path(spec.get_file_path().to_string(), catalogs, String::from(spec.get_catalog_id())), String::from(spec.get_catalog_id())) );
                                 specs_per_domain.insert(String::from(&spec_domain), specs);
                             },
                             None => {
                                 let mut related_specs = HashSet::new();
-                                related_specs.insert( (shorten_spec_path(spec.path, catalogs, String::from(&spec.catalog_id)), String::from(&spec.catalog_id)) );
+                                related_specs.insert( (shorten_spec_path(spec.get_file_path().to_string(), catalogs, String::from(spec.get_catalog_id())), String::from(spec.get_catalog_id())) );
                                 specs_per_domain.insert(String::from(&spec_domain), related_specs);
                             }
                         }                
                     }, 
                     false => {
-                        debug!("spec [{:?}] matches system [{:?}] but not layer [{:?}]", spec.path, system, layer);
+                        debug!("spec [{:?}] matches system [{:?}] but not layer [{:?}]", spec.get_file_path(), system, layer);
                     }
                 }
             
             }, 
             false => {
-                debug!("spec [{:?}] does not belong to system [{:?}] and layer [{:?}]", spec.path, system, layer);
+                debug!("spec [{:?}] does not belong to system [{:?}] and layer [{:?}]", spec.get_file_path(), system, layer);
             }
         }
     }

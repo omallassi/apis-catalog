@@ -40,7 +40,7 @@ pub async fn get_all_specs() -> impl Responder {
 
     let mut all_specs = list_specs(&SETTINGS.catalogs);
     while let Some(spec) = all_specs.pop() {
-        info!("Analysing file [{:?}]", spec.path);
+        info!("Analysing file [{:?}]", spec.get_file_path());
 
         let short_path = SpecItem::get_spec_short_path(&spec);
 

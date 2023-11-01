@@ -151,7 +151,7 @@ pub async fn get_domains_errors() -> impl Responder {
         if !is_contained {
             let error = DomainError {
                 spec_domain: String::from( SpecItem::get_domain(&spec.spec_handler) ),
-                spec_catalog_id: String::from(&spec.catalog_id),
+                spec_catalog_id: String::from(spec.get_catalog_id()),
                 spec_path: String::from(short_path),
                 resources: *data.get( SpecItem::get_domain(&spec.spec_handler) ).unwrap(),
             };
