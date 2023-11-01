@@ -180,9 +180,10 @@ impl SpecItem {
         base_url
     }
 
-    pub fn get_spec_short_path(spec: &SpecItem) -> &str {
-        let catalog_dir_srt = &spec.catalog_dir;
-        let short_path = SpecItem::extact_relative_path(&spec.path, &catalog_dir_srt);
+    pub fn get_spec_short_path(&self) -> &str {
+        let catalog_dir_srt = &self.catalog_dir;
+        let path_str = &self.path;
+        let short_path = SpecItem::extact_relative_path(path_str, catalog_dir_srt);
     
         short_path
     }
