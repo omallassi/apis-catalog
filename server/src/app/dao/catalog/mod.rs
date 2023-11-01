@@ -69,7 +69,6 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                     match serde_yaml::from_reader(f) {
                         Ok(openapi) => {
                             //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                            let layer = SpecItem::get_layer_from_spec(&openapi);
                             let systems = SpecItem::get_systems_from_spec(&openapi);
         
                             //create the API Item and add it to the returned value
@@ -77,7 +76,6 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                                 // spec_type: SpecType::OpenApi,
                                 path: String::from(file_path.to_str().unwrap()),
                                 spec_handler: openapi.clone(),
-                                layer: layer,
                                 systems: systems,
                                 catalog_id: String::from(&catalog.catalog_id),
                                 catalog_dir: String::from(&catalog.catalog_dir)
@@ -472,7 +470,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/path/to/spec.yaml"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            layer: String::from("functional"),
             systems: Vec::new(),
             catalog_id: String::from("an id"),
             catalog_dir: String::from("not used here"),
@@ -505,7 +502,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            layer: String::from("std::string::String"),
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("not used here"),
@@ -537,7 +533,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            layer: String::from("std::string::String"),
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("not used here"),
@@ -562,7 +557,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            layer: String::from("std::string::String"),
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("not used here"),
@@ -733,14 +727,14 @@ pub mod tests {
         let spec: &SpecItem = results.get(0).unwrap();
         assert_eq!( SpecItem::get_audience(&spec.spec_handler), "company");
         assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/analytics/time-series");
-        assert_eq!(spec.layer, super::DEFAULT_SYSTEM_LAYER);
+        assert_eq!( SpecItem::get_layer_from_spec(&spec.spec_handler), super::DEFAULT_SYSTEM_LAYER);
         assert_eq!(spec.systems.len(), 1);
         assert_eq!(spec.systems[0], super::DEFAULT_SYSTEM_LAYER);
 
         let spec: &SpecItem = results.get(1).unwrap();
         assert_eq!( SpecItem::get_audience(&spec.spec_handler), "company");
         assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/audit/trails");
-        assert_eq!(spec.layer, "application");
+        assert_eq!( SpecItem::get_layer_from_spec(&spec.spec_handler), "application");
         assert_eq!(spec.systems[0], "bpaas");
     }
 
@@ -813,7 +807,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: "a path".to_string(), 
             spec_handler: openapi_spec, 
-            layer: "layer".to_string(), 
             systems: Vec::new(), 
             catalog_id: "rr".to_string(), 
             catalog_dir: "fff".to_string() 

@@ -113,7 +113,7 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
     for spec in all_specs{
         match spec.systems.contains(&system.to_lowercase()){
             true => {
-                match spec.layer.eq(&layer.to_lowercase()) {
+                match SpecItem::get_layer_from_spec( &spec.spec_handler ).eq(&layer.to_lowercase()) {
                     true => {
                         debug!("spec [{:?}] matches system [{:?}] *and* layer [{:?}]", &spec.path, &system, &layer);
 

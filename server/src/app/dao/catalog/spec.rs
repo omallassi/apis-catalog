@@ -8,7 +8,6 @@ pub struct SpecItem {
     // pub spec_type: SpecType,
     pub path: std::string::String,
     pub spec_handler: OpenAPI, //TODO should be private again
-    pub layer: String,
     pub systems: Vec<String>,
     pub catalog_id: String,
     pub catalog_dir: String,
@@ -198,7 +197,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             spec_handler: openapi_spec, 
-            layer: String::from("not used here"), 
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("/home/catalog/")
