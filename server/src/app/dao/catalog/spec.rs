@@ -6,7 +6,7 @@ use regex::Regex;
 #[derive(Debug, Clone)]
 pub struct SpecItem {
     // pub spec_type: SpecType,
-    pub spec_handler: OpenAPI, //TODO should be private again
+    spec_handler: OpenAPI,
     path: std::string::String,
     catalog_id: String,
     catalog_dir: String,

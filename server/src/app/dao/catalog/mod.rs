@@ -393,7 +393,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
             spec.get_file_path()
         );
         let base_url = spec.get_domain();
-        let num = spec.spec_handler.paths.paths.len();
+        let num = spec.get_paths().len();
 
         *data.entry(base_url.to_string()).or_insert(0) += num;
     }
