@@ -14,6 +14,29 @@ pub struct SpecItem {
 
 impl SpecItem {
 
+    pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: &str) -> Result<Self, String> {
+
+        match serde_yaml::from_str::<OpenAPI>(spec) {
+            Ok(openapi) => {
+            let spec = Self{
+                path: path.clone(), 
+                catalog_id: catalog_id.clone(),
+                catalog_dir: catalog_dir.clone(),
+                spec: openapi,
+            };
+    
+            Ok(spec)
+                
+            }
+            Err(why) => {
+                warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
+                let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
+            
+                Err( error_message )
+            }
+        }
+    }
+
     pub fn get_file_path(&self) -> &str {
         &self.path
     }
@@ -179,31 +202,28 @@ impl SpecItem {
     
 }
 
-pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: &str) -> Result<SpecItem, String> {
+// pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: &str) -> Result<SpecItem, String> {
 
-    match serde_yaml::from_str::<OpenAPI>(spec) {
-        Ok(openapi) => {
-        let spec = SpecItem{
-            path: path.clone(), 
-            catalog_id: catalog_id.clone(),
-            catalog_dir: catalog_dir.clone(),
-            spec: openapi,
-        };
+//     match serde_yaml::from_str::<OpenAPI>(spec) {
+//         Ok(openapi) => {
+//         let spec = SpecItem{
+//             path: path.clone(), 
+//             catalog_id: catalog_id.clone(),
+//             catalog_dir: catalog_dir.clone(),
+//             spec: openapi,
+//         };
 
-        Ok(spec)
+//         Ok(spec)
             
-        }
-        Err(why) => {
-            warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
-            let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
+//         }
+//         Err(why) => {
+//             warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
+//             let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
         
-            Err( error_message )
-        }
-    }
-
-
-
-}
+//             Err( error_message )
+//         }
+//     }
+// }
 
 pub fn extact_relative_path<'a>(spec_path: &'a String, catalog_dir_srt: &'a String) -> &'a str {
     let catalog_dir = catalog_dir_srt.as_str().len();
@@ -275,7 +295,7 @@ pub mod tests {
         let path = "a path".to_string();
 
         ///
-        let spec = super::from_str(path, catalog_id, catalog_dir, spec_as_str.as_str()).unwrap();
+        let spec = super::SpecItem::from_str(path, catalog_id, catalog_dir, spec_as_str.as_str()).unwrap();
 
         assert_eq!(spec.get_version(), "1.4.0");
         assert_eq!(spec.get_title(), "My API");
@@ -309,7 +329,7 @@ pub mod tests {
 
         let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
 
-        let spec = super::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
+        let spec = super::SpecItem::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
         let sut = spec.get_api_id();
         assert_eq!(sut, "134");
     }
@@ -329,7 +349,7 @@ pub mod tests {
         let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
 
         //
-        let spec = super::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
+        let spec = super::SpecItem::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
 
         let sut = spec.get_api_id();
         assert_eq!(sut, "0");
