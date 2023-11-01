@@ -74,14 +74,12 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                             let layer = SpecItem::get_layer_from_spec(&openapi);
                             let systems = SpecItem::get_systems_from_spec(&openapi);
                             let api_id = SpecItem::get_api_id_from_spec(&openapi);
-                            let version = SpecItem::get_version_from_spec(&openapi);
         
                             //create the API Item and add it to the returned value
                             let spec: SpecItem = SpecItem {
                                 // spec_type: SpecType::OpenApi,
                                 path: String::from(file_path.to_str().unwrap()),
                                 id: api_id.to_string(),
-                                version: version,
                                 spec_handler: openapi.clone(),
                                 audience: audience,
                                 domain: domain.to_string(),
@@ -480,7 +478,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/path/to/spec.yaml"),
             id: String::from("id-12"),
-            version: String::from("1.0.0"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("public"),
             domain: String::from("/the/domain"),
@@ -517,7 +514,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
-            version: String::from("1.0.0"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
@@ -553,7 +549,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
-            version: String::from("1.0.0"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
@@ -582,7 +577,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
-            version: String::from("1.0.0"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
             audience: String::from("std::string::String"),
             domain: String::from("std::string::String"),
@@ -837,7 +831,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: "a path".to_string(), 
             id: "an id".to_string(), 
-            version: "5.6.0".to_string(), 
             spec_handler: openapi_spec, 
             audience: "audience".to_string(), 
             domain: "domain".to_string(), 

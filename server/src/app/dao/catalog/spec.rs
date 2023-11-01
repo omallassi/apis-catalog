@@ -1,5 +1,5 @@
 use openapiv3::OpenAPI;
-use log::{debug, info, warn, error};
+use log::warn;
 use super::{handlers::{Method, Path}, DEFAULT_SYSTEM_LAYER};
 use regex::Regex;
 
@@ -8,7 +8,6 @@ pub struct SpecItem {
     // pub spec_type: SpecType,
     pub path: std::string::String,
     pub id: std::string::String,
-    pub version: std::string::String,
     pub spec_handler: OpenAPI, //TODO should be private again
     pub audience: std::string::String,
     pub domain: std::string::String,
@@ -206,7 +205,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             id: String::from("not used"),
-            version: String::from("1.0.0"),
             spec_handler: openapi_spec, 
             audience: String::from("not used here"),
             domain: String::from("not used here"), 
