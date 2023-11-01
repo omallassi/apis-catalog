@@ -108,8 +108,8 @@ impl SpecItem {
         all_paths
     }
 
-    pub fn get_audience(spec: &OpenAPI) -> String {
-        let audience:String  = match spec.info.extensions.get("x-audience"){
+    pub fn get_audience(&self) -> String {
+        let audience:String  = match self.spec_handler.info.extensions.get("x-audience"){
             Some(aud) => String::from(aud.as_str().unwrap()),
             None => String::from(DEFAULT_SYSTEM_LAYER),
         };
