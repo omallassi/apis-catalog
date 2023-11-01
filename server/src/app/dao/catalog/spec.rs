@@ -1,12 +1,12 @@
 use openapiv3::OpenAPI;
 use log::warn;
-use super::{handlers::{Method, Path}, DEFAULT_SYSTEM_LAYER};
+use super::{handlers::{Method, Path, SpecHandler}, DEFAULT_SYSTEM_LAYER};
 use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct SpecItem {
     // pub spec_type: SpecType,
-    spec_handler: OpenAPI,
+    spec: OpenAPI,
     path: std::string::String,
     catalog_id: String,
     catalog_dir: String,
@@ -23,7 +23,7 @@ impl SpecItem {
                 path: path.clone(), 
                 catalog_id: catalog_id.clone(),
                 catalog_dir: catalog_dir.clone(),
-                spec_handler: openapi,
+                spec: openapi,
             };
 
             Ok(spec)
@@ -54,15 +54,15 @@ impl SpecItem {
     }
 
     pub fn get_version(&self) -> &str {
-        &self.spec_handler.info.version
+        &self.spec.info.version
     }
 
     pub fn get_title(&self) -> &str {
-        &self.spec_handler.info.title
+        &self.spec.info.title
     }
 
     pub fn get_description(&self) -> &str {
-        let description = match &self.spec_handler.info.description {
+        let description = match &self.spec.info.description {
             Some(d) => d,
             None => "",
         };
@@ -71,13 +71,13 @@ impl SpecItem {
     }
 
     pub fn get_paths_len(&self) -> usize {
-        * &self.spec_handler.paths.paths.len()
+        * &self.spec.paths.paths.len()
     }
 
     pub fn get_paths(&self) -> Vec<Path> {
         let mut all_paths = Vec::new();
 
-        let paths = &self.spec_handler.paths;
+        let paths = &self.spec.paths;
         for (path_value, path_item) in paths.iter() {
             match path_item.as_item() {
                 Some(item) => {
@@ -125,7 +125,7 @@ impl SpecItem {
     }
 
     pub fn get_audience(&self) -> String {
-        let audience:String  = match self.spec_handler.info.extensions.get("x-audience"){
+        let audience:String  = match self.spec.info.extensions.get("x-audience"){
             Some(aud) => String::from(aud.as_str().unwrap()),
             None => String::from(DEFAULT_SYSTEM_LAYER),
         };
@@ -134,7 +134,7 @@ impl SpecItem {
     }
 
     pub fn get_api_id(&self) -> String {
-        let api_id: String = match self.spec_handler.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
+        let api_id: String = match self.spec.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
             Some(id)=> String::from(id.as_str().unwrap()),
             None => String::from("0"),
         };
@@ -143,7 +143,7 @@ impl SpecItem {
     }
     
     pub fn get_layer(&self) -> String {
-        let layer:String  = match self.spec_handler.extensions.get("x-layer"){
+        let layer:String  = match self.spec.extensions.get("x-layer"){
             Some(layer) => String::from(layer.as_str().unwrap()),
             None => String::from(DEFAULT_SYSTEM_LAYER),
         };
@@ -153,7 +153,7 @@ impl SpecItem {
     
     pub fn get_systems(&self) -> Vec<String> {
         
-        let systems = match self.spec_handler.extensions.get("x-systems"){
+        let systems = match self.spec.extensions.get("x-systems"){
             Some(systems) => {
                 let mut returned_systems: Vec<String> = Vec::new();
                 for system in systems.as_array().unwrap(){
@@ -175,7 +175,7 @@ impl SpecItem {
     }
 
     pub fn get_domain(&self) -> &str {
-        let base_url = match self.spec_handler.servers.is_empty() {
+        let base_url = match self.spec.servers.is_empty() {
             true => "NA - servers attribute not specified",
             false => {
                 //TODO can do better
@@ -185,10 +185,10 @@ impl SpecItem {
                     static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
                 }
     
-                if let Some(cap) = RE.captures(&self.spec_handler.servers[0].url) {
+                if let Some(cap) = RE.captures(&self.spec.servers[0].url) {
                     cap.get(2).unwrap().as_str()
                 } else {
-                    &self.spec_handler.servers[0].url
+                    &self.spec.servers[0].url
                 }
             }
         };
@@ -235,7 +235,7 @@ pub mod tests {
         let spec = SpecItem {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
-            spec_handler: openapi_spec, 
+            spec: openapi_spec, 
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("/home/catalog/")
         };
@@ -327,7 +327,6 @@ pub mod tests {
             paths: Default::default(),
             ..Default::default()
         };
-
         let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
 
         //
