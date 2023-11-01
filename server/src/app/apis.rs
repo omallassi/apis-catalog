@@ -50,7 +50,7 @@ pub async fn get_all_specs() -> impl Responder {
             title: String::from(&spec.get_title().to_string()),
             version: String::from(&spec.get_version().to_string()),
             description: String::from(&spec.get_description().to_string()),
-            audience: spec.audience,
+            audience: SpecItem::get_audience(&spec.spec_handler),
         };
         specs.specs.push(spec);
     }

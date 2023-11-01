@@ -8,7 +8,6 @@ pub struct SpecItem {
     // pub spec_type: SpecType,
     pub path: std::string::String,
     pub spec_handler: OpenAPI, //TODO should be private again
-    pub audience: std::string::String,
     pub domain: std::string::String,
     pub layer: String,
     pub systems: Vec<String>,
@@ -89,7 +88,7 @@ impl SpecItem {
         all_paths
     }
 
-    pub fn get_audience_from_spec(spec: &OpenAPI) -> String {
+    pub fn get_audience(spec: &OpenAPI) -> String {
         let audience:String  = match spec.info.extensions.get("x-audience"){
             Some(aud) => String::from(aud.as_str().unwrap()),
             None => String::from(DEFAULT_SYSTEM_LAYER),
@@ -105,10 +104,6 @@ impl SpecItem {
         };
     
         api_id
-    }
-    
-    pub fn get_version_from_spec(spec: &OpenAPI) -> String {
-        spec.info.version.clone()
     }
     
     pub fn get_layer_from_spec(spec: &OpenAPI) -> String {
@@ -204,7 +199,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             spec_handler: openapi_spec, 
-            audience: String::from("not used here"),
             domain: String::from("not used here"), 
             layer: String::from("not used here"), 
             systems: Vec::new(),
