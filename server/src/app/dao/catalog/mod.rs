@@ -5,6 +5,7 @@ pub mod spec;
 ///import
 use log::{debug, info, warn, error};
 extern crate yaml_rust;
+use openapiv3::OpenAPI;
 use yaml_rust::{Yaml, YamlLoader};
 use std::collections::HashMap;
 use std::vec::Vec;
@@ -64,10 +65,8 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
         
                     let f = std::fs::File::open(file_path).unwrap();
         
-                    match serde_yaml::from_reader(f) {
+                    match serde_yaml::from_reader::<std::fs::File, OpenAPI>(f) {
                         Ok(openapi) => {
-                            let systems = SpecItem::get_systems(&openapi);
-
                             //create the API Item and add it to the returned value
                             let path = String::from(file_path.to_str().unwrap());
                             let catalog_id = String::from(&catalog.catalog_id);
@@ -711,14 +710,14 @@ pub mod tests {
         assert_eq!( &spec.get_audience(), "company");
         assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/analytics/time-series");
         assert_eq!( &spec.get_layer(), super::DEFAULT_SYSTEM_LAYER);
-        assert_eq!( SpecItem::get_systems(&spec.spec_handler).len(), 1);
-        assert_eq!( SpecItem::get_systems(&spec.spec_handler)[0], super::DEFAULT_SYSTEM_LAYER);
+        assert_eq!( spec.get_systems().len(), 1);
+        assert_eq!( &spec.get_systems()[0], super::DEFAULT_SYSTEM_LAYER);
 
         let spec: &SpecItem = results.get(1).unwrap();
         assert_eq!( &spec.get_audience(), "company");
         assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/audit/trails");
         assert_eq!( &spec.get_layer(), "application");
-        assert_eq!( SpecItem::get_systems(&spec.spec_handler)[0], "bpaas");
+        assert_eq!( &spec.get_systems()[0], "bpaas");
     }
 
     #[test]

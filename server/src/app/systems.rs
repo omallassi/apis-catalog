@@ -111,7 +111,7 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
     let all_specs = list_specs(&catalogs);
     //loop over the list and check system and layer equality
     for spec in all_specs{
-        match SpecItem::get_systems(&spec.spec_handler).contains(&system.to_lowercase()){
+        match &spec.get_systems().contains(&system.to_lowercase()){
             true => {
                 match &spec.get_layer().eq(&layer.to_lowercase()) {
                     true => {

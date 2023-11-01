@@ -135,9 +135,9 @@ impl SpecItem {
         layer.to_lowercase()
     }
     
-    pub fn get_systems(openapi: &OpenAPI) -> Vec<String> {
+    pub fn get_systems(&self) -> Vec<String> {
         
-        let systems = match openapi.extensions.get("x-systems"){
+        let systems = match self.spec_handler.extensions.get("x-systems"){
             Some(systems) => {
                 let mut returned_systems: Vec<String> = Vec::new();
                 for system in systems.as_array().unwrap(){

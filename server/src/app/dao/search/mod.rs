@@ -61,7 +61,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
 
     //  will index all specs
     for spec in specs {
-        let systems_as_text = SpecItem::get_systems(&spec.spec_handler).join(" ");
+        let systems_as_text = &spec.get_systems().join(" ");
         let paths = &spec.get_paths();
         for path_item in paths.iter() {
 
@@ -81,7 +81,7 @@ pub fn build_index(index_path: &str, specs: &Vec<SpecItem>) -> tantivy::Result<(
             index_writer.add_document(doc!(
                 audience => String::from( &spec.get_audience() ),
                 domain => String::from( SpecItem::get_domain(&spec.spec_handler) ), 
-                systems => String::from(&systems_as_text),
+                systems => String::from(systems_as_text),
                 layer => String::from( &spec.get_layer() ),
                 path => String::from(&path_item.path),
                 operations => ope_methods,
