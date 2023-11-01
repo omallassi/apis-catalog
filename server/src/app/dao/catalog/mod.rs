@@ -130,25 +130,6 @@ pub fn list_all_errors() -> Vec<SpecInError> {
 }
 
 
-
-// pub fn get_spec_short_path(spec: &SpecItem) -> &str {
-//     let catalog_dir_srt = &spec.catalog_dir;
-//     let short_path = extact_relative_path(&spec.path, &catalog_dir_srt);
-
-//     short_path
-// }
-
-// pub fn extact_relative_path<'a>(spec_path: &'a String, catalog_dir_srt: &'a String) -> &'a str {
-//     let catalog_dir = catalog_dir_srt.as_str().len();
-//     let len = spec_path.len();
-
-//     let short_path = &spec_path[ catalog_dir..len ];
-    
-//     short_path
-// }
-
-
-
 pub fn refresh_catalogs(catalogs: &Vec<Catalog>, init: bool) {
 
     for catalog in catalogs {
