@@ -8,7 +8,6 @@ pub struct SpecItem {
     // pub spec_type: SpecType,
     pub path: std::string::String,
     pub spec_handler: OpenAPI, //TODO should be private again
-    pub systems: Vec<String>,
     pub catalog_id: String,
     pub catalog_dir: String,
 }
@@ -104,7 +103,7 @@ impl SpecItem {
         api_id
     }
     
-    pub fn get_layer_from_spec(spec: &OpenAPI) -> String {
+    pub fn get_layer(spec: &OpenAPI) -> String {
         let layer:String  = match spec.extensions.get("x-layer"){
             Some(layer) => String::from(layer.as_str().unwrap()),
             None => String::from(DEFAULT_SYSTEM_LAYER),
@@ -113,7 +112,7 @@ impl SpecItem {
         layer.to_lowercase()
     }
     
-    pub fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
+    pub fn get_systems(openapi: &OpenAPI) -> Vec<String> {
         
         let systems = match openapi.extensions.get("x-systems"){
             Some(systems) => {
@@ -197,7 +196,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             spec_handler: openapi_spec, 
-            systems: Vec::new(),
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("/home/catalog/")
         };
