@@ -1,5 +1,5 @@
 extern crate tantivy;
-use crate::app::dao::catalog::SpecItem;
+use crate::app::dao::catalog::spec::SpecItem;
 use std::time::Instant;
 use std::path::Path;
 use std::fs;

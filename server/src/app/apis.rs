@@ -10,6 +10,7 @@ extern crate reqwest;
 use crate::app::dao::repo_apis::*;
 use crate::app::dao::repo_domains::*;
 use crate::app::dao::catalog::*;
+use crate::app::dao::catalog::spec::*;
 use crate::shared::settings::*;
 
 use log::{debug, error, info};
@@ -41,7 +42,7 @@ pub async fn get_all_specs() -> impl Responder {
     while let Some(spec) = all_specs.pop() {
         info!("Analysing file [{:?}]", spec.path);
 
-        let short_path = get_spec_short_path(&spec);
+        let short_path = SpecItem::get_spec_short_path(&spec);
 
         let spec = Spec {
             name: String::from(short_path),

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 extern crate reqwest;
 
 use crate::app::dao::catalog::*;
+use crate::app::dao::catalog::spec::*;
 use crate::app::apis::*;
 use crate::shared::settings::*;
 

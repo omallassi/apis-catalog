@@ -1,5 +1,6 @@
 ///sub module declaration
-mod handlers;
+pub mod handlers;
+pub mod spec;
 
 ///import
 use log::{debug, info, warn, error};
@@ -7,105 +8,13 @@ extern crate yaml_rust;
 use yaml_rust::{Yaml, YamlLoader};
 use std::collections::HashMap;
 use std::vec::Vec;
-use openapiv3::OpenAPI;
 use serde_yaml;
 use cmd_lib::run_cmd;
-extern crate regex;
-use regex::Regex;
 use crate::shared::settings::{Catalog, SETTINGS};
-use crate::app::dao::catalog::handlers::{Method, Path, SpecType};
-use crate::app::dao::catalog::handlers::SpecHandler;
-use crate::app::dao::catalog::handlers::implem::opanapi::v3;
+
+use self::spec::SpecItem;
 
 
-//
-#[derive(Debug, Clone)]
-pub struct SpecItem {
-    pub spec_type: SpecType,
-    pub path: std::string::String,
-    pub id: std::string::String,
-    pub version: std::string::String,
-    spec_handler: OpenAPI,
-    pub audience: std::string::String,
-    pub domain: std::string::String,
-    pub layer: String,
-    pub systems: Vec<String>,
-    pub catalog_id: String,
-    pub catalog_dir: String,
-}
-
-impl SpecItem {
-    pub fn get_version(&self) -> &str {
-        &self.spec_handler.info.version
-    }
-
-    pub fn get_title(&self) -> &str {
-        &self.spec_handler.info.title
-    }
-
-    pub fn get_description(&self) -> &str {
-        let description = match &self.spec_handler.info.description {
-            Some(d) => d,
-            None => "",
-        };
-
-        &description
-    }
-
-    pub fn get_paths_len(&self) -> usize {
-        * &self.spec_handler.paths.paths.len()
-    }
-
-    pub fn get_paths(&self) -> Vec<Path> {
-        let mut all_paths = Vec::new();
-
-        let paths = &self.spec_handler.paths;
-        for (path_value, path_item) in paths.iter() {
-            match path_item.as_item() {
-                Some(item) => {
-                    //need to get the http method fro the PathItem
-                    let http_methods: [(&str, &Option<openapiv3::Operation>); 7] = [
-                        ("GET", &item.get),
-                        ("POST", &item.post),
-                        ("PUT", &item.put),
-                        ("DELETE", &item.delete),
-                        ("OPTIONS", &item.options),
-                        ("HEAD", &item.head),
-                        ("PATCH", &item.patch),
-                    ];
-
-
-                    let mut all_methods = Vec::new();
-
-                    for (method, operation_option) in &http_methods {
-                        if let Some(ref ope) = operation_option {
-                            let mut ope_summary = String::from("");
-                            let mut ope_description = String::from("");
-                            let mut ope_method = String::from("");
-
-                            ope_summary.push_str( ope.summary.clone().unwrap_or("N/A".to_string()).as_str() );
-                            ope_description.push_str( ope.description.clone().unwrap_or("N/A".to_string()).as_str()  );
-                            ope_method.push_str( * method );
-
-                            all_methods.push(Method{
-                                method: String::from(* method),
-                                description: ope_description, 
-                                summary: ope_summary
-                            });
-                        }
-                    }
-
-                    all_paths.push(Path { path: String::from(path_value), methods: all_methods })
-                }
-                None => {
-                    warn!("No path found for spec {:?}", &self.path);
-                }
-            }
-        }
-
-        all_paths
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct SpecInError {
@@ -160,16 +69,16 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                     match serde_yaml::from_reader(f) {
                         Ok(openapi) => {
                             //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                            let audience = get_audience_from_spec(&openapi);
-                            let domain = get_domain_from_spec(&openapi);
-                            let layer = get_layer_from_spec(&openapi);
-                            let systems = get_systems_from_spec(&openapi);
-                            let api_id = get_api_id_from_spec(&openapi);
-                            let version = get_version_from_spec(&openapi);
+                            let audience = SpecItem::get_audience_from_spec(&openapi);
+                            let domain = SpecItem::get_domain_from_spec(&openapi);
+                            let layer = SpecItem::get_layer_from_spec(&openapi);
+                            let systems = SpecItem::get_systems_from_spec(&openapi);
+                            let api_id = SpecItem::get_api_id_from_spec(&openapi);
+                            let version = SpecItem::get_version_from_spec(&openapi);
         
                             //create the API Item and add it to the returned value
                             let spec: SpecItem = SpecItem {
-                                spec_type: SpecType::OpenApi,
+                                // spec_type: SpecType::OpenApi,
                                 path: String::from(file_path.to_str().unwrap()),
                                 id: api_id.to_string(),
                                 version: version,
@@ -220,97 +129,25 @@ pub fn list_all_errors() -> Vec<SpecInError> {
     errors
 }
 
-fn get_audience_from_spec(spec: &OpenAPI) -> String {
-    let audience:String  = match spec.info.extensions.get("x-audience"){
-        Some(aud) => String::from(aud.as_str().unwrap()),
-        None => String::from(DEFAULT_SYSTEM_LAYER),
-    };
 
-    audience
-}
 
-fn get_api_id_from_spec(spec: &OpenAPI) -> String {
-    let api_id: String = match spec.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
-        Some(id)=> String::from(id.as_str().unwrap()),
-        None => String::from("0"),
-    };
+// pub fn get_spec_short_path(spec: &SpecItem) -> &str {
+//     let catalog_dir_srt = &spec.catalog_dir;
+//     let short_path = extact_relative_path(&spec.path, &catalog_dir_srt);
 
-    api_id
-}
+//     short_path
+// }
 
-fn get_version_from_spec(spec: &OpenAPI) -> String {
-    spec.info.version.clone()
-}
+// pub fn extact_relative_path<'a>(spec_path: &'a String, catalog_dir_srt: &'a String) -> &'a str {
+//     let catalog_dir = catalog_dir_srt.as_str().len();
+//     let len = spec_path.len();
 
-fn get_layer_from_spec(spec: &OpenAPI) -> String {
-    let layer:String  = match spec.extensions.get("x-layer"){
-        Some(layer) => String::from(layer.as_str().unwrap()),
-        None => String::from(DEFAULT_SYSTEM_LAYER),
-    };
-
-    layer.to_lowercase()
-}
-
-fn get_systems_from_spec(openapi: &OpenAPI) -> Vec<String> {
+//     let short_path = &spec_path[ catalog_dir..len ];
     
-    let systems = match openapi.extensions.get("x-systems"){
-        Some(systems) => {
-            let mut returned_systems: Vec<String> = Vec::new();
-            for system in systems.as_array().unwrap(){
-                //did not find a way to use into_iter().collect::Vec<String>>
-                returned_systems.push(String::from(system.as_str().unwrap()).to_lowercase());
-            }
+//     short_path
+// }
 
-            returned_systems
-        },
-        None => {
-            let mut systems: Vec<String> = Vec::new();
-            systems.push(String::from(DEFAULT_SYSTEM_LAYER));        
 
-            systems
-        }
-    };
-
-    systems
-}
-
-pub fn get_spec_short_path(spec: &SpecItem) -> &str {
-    let catalog_dir_srt = &spec.catalog_dir;
-    let short_path = extact_relative_path(&spec.path, &catalog_dir_srt);
-
-    short_path
-}
-
-pub fn extact_relative_path<'a>(spec_path: &'a String, catalog_dir_srt: &'a String) -> &'a str {
-    let catalog_dir = catalog_dir_srt.as_str().len();
-    let len = spec_path.len();
-
-    let short_path = &spec_path[ catalog_dir..len ];
-    
-    short_path
-}
-
-fn get_domain_from_spec(spec: &OpenAPI) -> &str {
-    let base_url = match &spec.servers.is_empty() {
-        true => "NA - servers attribute not specified",
-        false => {
-            //TODO can do better
-            //base_url could have the following form http://baseurl/v1/xva-management/xva
-            //will extract http://baseurl and keep the rest
-            lazy_static! {
-                static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
-            }
-
-            if let Some(cap) = RE.captures(&spec.servers[0].url) {
-                cap.get(2).unwrap().as_str()
-            } else {
-                &spec.servers[0].url
-            }
-        }
-    };
-
-    base_url
-}
 
 pub fn refresh_catalogs(catalogs: &Vec<Catalog>, init: bool) {
 
@@ -591,7 +428,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
             "get_endpoints_num_per_subdomain - parsing spec [{:?}]",
             spec.path
         );
-        let base_url = get_domain_from_spec(&spec.spec_handler);
+        let base_url = SpecItem::get_domain_from_spec(&spec.spec_handler);
         let num = spec.spec_handler.paths.paths.len();
 
         *data.entry(base_url.to_string()).or_insert(0) += num;
@@ -659,7 +496,7 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
-            spec_type: super::SpecType::OpenApi,
+            // spec_type: super::SpecType::OpenApi,
             path: String::from("/path/to/spec.yaml"),
             id: String::from("id-12"),
             version: String::from("1.0.0"),
@@ -696,7 +533,7 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
-            spec_type: super::SpecType::OpenApi,
+            // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
             version: String::from("1.0.0"),
@@ -732,7 +569,7 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
-            spec_type: super::SpecType::OpenApi,
+            // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
             version: String::from("1.0.0"),
@@ -761,7 +598,7 @@ pub mod tests {
         ";
 
         let spec_item = super::SpecItem {
-            spec_type: super::SpecType::OpenApi,
+            // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             id: String::from("std::string::String"),
             version: String::from("1.0.0"),
@@ -950,39 +787,6 @@ pub mod tests {
         assert_eq!(spec.systems[0], "bpaas");
     }
 
-
-    #[test]
-    fn test_get_spec_short_path() {
-        let openapi_spec = openapiv3::OpenAPI {
-            openapi: "3.0.0".to_string(),
-            info: openapiv3::Info {
-                title: "My API".to_string(),
-                version: "1.0.0".to_string(),
-                ..Default::default()
-            },
-            paths: Default::default(),
-            ..Default::default()
-        };
-
-        let spec = SpecItem {
-            spec_type: super::SpecType::OpenApi,
-            path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
-            id: String::from("not used"),
-            version: String::from("1.0.0"),
-            spec_handler: openapi_spec, 
-            audience: String::from("not used here"),
-            domain: String::from("not used here"), 
-            layer: String::from("not used here"), 
-            systems: Vec::new(),
-            catalog_id: String::from("not used here"),
-            catalog_dir: String::from("/home/catalog/")
-        };
-
-        let sut = super::get_spec_short_path(&spec);
-        assert_eq!("code/openapi-specifications/specifications/manual-tasks/openapi.yaml", sut);
-
-    }
-
     #[test]
     fn test_get_api_id_from_spec_wo_ext(){
         let openapi_spec = openapiv3::OpenAPI {
@@ -996,7 +800,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let sut = super::get_api_id_from_spec(&openapi_spec);
+        let sut = super::SpecItem::get_api_id_from_spec(&openapi_spec);
         assert_eq!(sut, "0");
     }
 
@@ -1020,7 +824,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let sut = super::get_api_id_from_spec(&openapi_spec);
+        let sut = super::SpecItem::get_api_id_from_spec(&openapi_spec);
         assert_eq!(sut, "134");
     }
 
@@ -1048,7 +852,8 @@ pub mod tests {
         paths.insert("/example".to_string(), openapiv3::ReferenceOr::Item((path_item)));
         openapi_spec.paths.paths = paths;
 
-        let spec: SpecItem = SpecItem { spec_type: super::SpecType::OpenApi,
+        let spec: SpecItem = SpecItem { 
+            // spec_type: super::SpecType::OpenApi,
             path: "a path".to_string(), 
             id: "an id".to_string(), 
             version: "5.6.0".to_string(), 
