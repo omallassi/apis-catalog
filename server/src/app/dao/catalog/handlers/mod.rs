@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 pub mod implem;
 
-pub trait SpecHandler: Send + Sync + Debug + Clone{
+pub trait SpecHandler: Send + Sync + Debug {
     fn get_version(&self) -> String;
 
     fn get_title(&self) -> String;
