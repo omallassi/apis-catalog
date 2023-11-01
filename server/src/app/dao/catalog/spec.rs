@@ -14,7 +14,7 @@ pub struct SpecItem {
 
 impl SpecItem {
 
-    pub fn new(path: std::string::String, catalog_id: String, catalog_dir: String, spec: OpenAPI) -> SpecItem {
+    pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: OpenAPI) -> Result<SpecItem, &'static str> {
         let spec = SpecItem{
             path: path.clone(), 
             catalog_id: catalog_id.clone(),
@@ -22,8 +22,12 @@ impl SpecItem {
             spec_handler: spec,
         };
 
-        spec
+        Ok(spec)
     }
+
+    // pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: OpenAPI) -> Result<SpecItem, &'static str> {
+    //     Ok(SpecItem { spec_handler: (), path: (), catalog_id: (), catalog_dir: () })
+    // }
 
     pub fn get_file_path(&self) -> &str {
         &self.path

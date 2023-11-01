@@ -58,13 +58,20 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                     .filter_map(Result::ok);
 
                 for entry in walker {
-                    let file_path = entry.path();
-                    //let file_path = Path::new(&path);
-        
+                    let file_path: &std::path::Path = entry.path();
                     debug!("getting spec file [{:?}]", file_path);
-        
                     let f = std::fs::File::open(file_path).unwrap();
+                    
+                    
+                    
+                    
+                    // serde_yaml::from_str::<OpenAPI>( std::fs::read_to_string(file_path).unwrap().as_str() );
         
+
+
+
+
+
                     match serde_yaml::from_reader::<std::fs::File, OpenAPI>(f) {
                         Ok(openapi) => {
                             //create the API Item and add it to the returned value
@@ -72,7 +79,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                             let catalog_id = String::from(&catalog.catalog_id);
                             let catalog_dir = String::from(&catalog.catalog_dir);
 
-                            let spec: SpecItem = SpecItem::new(path, catalog_id, catalog_dir, openapi.clone());
+                            let spec: SpecItem = SpecItem::from_str(path, catalog_id, catalog_dir, openapi.clone()).unwrap();
                             specs.push(spec);
                         }
                         Err(why) => {
@@ -463,7 +470,7 @@ pub mod tests {
         let catalog_id = String::from("an id");
         let catalog_dir = String::from("not used here");
 
-        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
+        let spec_item = SpecItem::from_str(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap()).unwrap();
 
         let mut specs = Vec::new();
         specs.push(spec_item);
@@ -493,7 +500,7 @@ pub mod tests {
         let catalog_id = String::from("not used here");
         let catalog_dir = String::from("not used here");
 
-        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
+        let spec_item = SpecItem::from_str(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap()).unwrap();
 
         specs.push(spec_item);
 
@@ -521,7 +528,7 @@ pub mod tests {
         let catalog_dir = String::from("not used here");
         let path = String::from("std::string::String");
 
-        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
+        let spec_item = SpecItem::from_str(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap()).unwrap();
 
         specs.push(spec_item);
 
@@ -542,7 +549,7 @@ pub mod tests {
         let catalog_id = String::from("not used here");
         let catalog_dir = String::from("not used here");
 
-        let spec_item = SpecItem::new(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap());
+        let spec_item = SpecItem::from_str(path, catalog_id, catalog_dir, serde_yaml::from_str(spec).unwrap()).unwrap();
 
         specs.push(spec_item);
 
@@ -733,7 +740,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let spec = super::SpecItem::new("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), openapi_spec.clone());
+        let spec = super::SpecItem::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), openapi_spec.clone()).unwrap();
 
         let sut = spec.get_api_id();
         assert_eq!(sut, "0");
@@ -759,7 +766,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let spec = super::SpecItem::new("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), openapi_spec.clone());
+        let spec = super::SpecItem::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), openapi_spec.clone()).unwrap();
         let sut = spec.get_api_id();
         assert_eq!(sut, "134");
     }
@@ -792,7 +799,7 @@ pub mod tests {
         let catalog_dir = "fff".to_string(); 
         let path = "a path".to_string();
 
-        let spec = SpecItem::new(path, catalog_id, catalog_dir, openapi_spec);
+        let spec = SpecItem::from_str(path, catalog_id, catalog_dir, openapi_spec).unwrap();
 
         assert_eq!(spec.get_version(), "1.4.0");
         assert_eq!(spec.get_title(), "My API");
