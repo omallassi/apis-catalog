@@ -69,7 +69,6 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                     match serde_yaml::from_reader(f) {
                         Ok(openapi) => {
                             //audience is defiend as x-audience and extensions are not handled by OpenAPI crate
-                            let domain = SpecItem::get_domain_from_spec(&openapi);
                             let layer = SpecItem::get_layer_from_spec(&openapi);
                             let systems = SpecItem::get_systems_from_spec(&openapi);
         
@@ -78,7 +77,6 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                                 // spec_type: SpecType::OpenApi,
                                 path: String::from(file_path.to_str().unwrap()),
                                 spec_handler: openapi.clone(),
-                                domain: domain.to_string(),
                                 layer: layer,
                                 systems: systems,
                                 catalog_id: String::from(&catalog.catalog_id),
@@ -403,7 +401,7 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
             "get_endpoints_num_per_subdomain - parsing spec [{:?}]",
             spec.path
         );
-        let base_url = SpecItem::get_domain_from_spec(&spec.spec_handler);
+        let base_url = SpecItem::get_domain(&spec.spec_handler);
         let num = spec.spec_handler.paths.paths.len();
 
         *data.entry(base_url.to_string()).or_insert(0) += num;
@@ -474,7 +472,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/path/to/spec.yaml"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            domain: String::from("/the/domain"),
             layer: String::from("functional"),
             systems: Vec::new(),
             catalog_id: String::from("an id"),
@@ -508,7 +505,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
@@ -541,7 +537,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
@@ -567,7 +562,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("std::string::String"),
             spec_handler: serde_yaml::from_str(spec).unwrap(),
-            domain: String::from("std::string::String"),
             layer: String::from("std::string::String"),
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
@@ -738,14 +732,14 @@ pub mod tests {
         //
         let spec: &SpecItem = results.get(0).unwrap();
         assert_eq!( SpecItem::get_audience(&spec.spec_handler), "company");
-        assert_eq!(spec.domain, "/v1/analytics/time-series");
+        assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/analytics/time-series");
         assert_eq!(spec.layer, super::DEFAULT_SYSTEM_LAYER);
         assert_eq!(spec.systems.len(), 1);
         assert_eq!(spec.systems[0], super::DEFAULT_SYSTEM_LAYER);
 
         let spec: &SpecItem = results.get(1).unwrap();
         assert_eq!( SpecItem::get_audience(&spec.spec_handler), "company");
-        assert_eq!(spec.domain, "/v1/audit/trails");
+        assert_eq!( SpecItem::get_domain(&spec.spec_handler), "/v1/audit/trails");
         assert_eq!(spec.layer, "application");
         assert_eq!(spec.systems[0], "bpaas");
     }
@@ -819,7 +813,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: "a path".to_string(), 
             spec_handler: openapi_spec, 
-            domain: "domain".to_string(), 
             layer: "layer".to_string(), 
             systems: Vec::new(), 
             catalog_id: "rr".to_string(), 

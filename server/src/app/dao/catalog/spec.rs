@@ -8,7 +8,6 @@ pub struct SpecItem {
     // pub spec_type: SpecType,
     pub path: std::string::String,
     pub spec_handler: OpenAPI, //TODO should be private again
-    pub domain: std::string::String,
     pub layer: String,
     pub systems: Vec<String>,
     pub catalog_id: String,
@@ -138,7 +137,7 @@ impl SpecItem {
         systems
     }
 
-    pub fn get_domain_from_spec(spec: &OpenAPI) -> &str {
+    pub fn get_domain(spec: &OpenAPI) -> &str {
         let base_url = match &spec.servers.is_empty() {
             true => "NA - servers attribute not specified",
             false => {
@@ -199,7 +198,6 @@ pub mod tests {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             spec_handler: openapi_spec, 
-            domain: String::from("not used here"), 
             layer: String::from("not used here"), 
             systems: Vec::new(),
             catalog_id: String::from("not used here"),
