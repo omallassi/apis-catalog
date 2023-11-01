@@ -14,15 +14,31 @@ pub struct SpecItem {
 
 impl SpecItem {
 
-    pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: OpenAPI) -> Result<SpecItem, &'static str> {
-        let spec = SpecItem{
-            path: path.clone(), 
-            catalog_id: catalog_id.clone(),
-            catalog_dir: catalog_dir.clone(),
-            spec_handler: spec,
-        };
+    pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: &str) -> Result<SpecItem, String> {
 
-        Ok(spec)
+
+        match serde_yaml::from_str::<OpenAPI>(spec) {
+            Ok(openapi) => {
+            let spec = SpecItem{
+                path: path.clone(), 
+                catalog_id: catalog_id.clone(),
+                catalog_dir: catalog_dir.clone(),
+                spec_handler: openapi,
+            };
+
+            Ok(spec)
+                
+            }
+            Err(why) => {
+                warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
+                let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
+            
+                Err( error_message )
+            }
+        }
+
+
+
     }
 
     // pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: OpenAPI) -> Result<SpecItem, &'static str> {
