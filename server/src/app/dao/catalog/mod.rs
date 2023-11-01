@@ -64,7 +64,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                     let catalog_dir = String::from(&catalog.catalog_dir);
                 
                     ///
-                    match crate::app::dao::catalog::spec::SpecItem::from_str(path, catalog_id, catalog_dir, file_content.as_str()) {
+                    match crate::app::dao::catalog::spec::from_str(path, catalog_id, catalog_dir, file_content.as_str()) {
                         Ok(spec) => {
                             specs.push(spec);
                         }
@@ -456,7 +456,7 @@ pub mod tests {
         let catalog_id = String::from("an id");
         let catalog_dir = String::from("not used here");
 
-        let spec_item = super::spec::SpecItem::from_str(path, catalog_id, catalog_dir, spec).unwrap();
+        let spec_item = super::spec::from_str(path, catalog_id, catalog_dir, spec).unwrap();
 
         let mut specs = Vec::new();
         specs.push(spec_item);
@@ -487,7 +487,7 @@ pub mod tests {
         let catalog_id = String::from("not used here");
         let catalog_dir = String::from("not used here");
 
-        let spec_item = super::spec::SpecItem::from_str(path, catalog_id, catalog_dir, spec).unwrap();
+        let spec_item = super::spec::from_str(path, catalog_id, catalog_dir, spec).unwrap();
 
         specs.push(spec_item);
 
@@ -515,7 +515,7 @@ pub mod tests {
         let catalog_dir = String::from("not used here");
         let path = String::from("std::string::String");
 
-        let spec_item = super::spec::SpecItem::from_str(path, catalog_id, catalog_dir, spec).unwrap();
+        let spec_item = super::spec::from_str(path, catalog_id, catalog_dir, spec).unwrap();
 
         specs.push(spec_item);
 
@@ -536,7 +536,7 @@ pub mod tests {
         let catalog_id = String::from("not used here");
         let catalog_dir = String::from("not used here");
 
-        let spec_item = super::spec::SpecItem::from_str(path, catalog_id, catalog_dir, spec).unwrap();
+        let spec_item = super::spec::from_str(path, catalog_id, catalog_dir, spec).unwrap();
 
         specs.push(spec_item);
 
