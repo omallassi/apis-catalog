@@ -22,12 +22,7 @@ pub struct SpecInError {
 const DEFAULT_SYSTEM_LAYER: &str = "default";
 
 pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
-    //quite counter intuitive to me but following the doc https://docs.rs/moka/0.12.0/moka/sync/struct.Cache.html 
-    //To share the same cache across the threads, clone it.
-    // This is a cheap operation.
-    let my_cache = CACHE.cache.clone();
-    let errors_cache = CACHE.errors.clone();
-    let specs = match my_cache.get(&String::from("all")) {
+    let specs = match CACHE.cache.get(&String::from("all")) {
         Some(val) => {
             info!("got [{:?}] specs from cache ", &val.len() );
             val
@@ -80,8 +75,8 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
         
             info!("OAI specs # from all catalogs - [{:?}]", &specs.len());
         
-            my_cache.insert(String::from("all"), specs.to_vec());
-            errors_cache.insert(String::from("all"), specs_in_error.to_vec());
+            CACHE.cache.insert(String::from("all"), specs.to_vec());
+            CACHE.errors.insert(String::from("all"), specs_in_error.to_vec());
 
             specs
 
@@ -93,8 +88,7 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
 }
 
 pub fn list_all_errors() -> Vec<SpecInError> {
-    let errors_cache = CACHE.errors.clone();
-    let errors = match errors_cache.get(&String::from("all")) {
+    let errors = match CACHE.errors.get(&String::from("all")) {
         Some(val) => val,
         None => {
             error!("Unable to get all errors from cache");
@@ -398,8 +392,8 @@ pub fn get_endpoints_num_per_subdomain(all_specs: &Vec<SpecItem>) -> HashMap<Str
 
 struct Cache {
     //TODO there is likely a way to have a Cache that can Store Any - but I am struggling with + Send + Sync
-    cache: moka::sync::Cache<String, Vec<SpecItem>>,
-    errors: moka::sync::Cache<String, Vec<SpecInError>>,
+    cache: quick_cache::sync::Cache<String, Vec<SpecItem>>,
+    errors: quick_cache::sync::Cache<String, Vec<SpecInError>>,
 }
 
 lazy_static! {
@@ -409,16 +403,16 @@ lazy_static! {
 impl Cache {
     fn new() -> Self {
         let cache = Cache{
-            cache: moka::sync::Cache::new(2),
-            errors: moka::sync::Cache::new(2),
+            cache: quick_cache::sync::Cache::new(2),
+            errors: quick_cache::sync::Cache::new(2),
         };
 
         cache
     }
 
     fn invalidate_all(&self){
-        let _ = self.cache.clone().invalidate_all();
-        let _ = self.errors.clone().invalidate_all();
+        let _ = self.cache.remove("all");
+        let _ = self.errors.remove("all");
     } 
 }
 
