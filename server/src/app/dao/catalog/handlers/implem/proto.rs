@@ -1,3 +1,5 @@
+
+#[derive(Debug, Clone)]
 pub struct  Proto3{
     spec: String,
 }
@@ -31,22 +33,22 @@ impl crate::app::dao::catalog::handlers::SpecHandler for Proto3{
     }
 }
 
-impl std::fmt::Debug for Proto3 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Debug not implemented"
-        )
-    }
-}
+// impl std::fmt::Debug for Proto3 {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(
+//             f,
+//             "Debug not implemented"
+//         )
+//     }
+// }
 
-impl Clone for Proto3 {
-    fn clone(&self) -> Self {
-        Proto3 {
-            spec: self.spec.clone(),
-        }
-    }
-}
+// impl Clone for Proto3 {
+//     fn clone(&self) -> Self {
+//         Proto3 {
+//             spec: self.spec.clone(),
+//         }
+//     }
+// }
 
 #[cfg(test)]
 pub mod tests {

@@ -1,12 +1,13 @@
 use openapiv3::OpenAPI;
 use log::warn;
-use super::{handlers::{Method, Path}, DEFAULT_SYSTEM_LAYER};
+use super::{handlers::{Method, Path, SpecHandler}, DEFAULT_SYSTEM_LAYER};
 use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct SpecItem {
     // pub spec_type: SpecType,
     spec: OpenAPI,
+    handler: Box<dyn SpecHandler>,
     path: std::string::String,
     catalog_id: String,
     catalog_dir: String,
@@ -27,6 +28,9 @@ impl SpecItem {
     }
 
     pub fn get_version(&self) -> &str {
+        
+        //println!("oliv {:?}", self.handler.get_version().as_str());
+
         &self.spec.info.version
     }
 
@@ -188,6 +192,8 @@ pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: Stri
             catalog_id: catalog_id.clone(),
             catalog_dir: catalog_dir.clone(),
             spec: openapi,
+            handler: Box::new(crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec)),
+            //handler: Box::new(crate::app::dao::catalog::handlers::implem::proto::Proto3::new(&spec)),
         };
 
         Ok(spec)
@@ -231,12 +237,15 @@ pub mod tests {
             ..Default::default()
         };
 
+        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+
         let spec = SpecItem {
             // spec_type: super::SpecType::OpenApi,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             spec: openapi_spec, 
             catalog_id: String::from("not used here"),
-            catalog_dir: String::from("/home/catalog/")
+            catalog_dir: String::from("/home/catalog/"),
+            handler: Box::new(crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec_as_str)),
         };
 
         let sut = super::SpecItem::get_spec_short_path(&spec);

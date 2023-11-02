@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 pub mod implem;
 
-pub trait SpecHandler: Send + Sync + Debug {
+pub trait SpecHandler: Sync + Send + SpecHandlerClone + Debug {
     fn get_version(&self) -> String;
 
     fn get_title(&self) -> String;
@@ -31,4 +31,25 @@ pub struct Method {
     pub method: String, 
     pub description: String, 
     pub summary: String
+}
+
+// SpecItem struct will link to a handler of Box<dyn SpecHandler> *and* must be Clong
+// *but* Trait SpecHandler cannot have Clone (because of Object Safety).
+// Having this Trait kinda help. not fully understood tbh and deeply inspired by 
+// https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
+pub trait SpecHandlerClone {
+    fn clone_box(&self) -> Box<dyn SpecHandler>;
+}
+
+impl<T> SpecHandlerClone for T where T: 'static + SpecHandler + Clone, 
+{
+    fn clone_box(&self) -> Box<dyn SpecHandler> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn SpecHandler> {
+    fn clone(&self) -> Box<dyn SpecHandler> {
+        self.clone_box()
+    }
 }

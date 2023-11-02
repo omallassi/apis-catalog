@@ -3,6 +3,7 @@ use openapiv3::OpenAPI;
 use crate::app::dao::catalog::handlers::{SpecHandler, Path, Method};
 use log::{debug, info, warn, error};
 
+#[derive(Debug, Clone)]
 pub struct v3 {
     pub spec: OpenAPI,
 }
@@ -86,23 +87,23 @@ impl SpecHandler for v3{
     }
 }
 
-impl Clone for v3 {
-    fn clone(&self) -> Self {
-        v3 {
-            spec: self.spec.clone(),
-        }
-    }
-}
+// impl Clone for v3 {
+//     fn clone(&self) -> Self {
+//         v3 {
+//             spec: self.spec.clone(),
+//         }
+//     }
+// }
 
-impl std::fmt::Debug for v3 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}", 
-            self.spec
-        )
-    }
-}
+// impl std::fmt::Debug for v3 {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(
+//             f,
+//             "{:?}", 
+//             self.spec
+//         )
+//     }
+// }
 
 #[cfg(test)]
 pub mod tests {

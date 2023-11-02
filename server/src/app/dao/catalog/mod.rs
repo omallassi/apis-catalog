@@ -75,7 +75,10 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
         
             info!("OAI specs # from all catalogs - [{:?}]", &specs.len());
         
+            //TODO  the underlying line create a stack overflow (while clone the box)
             CACHE.cache.insert(String::from("all"), specs.to_vec());
+
+
             CACHE.errors.insert(String::from("all"), specs_in_error.to_vec());
 
             specs

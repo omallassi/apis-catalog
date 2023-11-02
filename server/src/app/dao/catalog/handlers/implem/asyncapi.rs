@@ -1,5 +1,6 @@
 use crate::app::dao::catalog::handlers::SpecHandler;
 
+#[derive(Debug, Clone)]
 pub struct v2 {
     spec: String,
 }
@@ -45,23 +46,23 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v2{
     }
 }
 
-impl Clone for v2 {
-    fn clone(&self) -> Self {
-        v2 {
-            spec: self.spec.clone(),
-        }
-    }
-}
+// impl Clone for v2 {
+//     fn clone(&self) -> Self {
+//         v2 {
+//             spec: self.spec.clone(),
+//         }
+//     }
+// }
 
-impl std::fmt::Debug for v2 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}", 
-            self.spec
-        )
-    }
-}
+// impl std::fmt::Debug for v2 {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(
+//             f,
+//             "{:?}", 
+//             self.spec
+//         )
+//     }
+// }
 
 #[cfg(test)]
 pub mod tests {
