@@ -153,7 +153,7 @@ pub async fn get_domains_errors() -> impl Responder {
                 spec_domain: String::from( spec.get_domain() ),
                 spec_catalog_id: String::from(spec.get_catalog_id()),
                 spec_path: String::from(short_path),
-                resources: *data.get( spec.get_domain() ).unwrap(),
+                resources: *data.get( spec.get_domain().as_str() ).unwrap(),
             };
 
             errors.push(error);

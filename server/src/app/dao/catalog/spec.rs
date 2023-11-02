@@ -1,12 +1,10 @@
-use openapiv3::OpenAPI;
 use log::warn;
-use super::{handlers::{Method, Path, SpecHandler}, DEFAULT_SYSTEM_LAYER};
 use regex::Regex;
+use super::handlers::{Path, SpecHandler, SpecType};
 
 #[derive(Debug, Clone)]
 pub struct SpecItem {
-    // pub spec_type: SpecType,
-    spec: OpenAPI,
+    pub spec_type: SpecType,
     handler: Box<dyn SpecHandler>,
     path: std::string::String,
     catalog_id: String,
@@ -27,150 +25,49 @@ impl SpecItem {
         &self.catalog_dir
     }
 
-    pub fn get_version(&self) -> &str {
-        
-        //println!("oliv {:?}", self.handler.get_version().as_str());
-
-        &self.spec.info.version
+    pub fn get_version(&self) -> String {
+        self.handler.get_version()
     }
 
-    pub fn get_title(&self) -> &str {
-        &self.spec.info.title
+    pub fn get_title(&self) -> String {
+        self.handler.get_title()
     }
 
-    pub fn get_description(&self) -> &str {
-        let description = match &self.spec.info.description {
-            Some(d) => d,
-            None => "",
-        };
-
-        &description
+    pub fn get_description(&self) -> String {
+        self.handler.get_description()
     }
 
     pub fn get_paths_len(&self) -> usize {
-        * &self.spec.paths.paths.len()
+        self.handler.get_paths_len()
     }
 
     pub fn get_paths(&self) -> Vec<Path> {
-        let mut all_paths = Vec::new();
-
-        let paths = &self.spec.paths;
-        for (path_value, path_item) in paths.iter() {
-            match path_item.as_item() {
-                Some(item) => {
-                    //need to get the http method fro the PathItem
-                    let http_methods: [(&str, &Option<openapiv3::Operation>); 7] = [
-                        ("GET", &item.get),
-                        ("POST", &item.post),
-                        ("PUT", &item.put),
-                        ("DELETE", &item.delete),
-                        ("OPTIONS", &item.options),
-                        ("HEAD", &item.head),
-                        ("PATCH", &item.patch),
-                    ];
-
-
-                    let mut all_methods = Vec::new();
-
-                    for (method, operation_option) in &http_methods {
-                        if let Some(ref ope) = operation_option {
-                            let mut ope_summary = String::from("");
-                            let mut ope_description = String::from("");
-                            let mut ope_method = String::from("");
-
-                            ope_summary.push_str( ope.summary.clone().unwrap_or("N/A".to_string()).as_str() );
-                            ope_description.push_str( ope.description.clone().unwrap_or("N/A".to_string()).as_str()  );
-                            ope_method.push_str( * method );
-
-                            all_methods.push(Method{
-                                method: String::from(* method),
-                                description: ope_description, 
-                                summary: ope_summary
-                            });
-                        }
-                    }
-
-                    all_paths.push(Path { path: String::from(path_value), methods: all_methods })
-                }
-                None => {
-                    warn!("No path found for spec {:?}", &self.path);
-                }
-            }
+        let all_paths = self.handler.get_paths();
+        if all_paths.len() == 0 {
+            warn!("No path found for spec {:?}", &self.path);
         }
 
         all_paths
     }
 
     pub fn get_audience(&self) -> String {
-        let audience:String  = match self.spec.info.extensions.get("x-audience"){
-            Some(aud) => String::from(aud.as_str().unwrap()),
-            None => String::from(DEFAULT_SYSTEM_LAYER),
-        };
-    
-        audience
+        self.handler.get_audience()
     }
 
     pub fn get_api_id(&self) -> String {
-        let api_id: String = match self.spec.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
-            Some(id)=> String::from(id.as_str().unwrap()),
-            None => String::from("0"),
-        };
-    
-        api_id
+        self.handler.get_api_id()
     }
     
     pub fn get_layer(&self) -> String {
-        let layer:String  = match self.spec.extensions.get("x-layer"){
-            Some(layer) => String::from(layer.as_str().unwrap()),
-            None => String::from(DEFAULT_SYSTEM_LAYER),
-        };
-    
-        layer.to_lowercase()
+        self.handler.get_layer()
     }
     
     pub fn get_systems(&self) -> Vec<String> {
-        
-        let systems = match self.spec.extensions.get("x-systems"){
-            Some(systems) => {
-                let mut returned_systems: Vec<String> = Vec::new();
-                for system in systems.as_array().unwrap(){
-                    //did not find a way to use into_iter().collect::Vec<String>>
-                    returned_systems.push(String::from(system.as_str().unwrap()).to_lowercase());
-                }
-    
-                returned_systems
-            },
-            None => {
-                let mut systems: Vec<String> = Vec::new();
-                systems.push(String::from(DEFAULT_SYSTEM_LAYER));        
-    
-                systems
-            }
-        };
-    
-        systems
+        self.handler.get_systems()
     }
 
-    pub fn get_domain(&self) -> &str {
-        let base_url = match self.spec.servers.is_empty() {
-            true => "NA - servers attribute not specified",
-            false => {
-                //TODO can do better
-                //base_url could have the following form http://baseurl/v1/xva-management/xva
-                //will extract http://baseurl and keep the rest
-                lazy_static! {
-                    static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
-                }
-    
-                if let Some(cap) = RE.captures(&self.spec.servers[0].url) {
-                    cap.get(2).unwrap().as_str()
-                } else {
-                    &self.spec.servers[0].url
-                }
-            }
-        };
-    
-        base_url
+    pub fn get_domain(&self) -> String {
+        self.handler.get_domain()
     }
 
     pub fn get_spec_short_path(&self) -> &str {
@@ -180,36 +77,115 @@ impl SpecItem {
     
         short_path
     }
+
+    pub fn get_spec_type(&self) -> SpecType {
+        self.spec_type
+    }
     
 }
 
 pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: &str) -> Result<SpecItem, String> {
 
-    match serde_yaml::from_str::<OpenAPI>(spec) {
-        Ok(openapi) => {
-        let spec = SpecItem{
-            path: path.clone(), 
-            catalog_id: catalog_id.clone(),
-            catalog_dir: catalog_dir.clone(),
-            spec: openapi,
-            handler: Box::new(crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec)),
-            //handler: Box::new(crate::app::dao::catalog::handlers::implem::proto::Proto3::new(&spec)),
-        };
+    let patterns = [
+        r"openapi:\W*3", 
+        r"asyncapi:\W*1",
+        r"asyncapi:\W*2",
+        r"syntax=.proto3",
+    ];
 
-        Ok(spec)
-            
-        }
-        Err(why) => {
-            warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
-            let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
+    let patterns_as_regexp: Vec<Regex> = patterns.iter().map(|pattern| Regex::new(pattern).expect("Invalid regex pattern")).collect();
+
+    let mut returned_val = Err( format!("Unable to parse content for path {:?}", path) );
+    for (index, regex) in patterns_as_regexp.iter().enumerate() {
+        if regex.is_match(spec) {
+            returned_val = match index {
+                0 => {
+                    let val = match crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec) {
+                        Ok(v3) => {
+                            let spec = SpecItem{
+                                spec_type: SpecType::OpenAPIv3,
+                                path: path.clone(), 
+                                catalog_id: catalog_id.clone(),
+                                catalog_dir: catalog_dir.clone(),
+                                handler: Box::new( v3 ),
+                            };
+
+                            Ok(spec)
+                        },
+                        Err(why)=> {
+                            warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
+                            let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
+                        
+                            Err( error_message )
+                        }
+                    };
+
+                    val
+                }
+                1 => {
+                    let val = match crate::app::dao::catalog::handlers::implem::asyncapi::v1::new(&spec){
+                        Ok(v1) => {
+                            let spec = SpecItem{
+                                spec_type: SpecType::AsyncAPIv1,
+                                path: path.clone(), 
+                                catalog_id: catalog_id.clone(),
+                                catalog_dir: catalog_dir.clone(),
+                                handler: Box::new( v1 ),
+                            };
+
+                            Ok(spec)
+                        }
+                        Err(why) => {
+                            warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
+                            let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
+                        
+                            Err( error_message )
+                        }
+                    };
+
+                    val
+                }
+                2 => {
+                    let val = match crate::app::dao::catalog::handlers::implem::asyncapi::v2::new(&spec){
+                        Ok(v2) => {
+                            let spec = SpecItem{
+                                spec_type: SpecType::AsyncAPIv2,
+                                path: path.clone(), 
+                                catalog_id: catalog_id.clone(),
+                                catalog_dir: catalog_dir.clone(),
+                                handler: Box::new( v2 ),
+                            };
+
+                            Ok(spec)
+                        }
+                        Err(why) => {
+                            warn!("Unable to parse file [{:?}] - reason [{:?}]", &path, &why);
+                            let error_message = format!("Unable to parse file [{:?}] - reason [{:?}]", path, &why);
+                        
+                            Err( error_message )
+                        }
+                    };
+
+                    val
+                }
+                // 3 => {
+                //     println!("index {:?}", index);
+                // }
+                _ => {
+                    warn!("Content for spec  [{:?}] does not match any of the support spec format", &path);
+                    let error_message = format!("Content for spec  [{:?}] does not match any of the support spec format", &path);
         
-            Err( error_message )
+                    Err( error_message )
+                }
+            };
+            break;
         }
     }
 
-
+    returned_val
 
 }
+
 
 pub fn extact_relative_path<'a>(spec_path: &'a String, catalog_dir_srt: &'a String) -> &'a str {
     let catalog_dir = catalog_dir_srt.as_str().len();
@@ -240,12 +216,11 @@ pub mod tests {
         let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
 
         let spec = SpecItem {
-            // spec_type: super::SpecType::OpenApi,
+            spec_type: SpecType::OpenAPIv3,
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
-            spec: openapi_spec, 
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("/home/catalog/"),
-            handler: Box::new(crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec_as_str)),
+            handler: Box::new(crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec_as_str).unwrap()),
         };
 
         let sut = super::SpecItem::get_spec_short_path(&spec);
@@ -254,7 +229,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_spec_item_struct_impl(){
+    fn test_spec_item_from_str_for_openapi(){
         let mut path_item = openapiv3::PathItem::default();
         let mut get_operation = openapiv3::Operation::default();
         get_operation.summary = Some("Get example".to_string());
@@ -284,8 +259,9 @@ pub mod tests {
         let path = "a path".to_string();
 
         ///
-        let spec = super::from_str(path, catalog_id, catalog_dir, spec_as_str.as_str()).unwrap();
+        let spec = crate::app::dao::catalog::spec::from_str(path, catalog_id, catalog_dir, spec_as_str.as_str()).unwrap();
 
+        assert_eq!(spec.get_spec_type(), SpecType::OpenAPIv3);
         assert_eq!(spec.get_version(), "1.4.0");
         assert_eq!(spec.get_title(), "My API");
         assert_eq!(spec.get_description(), "");
@@ -297,50 +273,37 @@ pub mod tests {
     }
 
     #[test]
-    fn test_get_api_id_from_spec_w_ext(){
-        let mut custom_extension = indexmap::IndexMap::new();
-        custom_extension.insert(
-            "x-api-id".to_string(),
-            serde_json::Value::String("134".to_string()),
-        );
+    fn test_spec_item_from_str_for_asyncapi_v1(){
+        let mut path = std::path::PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("./tests/data/catalog/async/messaging-1.0.0.yml");
 
-        let openapi_spec = openapiv3::OpenAPI {
-            openapi: "3.0.0".to_string(),
-            info: openapiv3::Info {
-                title: "My API".to_string(),
-                version: "1.0.0".to_string(),
-                extensions: custom_extension,
-                ..Default::default()
-            },
-            paths: Default::default(),
-            ..Default::default()
-        };
+        let content = std::fs::read_to_string(path.as_path()).unwrap();
 
-        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+        let spec = crate::app::dao::catalog::spec::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), content.as_str()).unwrap();
 
-        let spec = super::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
-        let sut = spec.get_api_id();
-        assert_eq!(sut, "134");
+        assert_eq!(spec.get_spec_type(), SpecType::AsyncAPIv1);
+        assert_eq!(spec.get_version(), "1.12");
+        assert_eq!(spec.get_title(), "Portfolio Management - Full Revaluation - Business action");
+        assert_eq!(spec.get_description(), "");
+        assert_eq!(spec.get_paths_len(), 4);
     }
 
     #[test]
-    fn test_get_api_id_from_spec_wo_ext(){
-        let openapi_spec = openapiv3::OpenAPI {
-            openapi: "3.0.0".to_string(),
-            info: openapiv3::Info {
-                title: "My API".to_string(),
-                version: "1.0.0".to_string(),
-                ..Default::default()
-            },
-            paths: Default::default(),
-            ..Default::default()
-        };
-        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+    fn test_spec_item_from_str_for_asyncapi_v2(){
+        let mut path = std::path::PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("./tests/data/catalog/async/messaging-2.6.0.yml");
 
-        //
-        let spec = super::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
+        let content = std::fs::read_to_string(path.as_path()).unwrap();
 
-        let sut = spec.get_api_id();
-        assert_eq!(sut, "0");
+        let spec = crate::app::dao::catalog::spec::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), content.as_str()).unwrap();
+
+        assert_eq!(spec.get_spec_type(), SpecType::AsyncAPIv2);
+        assert_eq!(spec.get_version(), "1.12.0");
+        assert_eq!(spec.get_title(), "Account Service");
+        assert_eq!(spec.get_description(), "This service is in charge of processing user signups");
+        assert_eq!(spec.get_paths_len(), 1);
     }
+
 }

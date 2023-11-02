@@ -6,10 +6,8 @@ pub struct v2 {
 }
 
 impl v2 {
-    pub fn new(val: &str) -> v2 {
-        v2 {
-            spec: String::from(val),
-        }
+    pub fn new(val: &str) -> Result<Self, String> {
+        Ok( Self { spec: String::from(val) } )
     }
 }
 impl crate::app::dao::catalog::handlers::SpecHandler for v2{
@@ -26,12 +24,26 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v2{
 
     fn get_title(&self) -> String {
         let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
-        spec_as_yaml["info"]["title"].as_str().unwrap().to_string()
+        let mut title = "";
+        if let Some(info) = spec_as_yaml.get("info") {
+            if let Some(val) = info.get("title"){
+                title = val.as_str().unwrap();
+            }
+        }
+
+        title.to_string()
     }
 
     fn get_description(&self) -> String {
         let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
-        spec_as_yaml["info"]["description"].as_str().unwrap().to_string()
+        let mut description = "";
+        if let Some(info) = spec_as_yaml.get("info") {
+            if let Some(desc) = info.get("description"){
+                description = desc.as_str().unwrap();
+            }
+        }
+
+        description.to_string()
     }
 
     fn get_paths_len(&self) -> usize {
@@ -44,25 +56,105 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v2{
     fn get_paths(&self) -> Vec<crate::app::dao::catalog::handlers::Path> {
         Vec::new()
     }
+
+    fn get_audience(&self) -> String {
+        "To Be Implemented".to_string()
+    }
+
+    fn get_api_id(&self) -> String {
+        todo!()
+    }
+
+    fn get_layer(&self) -> String {
+        "To Be Implemented".to_string()
+    }
+
+    fn get_systems(&self) -> Vec<String> {
+        vec![ "To Be Implemented".to_string() ]
+    }
+
+    fn get_domain(&self) -> String {
+        "To Be Implemented".to_string()
+    }
 }
 
-// impl Clone for v2 {
-//     fn clone(&self) -> Self {
-//         v2 {
-//             spec: self.spec.clone(),
-//         }
-//     }
-// }
+#[derive(Debug, Clone)]
+pub struct v1 {
+    spec: String,
+}
 
-// impl std::fmt::Debug for v2 {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(
-//             f,
-//             "{:?}", 
-//             self.spec
-//         )
-//     }
-// }
+impl v1 {
+    pub fn new(val: &str) -> Result<Self, String> {
+        Ok( Self { spec: String::from(val) } )
+    }
+}
+impl crate::app::dao::catalog::handlers::SpecHandler for v1{
+    fn get_version(&self) -> String{
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+    
+        // Access the value and handle the potential absence or incorrect type
+        if let Some(version) = spec_as_yaml["info"]["version"].as_str() {
+            version.to_string()
+        } else {
+            "N/A".to_string()
+        }
+    }
+
+    fn get_title(&self) -> String {
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let mut title = "";
+        if let Some(info) = spec_as_yaml.get("info") {
+            if let Some(val) = info.get("title"){
+                title = val.as_str().unwrap();
+            }
+        }
+
+        title.to_string()
+    }
+
+    fn get_description(&self) -> String {
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let mut description = "";
+        if let Some(info) = spec_as_yaml.get("info") {
+            if let Some(desc) = info.get("description"){
+                description = desc.as_str().unwrap();
+            }
+        }
+
+        description.to_string()
+    }
+
+    fn get_paths_len(&self) -> usize {
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let channels: &serde_yaml::Value = &spec_as_yaml["topics"];
+        
+        channels.as_mapping().unwrap().len()        
+    }
+
+    fn get_paths(&self) -> Vec<crate::app::dao::catalog::handlers::Path> {
+        Vec::new()
+    }
+
+    fn get_audience(&self) -> String {
+        "To Be Implemented".to_string()
+    }
+
+    fn get_api_id(&self) -> String {
+        todo!()
+    }
+
+    fn get_layer(&self) -> String {
+        "To Be Implemented".to_string()
+    }
+
+    fn get_systems(&self) -> Vec<String> {
+        vec![ "To Be Implemented".to_string() ]
+    }
+
+    fn get_domain(&self) -> String {
+        "To Be Implemented".to_string()
+    }
+}
 
 #[cfg(test)]
 pub mod tests {
@@ -105,7 +197,7 @@ pub mod tests {
                     description: Email of the user
         ";
         
-        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::v2::new(asyncapi_spec);
+        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::v2::new(asyncapi_spec).unwrap();
         
         assert_eq!(spec.get_version(), "1.2.0");
         assert_eq!(spec.get_description(), "This service is in charge of processing user signups");

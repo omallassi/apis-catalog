@@ -1,7 +1,7 @@
 asyncapi: "1.2.0"
 info:
   title: "Portfolio Management - Full Revaluation - Business action"
-  version: "1.0"
+  version: "1.12"
 topics:
   v1.portfolio-management.full-revaluation.business-action-request:
     publish:
@@ -9,17 +9,12 @@ topics:
   v1.portfolio-management.full-revaluation.business-action-request-subscription:
     subscribe:
       $ref: "#/components/messages/business-action-request"
-    x-murex-binding-key: "#"
-    x-murex-destination: v1.portfolio-management.full-revaluation.business-action-request
   v1.portfolio-management.full-revaluation.business-action-response:
     publish:
       $ref: "#/components/messages/business-action-response"
   v1.portfolio-management.full-revaluation.business-action-response-subscription:
     subscribe:
       $ref: "#/components/messages/business-action-response"
-    x-murex-binding-key: "#"
-    x-murex-destination: v1.portfolio-management.full-revaluation.business-action-response
-    x-murex-distribution: multicast
 components:
   messages:
     business-action-request:

@@ -12,12 +12,24 @@ pub trait SpecHandler: Sync + Send + SpecHandlerClone + Debug {
     fn get_paths_len(&self) -> usize;
 
     fn get_paths(&self) -> Vec<Path>;
+
+    fn get_audience(&self) -> String;
+
+    fn get_api_id(&self) -> String;
+
+    fn get_layer(&self) -> String;
+
+    fn get_systems(&self) -> Vec<String>;
+
+    fn get_domain(&self) -> String;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum SpecType {
-    OpenApi, 
-    AsyncApi, 
+    OpenAPIv3, 
+    AsyncAPIv1, 
+    AsyncAPIv2,
+    Proto3, 
 }
 
 #[derive(Debug, Clone)]

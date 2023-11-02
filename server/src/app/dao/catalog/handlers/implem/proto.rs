@@ -4,8 +4,8 @@ pub struct  Proto3{
     spec: String,
 }
 impl Proto3 {
-    pub fn new(val: &str) -> Proto3 {
-        Proto3 {
+    pub fn new(val: &str) -> Self {
+        Self {
             spec: String::from(val),
         }
     }
@@ -31,24 +31,27 @@ impl crate::app::dao::catalog::handlers::SpecHandler for Proto3{
     fn get_paths(&self) -> Vec<crate::app::dao::catalog::handlers::Path> {
         Vec::new()
     }
+
+    fn get_audience(&self) -> String {
+        todo!()
+    }
+
+    fn get_api_id(&self) -> String {
+        todo!()
+    }
+
+    fn get_layer(&self) -> String {
+        todo!()
+    }
+
+    fn get_systems(&self) -> Vec<String> {
+        todo!()
+    }
+
+    fn get_domain(&self) -> String {
+        todo!()
+    }
 }
-
-// impl std::fmt::Debug for Proto3 {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(
-//             f,
-//             "Debug not implemented"
-//         )
-//     }
-// }
-
-// impl Clone for Proto3 {
-//     fn clone(&self) -> Self {
-//         Proto3 {
-//             spec: self.spec.clone(),
-//         }
-//     }
-// }
 
 #[cfg(test)]
 pub mod tests {

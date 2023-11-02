@@ -58,7 +58,6 @@ pub fn list_specs(catalogs: &Vec<Catalog>) -> Vec<SpecItem> {
                     let catalog_id = String::from(&catalog.catalog_id);
                     let catalog_dir = String::from(&catalog.catalog_dir);
                 
-                    ///
                     match crate::app::dao::catalog::spec::from_str(path, catalog_id, catalog_dir, file_content.as_str()) {
                         Ok(spec) => {
                             specs.push(spec);
@@ -695,7 +694,7 @@ pub mod tests {
         catalogs.push(catalog);
 
         let results = super::list_specs(&catalogs);
-        assert_eq!(results.len(), 2);
+        assert_eq!(results.len(), 4); //this include also asyncAPI ones
         //
         let spec: &SpecItem = results.get(0).unwrap();
         assert_eq!( &spec.get_audience(), "company");
@@ -704,7 +703,7 @@ pub mod tests {
         assert_eq!( spec.get_systems().len(), 1);
         assert_eq!( &spec.get_systems()[0], super::DEFAULT_SYSTEM_LAYER);
 
-        let spec: &SpecItem = results.get(1).unwrap();
+        let spec: &SpecItem = results.get(3).unwrap();
         assert_eq!( &spec.get_audience(), "company");
         assert_eq!( spec.get_domain(), "/v1/audit/trails");
         assert_eq!( &spec.get_layer(), "application");

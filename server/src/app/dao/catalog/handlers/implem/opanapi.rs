@@ -1,4 +1,5 @@
 use openapiv3::OpenAPI;
+use regex::Regex;
 
 use crate::app::dao::catalog::handlers::{SpecHandler, Path, Method};
 use log::{debug, info, warn, error};
@@ -8,12 +9,18 @@ pub struct v3 {
     pub spec: OpenAPI,
 }
 impl v3 {
-    pub fn new(val: &str) -> v3 {
-        v3 {
-            spec: serde_yaml::from_str(val).unwrap(),
-        }
+  pub fn new(val: &str) -> Result<Self, String> {
+    match serde_yaml::from_str::<OpenAPI>(val) {
+      Ok(openapi) => {
+        Ok(Self { spec: openapi })
+      }
+      Err(why) => {
+        Err( format!("Unable to parse content") )
+      }
     }
+  }
 }
+
 impl SpecHandler for v3{
     fn get_version(&self) -> String {
         self.spec.info.version.clone()
@@ -78,32 +85,86 @@ impl SpecHandler for v3{
                     all_paths.push(Path { path: String::from(path_value), methods: all_methods })
                 }
                 None => {
-                    warn!("No path to index for spec {:?}", "TODO &self.path");
+                    warn!("No PathItem found for {:?} in spec title {:?}", path_value, self.get_title());
                 }
             }
         }
 
         all_paths
     }
+
+    fn get_audience(&self) -> String {
+      let audience:String  = match self.spec.info.extensions.get("x-audience"){
+        Some(aud) => String::from(aud.as_str().unwrap()),
+        None => String::from(crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER),
+      };
+
+      audience
+    }
+
+    fn get_api_id(&self) -> String {
+      let api_id: String = match self.spec.info.extensions.get("x-api-id"){ // as specified https://opensource.zalando.com/restful-api-guidelines/#215
+        Some(id)=> String::from(id.as_str().unwrap()),
+        None => String::from("0"),
+      };
+
+      api_id
+    }
+
+    fn get_layer(&self) -> String {
+      let layer:String  = match self.spec.extensions.get("x-layer"){
+        Some(layer) => String::from(layer.as_str().unwrap()),
+        None => String::from(crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER),
+      };
+
+      layer.to_lowercase()
+    }
+
+    fn get_systems(&self) -> Vec<String> {
+      let systems = match self.spec.extensions.get("x-systems"){
+        Some(systems) => {
+            let mut returned_systems: Vec<String> = Vec::new();
+            for system in systems.as_array().unwrap(){
+                //did not find a way to use into_iter().collect::Vec<String>>
+                returned_systems.push(String::from(system.as_str().unwrap()).to_lowercase());
+            }
+
+            returned_systems
+        },
+        None => {
+            let mut systems: Vec<String> = Vec::new();
+            systems.push(String::from(crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER));        
+
+            systems
+        }
+      };
+
+      systems
+    }
+
+    fn get_domain(&self) -> String {
+      let base_url = match self.spec.servers.is_empty() {
+        true => "NA - servers attribute not specified",
+        false => {
+            //TODO can do better
+            //base_url could have the following form http://baseurl/v1/xva-management/xva
+            //will extract http://baseurl and keep the rest
+            lazy_static! {
+                static ref RE: Regex = Regex::new(r"(http[s]?://[a-z]*)(.*)").unwrap();
+            }
+
+            if let Some(cap) = RE.captures(&self.spec.servers[0].url) {
+                cap.get(2).unwrap().as_str()
+            } else {
+                &self.spec.servers[0].url
+            }
+        }
+      };
+
+      base_url.to_string()
+    }
+
 }
-
-// impl Clone for v3 {
-//     fn clone(&self) -> Self {
-//         v3 {
-//             spec: self.spec.clone(),
-//         }
-//     }
-// }
-
-// impl std::fmt::Debug for v3 {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(
-//             f,
-//             "{:?}", 
-//             self.spec
-//         )
-//     }
-// }
 
 #[cfg(test)]
 pub mod tests {
@@ -220,11 +281,59 @@ pub mod tests {
         "#;
 
 
-        let spec = crate::app::dao::catalog::handlers::implem::opanapi::v3::new(openapi_spec);
+        let spec = crate::app::dao::catalog::handlers::implem::opanapi::v3::new(openapi_spec).unwrap();
         assert_eq!(spec.get_version(), "1.0.17");
         assert_eq!(spec.get_title(), "Swagger Petstore");
         assert_eq!(spec.get_description(), "This is a sample Pet Store....");
         assert_eq!(spec.get_paths_len(), 1)
     
+    }
+
+    #[test]
+    fn test_get_api_id_from_spec_w_ext(){
+        let mut custom_extension = indexmap::IndexMap::new();
+        custom_extension.insert(
+            "x-api-id".to_string(),
+            serde_json::Value::String("134".to_string()),
+        );
+
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.0.0".to_string(),
+                extensions: custom_extension,
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+
+        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+
+        let spec = crate::app::dao::catalog::spec::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
+        let sut = spec.get_api_id();
+        assert_eq!(sut, "134");
+    }
+
+    #[test]
+    fn test_get_api_id_from_spec_wo_ext(){
+        let openapi_spec = openapiv3::OpenAPI {
+            openapi: "3.0.0".to_string(),
+            info: openapiv3::Info {
+                title: "My API".to_string(),
+                version: "1.0.0".to_string(),
+                ..Default::default()
+            },
+            paths: Default::default(),
+            ..Default::default()
+        };
+        let spec_as_str = serde_yaml::to_string(&openapi_spec).unwrap();
+
+        //
+        let spec = crate::app::dao::catalog::spec::from_str("path".to_string(), "catalog_id".to_string(), "catalog_dir".to_string(), spec_as_str.as_str()).unwrap();
+
+        let sut = spec.get_api_id();
+        assert_eq!(sut, "0");
     }
 }
