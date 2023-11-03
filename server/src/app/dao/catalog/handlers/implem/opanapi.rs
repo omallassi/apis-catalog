@@ -5,10 +5,10 @@ use crate::app::dao::catalog::handlers::{SpecHandler, Path, Method};
 use log::{debug, info, warn, error};
 
 #[derive(Debug, Clone)]
-pub struct v3 {
+pub struct V3 {
     pub spec: OpenAPI,
 }
-impl v3 {
+impl V3 {
   pub fn new(val: &str) -> Result<Self, String> {
     match serde_yaml::from_str::<OpenAPI>(val) {
       Ok(openapi) => {
@@ -21,7 +21,7 @@ impl v3 {
   }
 }
 
-impl SpecHandler for v3{
+impl SpecHandler for V3{
     fn get_version(&self) -> String {
         self.spec.info.version.clone()
     }
@@ -281,7 +281,7 @@ pub mod tests {
         "#;
 
 
-        let spec = crate::app::dao::catalog::handlers::implem::opanapi::v3::new(openapi_spec).unwrap();
+        let spec = crate::app::dao::catalog::handlers::implem::opanapi::V3::new(openapi_spec).unwrap();
         assert_eq!(spec.get_version(), "1.0.17");
         assert_eq!(spec.get_title(), "Swagger Petstore");
         assert_eq!(spec.get_description(), "This is a sample Pet Store....");

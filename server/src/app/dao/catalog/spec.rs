@@ -100,7 +100,7 @@ pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: Stri
         if regex.is_match(spec) {
             returned_val = match index {
                 0 => {
-                    let val = match crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec) {
+                    let val = match crate::app::dao::catalog::handlers::implem::opanapi::V3::new(&spec) {
                         Ok(v3) => {
                             let spec = SpecItem{
                                 spec_type: SpecType::OpenAPIv3,
@@ -123,7 +123,7 @@ pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: Stri
                     val
                 }
                 1 => {
-                    let val = match crate::app::dao::catalog::handlers::implem::asyncapi::v1::new(&spec){
+                    let val = match crate::app::dao::catalog::handlers::implem::asyncapi::V1::new(&spec){
                         Ok(v1) => {
                             let spec = SpecItem{
                                 spec_type: SpecType::AsyncAPIv1,
@@ -146,7 +146,7 @@ pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: Stri
                     val
                 }
                 2 => {
-                    let val = match crate::app::dao::catalog::handlers::implem::asyncapi::v2::new(&spec){
+                    let val = match crate::app::dao::catalog::handlers::implem::asyncapi::V2::new(&spec){
                         Ok(v2) => {
                             let spec = SpecItem{
                                 spec_type: SpecType::AsyncAPIv2,
@@ -220,7 +220,7 @@ pub mod tests {
             path: String::from("/home/catalog/code/openapi-specifications/specifications/manual-tasks/openapi.yaml"), 
             catalog_id: String::from("not used here"),
             catalog_dir: String::from("/home/catalog/"),
-            handler: Box::new(crate::app::dao::catalog::handlers::implem::opanapi::v3::new(&spec_as_str).unwrap()),
+            handler: Box::new(crate::app::dao::catalog::handlers::implem::opanapi::V3::new(&spec_as_str).unwrap()),
         };
 
         let sut = super::SpecItem::get_spec_short_path(&spec);

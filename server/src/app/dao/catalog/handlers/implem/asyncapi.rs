@@ -4,16 +4,16 @@ use log::warn;
 use crate::app::dao::catalog::handlers::{SpecHandler, Method, Path};
 
 #[derive(Debug, Clone)]
-pub struct v2 {
+pub struct V2 {
     spec: String,
 }
 
-impl v2 {
+impl V2 {
     pub fn new(val: &str) -> Result<Self, String> {
         Ok( Self { spec: String::from(val) } )
     }
 }
-impl crate::app::dao::catalog::handlers::SpecHandler for v2{
+impl crate::app::dao::catalog::handlers::SpecHandler for V2{
     fn get_version(&self) -> String{
         let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
     
@@ -135,16 +135,16 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v2{
 }
 
 #[derive(Debug, Clone)]
-pub struct v1 {
+pub struct V1 {
     spec: String,
 }
 
-impl v1 {
+impl V1 {
     pub fn new(val: &str) -> Result<Self, String> {
         Ok( Self { spec: String::from(val) } )
     }
 }
-impl crate::app::dao::catalog::handlers::SpecHandler for v1{
+impl crate::app::dao::catalog::handlers::SpecHandler for V1{
     fn get_version(&self) -> String{
         let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
     
@@ -282,7 +282,7 @@ pub mod tests {
 
         let content = std::fs::read_to_string(path.as_path()).unwrap();
 
-        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::v1::new(content.as_str()).unwrap();
+        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::V1::new(content.as_str()).unwrap();
         
         assert_eq!(spec.get_version(), "1.12");
         assert_eq!(spec.get_description(), "");
@@ -342,7 +342,7 @@ pub mod tests {
                     description: Email of the user
         ";
         
-        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::v2::new(asyncapi_spec).unwrap();
+        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::V2::new(asyncapi_spec).unwrap();
         
         assert_eq!(spec.get_version(), "1.2.0");
         assert_eq!(spec.get_description(), "This service is in charge of processing user signups");
