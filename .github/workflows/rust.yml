@@ -38,7 +38,7 @@ jobs:
       #Also seems like cucumber tests are part of coverage measures (which is nice)
         run: |
           cargo install cargo-tarpaulin
-          cargo tarpaulin --release --out Lcov --coveralls "${{secrets.COVERALLS_TOKEN}}"
+          cargo tarpaulin --release --ignore-tests --out Lcov --coveralls "${{secrets.COVERALLS_TOKEN}}"
 
   build_and_publish_image:
     needs: build
