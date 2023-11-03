@@ -258,7 +258,7 @@ pub mod tests {
         let catalog_dir = "fff".to_string(); 
         let path = "a path".to_string();
 
-        ///
+        //
         let spec = crate::app::dao::catalog::spec::from_str(path, catalog_id, catalog_dir, spec_as_str.as_str()).unwrap();
 
         assert_eq!(spec.get_spec_type(), SpecType::OpenAPIv3);

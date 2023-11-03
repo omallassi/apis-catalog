@@ -1,4 +1,6 @@
-use crate::app::dao::catalog::handlers::SpecHandler;
+use log::warn;
+
+use crate::app::dao::catalog::handlers::{SpecHandler, Method, Path};
 
 #[derive(Debug, Clone)]
 pub struct v2 {
@@ -49,11 +51,43 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v2{
     fn get_paths_len(&self) -> usize {
         let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
         let channels: &serde_yaml::Value = &spec_as_yaml["channels"];
-        
-        channels.as_mapping().unwrap().len()        
+        let len = match channels.as_mapping(){
+            Some(val) => val.len(),
+            None => 0
+        };
+
+        len  
     }
 
     fn get_paths(&self) -> Vec<crate::app::dao::catalog::handlers::Path> {
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let channels: &serde_yaml::Value = &spec_as_yaml["channels"];
+
+        match channels.as_mapping(){
+            Some(val) => {
+                for (key, value) in val{
+                    println!("got {:?} - {:?}", key, value);
+                    match value.as_mapping(){
+                        Some(ope) => {
+                            for (key, value) in ope {
+                                println!("got after {:?} - {:?}", key, value);
+                            }
+                        },
+                        None => {
+                            println!("none")
+                        }
+                    };
+
+
+                }
+
+            }
+            None => {}
+        };
+
+
+
+
         Vec::new()
     }
 
@@ -126,13 +160,49 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v1{
 
     fn get_paths_len(&self) -> usize {
         let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
-        let channels: &serde_yaml::Value = &spec_as_yaml["topics"];
-        
-        channels.as_mapping().unwrap().len()        
+        let topics: &serde_yaml::Value = &spec_as_yaml["topics"];
+        let len = match topics.as_mapping(){
+            Some(val) => val.len(),
+            None => 0
+        };
+
+        len  
     }
 
     fn get_paths(&self) -> Vec<crate::app::dao::catalog::handlers::Path> {
-        Vec::new()
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let topics: &serde_yaml::Value = &spec_as_yaml["topics"];
+
+        let mut all_paths: Vec<Path> = Vec::new();
+
+        match topics.as_mapping(){
+            Some(val) => {
+                for (key, value) in val{
+                    let mut methods: Vec<Method> = Vec::new();
+                    match value.as_mapping(){
+                        Some(ope) => {
+                            for (key_1, value_1) in ope {
+                                let empty_val = serde_yaml::Value::String("".to_string());
+                                let method_name = key_1; 
+                                let method_description = value_1.get("description").unwrap_or( &empty_val );
+                                let method_summary = value_1.get("summary").unwrap_or( &empty_val );
+
+                                methods.push(Method { method: method_name.as_str().unwrap().to_string(), description: method_description.as_str().unwrap().to_string(), summary: method_summary.as_str().unwrap().to_string() })
+                            }
+                        },
+                        None => {
+                            warn!("No operation found on path {:?} for spec title {:?}", key, self.get_title());
+                        }
+                    };
+
+                    all_paths.push(Path { path: key.as_str().unwrap().to_string(), methods: methods })
+                }   
+
+            }
+            None => {}
+        };
+
+        all_paths
     }
 
     fn get_audience(&self) -> String {
@@ -162,7 +232,37 @@ pub mod tests {
 
 
     #[test]
-    fn test_play_with_trait(){
+    fn test_async_v1(){
+        let mut path = std::path::PathBuf::new();
+        path.push(env!("CARGO_MANIFEST_DIR"));
+        path.push("./tests/data/catalog/async/messaging-1.0.0.yml");
+
+        let content = std::fs::read_to_string(path.as_path()).unwrap();
+
+        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::v1::new(content.as_str()).unwrap();
+        
+        assert_eq!(spec.get_version(), "1.12");
+        assert_eq!(spec.get_description(), "");
+        assert_eq!(spec.get_paths_len(), 4);
+        assert_eq!(spec.get_title(), "Portfolio Management - Full Revaluation - Business action");
+
+        let all_paths = spec.get_paths();
+
+        assert_eq!("v1.portfolio-management.full-revaluation.business-action-request", all_paths.get(0).unwrap().path);
+        assert_eq!("publish", all_paths.get(0).unwrap().methods.get(0).unwrap().method);
+        assert_eq!("", all_paths.get(0).unwrap().methods.get(0).unwrap().description);
+        assert_eq!("", all_paths.get(0).unwrap().methods.get(0).unwrap().summary);
+
+        assert_eq!("v1.portfolio-management.full-revaluation.business-action-request-subscription", all_paths.get(1).unwrap().path);
+        assert_eq!("subscribe", all_paths.get(1).unwrap().methods.get(0).unwrap().method);
+        assert_eq!("", all_paths.get(1).unwrap().methods.get(0).unwrap().description);
+        assert_eq!("", all_paths.get(1).unwrap().methods.get(0).unwrap().summary);
+
+        
+    }
+
+    #[test]
+    fn test_async_v2(){
     
         let asyncapi_spec = "
         asyncapi: '2.6.0'
@@ -203,6 +303,8 @@ pub mod tests {
         assert_eq!(spec.get_description(), "This service is in charge of processing user signups");
         assert_eq!(spec.get_paths_len(), 1);
         assert_eq!(spec.get_title(), "Account Service");
+
+        spec.get_paths();
         
     }
 
