@@ -8,7 +8,6 @@ use actix_web::HttpResponse;
 
 use crate::app::dao::repo_layers::*;
 use crate::app::dao::catalog::*;
-use crate::app::dao::catalog::spec::*;
 use crate::shared::settings::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,6 +77,7 @@ pub struct Domain {
 pub struct Spec {
     pub catalog_id: String,
     pub spec_path: String,
+    pub grammar: String,
 }
 
 #[get("/v1/systems/{system}/layers/{layer}")]
@@ -106,7 +106,7 @@ pub async fn get_all_domains_per_system_and_layer(path: web::Path<(String, Strin
 fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, layer: &String) -> HashSet<Domain>{
     let mut domains: HashSet<Domain> = HashSet::new();
 
-    let mut specs_per_domain: HashMap<String, HashSet<(String, String)>> = HashMap::new();
+    let mut specs_per_domain: HashMap<String, HashSet<(String, String, String)>> = HashMap::new();
 
     let all_specs = list_specs(&catalogs);
     //loop over the list and check system and layer equality
@@ -121,12 +121,24 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
                         match specs_per_domain.get(&spec_domain) {
                             Some(related_specs) => {
                                 let mut specs = related_specs.clone();
-                                specs.insert( (shorten_spec_path(spec.get_file_path().to_string(), catalogs, String::from(spec.get_catalog_id())), String::from(spec.get_catalog_id())) );
+                                specs.insert( 
+                                    ( 
+                                        shorten_spec_path(spec.get_file_path().to_string(), catalogs, String::from(spec.get_catalog_id())),
+                                        String::from(spec.get_catalog_id()), 
+                                        spec.get_spec_type().to_string() 
+                                    ) 
+                                );
                                 specs_per_domain.insert(String::from(&spec_domain), specs);
                             },
                             None => {
-                                let mut related_specs = HashSet::new();
-                                related_specs.insert( (shorten_spec_path(spec.get_file_path().to_string(), catalogs, String::from(spec.get_catalog_id())), String::from(spec.get_catalog_id())) );
+                                let mut related_specs: HashSet<(String, String, String)> = HashSet::new();
+                                related_specs.insert( 
+                                    (
+                                        shorten_spec_path(spec.get_file_path().to_string(), catalogs, String::from(spec.get_catalog_id())), 
+                                        String::from(spec.get_catalog_id()), 
+                                        spec.get_spec_type().to_string()
+                                    ) 
+                                );
                                 specs_per_domain.insert(String::from(&spec_domain), related_specs);
                             }
                         }                
@@ -149,7 +161,7 @@ fn get_domains_per_system_and_layer(catalogs: &Vec<Catalog>, system: &String, la
             //create the vec of spec
         let mut specs_object: Vec<Spec> = Vec::new();
         for item in specs {
-            specs_object.push(Spec{ spec_path: item.0, catalog_id: item.1 })
+            specs_object.push(Spec{ spec_path: item.0, catalog_id: item.1, grammar: item.2 })
         }
         
         domains.insert( Domain {
