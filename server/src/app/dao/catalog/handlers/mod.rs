@@ -1,4 +1,6 @@
-use std::fmt::Debug;
+use std::fmt::{Debug};
+
+use strum_macros::{Display, EnumString};
 
 pub mod implem;
 
@@ -25,10 +27,15 @@ pub trait SpecHandler: Sync + Send + SpecHandlerClone + Debug {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(EnumString, Display)]
 pub enum SpecType {
+    #[strum(serialize = "OpenAPI.v3")]
     OpenAPIv3, 
+    #[strum(serialize = "AsyncAPI.v1")]
     AsyncAPIv1, 
+    #[strum(serialize = "AsyncAPI.v2")]
     AsyncAPIv2,
+    #[strum(serialize = "Proto3")]
     Proto3, 
 }
 
