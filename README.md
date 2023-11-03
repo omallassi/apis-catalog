@@ -1,6 +1,6 @@
 ![logo](https://raw.githubusercontent.com/wiki/omallassi/apis-catalog/assets/logo.png)
 
-[![Actions Status](https://github.com/omallassi/apis-catalog/actions/workflows/rust.yml/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/omallassi/apis-catalog/badge.svg)](https://coveralls.io/github/omallassi/apis-catalog)
+[![Actions Status](https://github.com/omallassi/apis-catalog/actions/workflows/rust.yml/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/omallassi/apis-catalog/badge.svg?branch=master)](https://coveralls.io/github/omallassi/apis-catalog?branch=master)
 
 
 > :warning: All of this is, at this stage ideas, POC...tested in real life. 
