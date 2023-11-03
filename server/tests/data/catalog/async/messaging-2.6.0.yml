@@ -3,6 +3,7 @@ info:
   title: Account Service
   version: 1.12.0
   description: This service is in charge of processing user signups
+  x-audience: corporate
 channels:
   user/signedup:
     subscribe:

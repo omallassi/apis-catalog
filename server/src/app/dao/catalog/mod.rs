@@ -711,7 +711,7 @@ pub mod tests {
                 assert_eq!( &spec.get_systems()[0], "bpaas");
             }
             else {
-                assert_eq!( &spec.get_audience(), "To Be Implemented");
+                assert_eq!( &spec.get_audience(), "corporate");
             }
         }
     }
