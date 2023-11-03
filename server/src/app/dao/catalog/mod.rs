@@ -696,18 +696,24 @@ pub mod tests {
         let results = super::list_specs(&catalogs);
         assert_eq!(results.len(), 4); //this include also asyncAPI ones
         //
-        let spec: &SpecItem = results.get(0).unwrap();
-        assert_eq!( &spec.get_audience(), "company");
-        assert_eq!( spec.get_domain(), "/v1/analytics/time-series");
-        assert_eq!( &spec.get_layer(), super::DEFAULT_SYSTEM_LAYER);
-        assert_eq!( spec.get_systems().len(), 1);
-        assert_eq!( &spec.get_systems()[0], super::DEFAULT_SYSTEM_LAYER);
-
-        let spec: &SpecItem = results.get(3).unwrap();
-        assert_eq!( &spec.get_audience(), "company");
-        assert_eq!( spec.get_domain(), "/v1/audit/trails");
-        assert_eq!( &spec.get_layer(), "application");
-        assert_eq!( &spec.get_systems()[0], "bpaas");
+        for spec in results.iter(){
+            if spec.get_file_path().contains("analytics-time-series.yaml"){   
+                assert_eq!( &spec.get_audience(), "company");
+                assert_eq!( spec.get_domain(), "/v1/analytics/time-series");
+                assert_eq!( &spec.get_layer(), super::DEFAULT_SYSTEM_LAYER);
+                assert_eq!( spec.get_systems().len(), 1);
+                assert_eq!( &spec.get_systems()[0], super::DEFAULT_SYSTEM_LAYER);
+            }
+            else if spec.get_file_path().contains("history-trail-operator.yaml"){
+                assert_eq!( &spec.get_audience(), "company");
+                assert_eq!( spec.get_domain(), "/v1/audit/trails");
+                assert_eq!( &spec.get_layer(), "application");
+                assert_eq!( &spec.get_systems()[0], "bpaas");
+            }
+            else {
+                assert_eq!( &spec.get_audience(), "To Be Implemented");
+            }
+        }
     }
 
 }
