@@ -21,7 +21,7 @@ A lot of great solutions exists in these spaces and the goal here is not to repl
 
 The goals are 
 
-* to ease keeping track of your endpoints and APIs (be thy OpenAPI, WSDL, AsyncAPI etc...) : from inception to production and end of life
+* to ease keeping track of your endpoints and APIs (it [currently supports OpenAPI, AsyncAPI](https://github.com/omallassi/apis-catalog/blob/c36d1b5155930c518a49593c62e624e4ed545b30/server/src/app/dao/catalog/spec.rs#L101) etc. but could evolve) : from inception to production and end of life
 * to help having an overview of the specs accross all possible [catalogs](https://github.com/omallassi/apis-catalog/blob/master/server/config/local-template.toml) of your organisation, the volumes of endpoints, 
 * to help you understanding your domains, how they spread per layers and systems etc.
 * to help you monitoring the efficiency of your governance process (whatever it is)
