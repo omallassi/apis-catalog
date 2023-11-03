@@ -122,11 +122,11 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v2{
     }
 
     fn get_layer(&self) -> String {
-        "To Be Implemented".to_string()
+        crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string()
     }
 
     fn get_systems(&self) -> Vec<String> {
-        vec![ "To Be Implemented".to_string() ]
+        vec![ crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string() ]
     }
 
     fn get_domain(&self) -> String {
@@ -257,11 +257,11 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v1{
     }
 
     fn get_layer(&self) -> String {
-        "To Be Implemented".to_string()
+        crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string()
     }
 
     fn get_systems(&self) -> Vec<String> {
-        vec![ "To Be Implemented".to_string() ]
+        vec![ crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string() ]
     }
 
     fn get_domain(&self) -> String {
