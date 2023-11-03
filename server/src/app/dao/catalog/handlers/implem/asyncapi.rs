@@ -206,7 +206,15 @@ impl crate::app::dao::catalog::handlers::SpecHandler for v1{
     }
 
     fn get_audience(&self) -> String {
-        "To Be Implemented".to_string()
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let mut audience = "N/A";
+        if let Some(info) = spec_as_yaml.get("info") {
+            if let Some(val) = info.get("x-audience"){
+                audience = val.as_str().unwrap();
+            }
+        }
+
+        audience.to_string()
     }
 
     fn get_api_id(&self) -> String {
@@ -245,6 +253,7 @@ pub mod tests {
         assert_eq!(spec.get_description(), "");
         assert_eq!(spec.get_paths_len(), 4);
         assert_eq!(spec.get_title(), "Portfolio Management - Full Revaluation - Business action");
+        assert_eq!(spec.get_audience(), "corporate");
 
         let all_paths = spec.get_paths();
 

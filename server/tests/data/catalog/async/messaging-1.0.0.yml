@@ -2,6 +2,7 @@ asyncapi: "1.2.0"
 info:
   title: "Portfolio Management - Full Revaluation - Business action"
   version: "1.12"
+  x-audience: corporate
 topics:
   v1.portfolio-management.full-revaluation.business-action-request:
     publish:
