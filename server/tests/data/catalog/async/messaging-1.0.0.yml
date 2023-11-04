@@ -17,6 +17,9 @@ topics:
   v1.portfolio-management.full-revaluation.business-action-response-subscription:
     subscribe:
       $ref: "#/components/messages/business-action-response"
+    publish:
+      $ref: "#/components/messages/business-action-response"
+    x-murex-destination: "should not be considered"
 components:
   messages:
     business-action-request:

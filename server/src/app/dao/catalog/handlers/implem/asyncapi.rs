@@ -1,4 +1,3 @@
-use diesel::IntoSql;
 use log::warn;
 
 use crate::app::dao::catalog::handlers::{SpecHandler, Method, Path};
@@ -204,12 +203,16 @@ impl crate::app::dao::catalog::handlers::SpecHandler for V1{
                     match value.as_mapping(){
                         Some(ope) => {
                             for (key_1, value_1) in ope {
-                                let empty_val = serde_yaml::Value::String("".to_string());
-                                let method_name = key_1; 
-                                let method_description = value_1.get("description").unwrap_or( &empty_val );
-                                let method_summary = value_1.get("summary").unwrap_or( &empty_val );
+                                //to avoid having extension
+                                let async_methods = vec!["publish", "subscribe"];
+                                if async_methods.contains(&key_1.as_str().unwrap()) {
+                                    let empty_val = serde_yaml::Value::String("".to_string());
+                                    let method_name = key_1; 
+                                    let method_description = value_1.get("description").unwrap_or( &empty_val );
+                                    let method_summary = value_1.get("summary").unwrap_or( &empty_val );
 
-                                methods.push(Method { method: method_name.as_str().unwrap().to_string(), description: method_description.as_str().unwrap().to_string(), summary: method_summary.as_str().unwrap().to_string() })
+                                    methods.push(Method { method: method_name.as_str().unwrap().to_string(), description: method_description.as_str().unwrap().to_string(), summary: method_summary.as_str().unwrap().to_string() })
+                                }
                             }
                         },
                         None => {
@@ -293,6 +296,8 @@ pub mod tests {
 
         let all_paths = spec.get_paths();
 
+        assert_eq!(all_paths.len(), 4);
+
         assert_eq!("v1.portfolio-management.full-revaluation.business-action-request", all_paths.get(0).unwrap().path);
         assert_eq!("publish", all_paths.get(0).unwrap().methods.get(0).unwrap().method);
         assert_eq!("", all_paths.get(0).unwrap().methods.get(0).unwrap().description);
@@ -302,6 +307,9 @@ pub mod tests {
         assert_eq!("subscribe", all_paths.get(1).unwrap().methods.get(0).unwrap().method);
         assert_eq!("", all_paths.get(1).unwrap().methods.get(0).unwrap().description);
         assert_eq!("", all_paths.get(1).unwrap().methods.get(0).unwrap().summary);
+
+        assert_eq!("v1.portfolio-management.full-revaluation.business-action-response-subscription", all_paths.get(3).unwrap().path);
+        assert_eq!(2, all_paths.get(3).unwrap().methods.len());
 
         
     }
