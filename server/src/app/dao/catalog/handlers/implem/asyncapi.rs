@@ -119,13 +119,38 @@ impl crate::app::dao::catalog::handlers::SpecHandler for V2{
 
         api_id
     }
-
     fn get_layer(&self) -> String {
-        crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string()
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let mut layer = String::from( crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER );
+        if let Some(info) = spec_as_yaml.get("x-layer") {
+            layer = String::from(info.as_str().unwrap());
+        }
+
+        layer
     }
 
     fn get_systems(&self) -> Vec<String> {
-        vec![ crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string() ]
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let systems = match spec_as_yaml.get("x-systems"){
+            Some(systems) => {
+                let mut returned_systems: Vec<String> = Vec::new();
+                let list_of_systems = systems.as_sequence().unwrap();
+                for system in list_of_systems{
+                    //did not find a way to use into_iter().collect::Vec<String>>
+                    returned_systems.push( String::from(system.as_str().unwrap()) );
+                }
+    
+                returned_systems
+            },
+            None => {
+                let mut systems: Vec<String> = Vec::new();
+                systems.push(String::from(crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER));        
+    
+                systems
+            }
+          };
+    
+          systems
     }
 
     fn get_domain(&self) -> String {
@@ -260,11 +285,37 @@ impl crate::app::dao::catalog::handlers::SpecHandler for V1{
     }
 
     fn get_layer(&self) -> String {
-        crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string()
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let mut layer = String::from( crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER );
+        if let Some(info) = spec_as_yaml.get("x-layer") {
+            layer = String::from(info.as_str().unwrap());
+        }
+
+        layer
     }
 
     fn get_systems(&self) -> Vec<String> {
-        vec![ crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER.to_string() ]
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let systems = match spec_as_yaml.get("x-systems"){
+            Some(systems) => {
+                let mut returned_systems: Vec<String> = Vec::new();
+                let list_of_systems = systems.as_sequence().unwrap();
+                for system in list_of_systems{
+                    //did not find a way to use into_iter().collect::Vec<String>>
+                    returned_systems.push( String::from(system.as_str().unwrap()) );
+                }
+    
+                returned_systems
+            },
+            None => {
+                let mut systems: Vec<String> = Vec::new();
+                systems.push(String::from(crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER));        
+    
+                systems
+            }
+          };
+    
+          systems
     }
 
     fn get_domain(&self) -> String {
@@ -312,6 +363,70 @@ pub mod tests {
         assert_eq!(2, all_paths.get(3).unwrap().methods.len());
 
         
+    }
+
+    #[test] 
+    fn test_async_v1_default_layer_and_system() {
+        let spec = r#"
+            asyncapi: "1.2.0"
+            info:
+                title: "Portfolio Management - Full Revaluation - Business action"
+                version: "1.12"
+                x-audience: corporate
+                x-api-id: 9e9880d5-ecb3-49eb-939d-c450aafe1a8d
+            topics:
+                v1.portfolio-management.full-revaluation.business-action-request:
+                    publish:
+        "#;
+
+        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::V1::new(spec).unwrap();
+        assert_eq!(spec.get_systems().len(), 1);
+        assert_eq!(spec.get_systems().get(0).unwrap(), crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER);
+        assert_eq!(spec.get_layer(), crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER);
+    }
+
+    #[test] 
+    fn test_async_v1_specified_layer_and_system() {
+        let spec = r#"
+            asyncapi: "1.2.0"
+            info:
+                title: "Portfolio Management - Full Revaluation - Business action"
+                version: "1.12"
+                x-audience: corporate
+                x-api-id: 9e9880d5-ecb3-49eb-939d-c450aafe1a8d
+            x-systems:
+                - system1
+            topics:
+                v1.portfolio-management.full-revaluation.business-action-request:
+                    publish:
+        "#;
+
+        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::V1::new(spec).unwrap();
+        assert_eq!(spec.get_systems().len(), 1);
+        assert_eq!(spec.get_systems().get(0).unwrap(), "system1");
+        assert_eq!(spec.get_layer(), crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER);
+
+        let spec = r#"
+            asyncapi: "1.2.0"
+            info:
+                title: "Portfolio Management - Full Revaluation - Business action"
+                version: "1.12"
+                x-audience: corporate
+                x-api-id: 9e9880d5-ecb3-49eb-939d-c450aafe1a8d
+            x-systems:
+                - system1
+                - system2
+            x-layer: layer1
+            topics:
+                v1.portfolio-management.full-revaluation.business-action-request:
+                    publish:
+        "#;
+
+        let spec = crate::app::dao::catalog::handlers::implem::asyncapi::V1::new(spec).unwrap();
+        assert_eq!(spec.get_systems().len(), 2);
+        assert_eq!(spec.get_systems().get(0).unwrap(), "system1");
+        assert_eq!(spec.get_systems().get(1).unwrap(), "system2");
+        assert_eq!(spec.get_layer(), "layer1");
     }
 
     #[test]
