@@ -77,8 +77,6 @@ impl crate::app::dao::catalog::handlers::SpecHandler for V2{
                             println!("none")
                         }
                     };
-
-
                 }
 
             }
@@ -154,6 +152,9 @@ impl crate::app::dao::catalog::handlers::SpecHandler for V2{
     }
 
     fn get_domain(&self) -> String {
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+
+
         "To Be Implemented".to_string()
     }
 }
@@ -318,8 +319,24 @@ impl crate::app::dao::catalog::handlers::SpecHandler for V1{
           systems
     }
 
+    /// As for OpenAPI, in Async.V1, (the `servers` are specified)[https://github.com/asyncapi/spec/tree/1.0.0#A2SServers]. 
+    /// We use *for now¨ the first item to define the domain.
+    /// likely to evolve. 
     fn get_domain(&self) -> String {
-        "To Be Implemented".to_string()
+        let spec_as_yaml: serde_yaml::Value = serde_yaml::from_str(&self.spec).unwrap();
+        let mut domaain = String::from( "NA - servers attribute not specified" );
+        if let Some(servers) = spec_as_yaml.get("servers") {
+            let urls = servers.as_sequence().unwrap();
+            if let Some(val) = urls.get(0) {
+                let url = val.as_mapping().unwrap();
+                //only get the first one 
+                if let Some((_first_key, first_value)) = url.iter().next() {
+                    domaain = String::from( first_value.as_str().unwrap() );
+                }
+            }
+        }
+
+        domaain
     }
 }
 
@@ -383,6 +400,8 @@ pub mod tests {
         assert_eq!(spec.get_systems().len(), 1);
         assert_eq!(spec.get_systems().get(0).unwrap(), crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER);
         assert_eq!(spec.get_layer(), crate::app::dao::catalog::DEFAULT_SYSTEM_LAYER);
+
+        assert_eq!(spec.get_domain(), "NA - servers attribute not specified");
     }
 
     #[test] 
@@ -416,6 +435,8 @@ pub mod tests {
             x-systems:
                 - system1
                 - system2
+            servers:
+                - url: /v1/my-domain
             x-layer: layer1
             topics:
                 v1.portfolio-management.full-revaluation.business-action-request:
@@ -427,6 +448,9 @@ pub mod tests {
         assert_eq!(spec.get_systems().get(0).unwrap(), "system1");
         assert_eq!(spec.get_systems().get(1).unwrap(), "system2");
         assert_eq!(spec.get_layer(), "layer1");
+
+        assert_eq!(spec.get_domain(), "/v1/my-domain");
+       
     }
 
     #[test]
