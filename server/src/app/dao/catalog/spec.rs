@@ -86,14 +86,21 @@ impl SpecItem {
 
 pub fn from_str(path: std::string::String, catalog_id: String, catalog_dir: String, spec: &str) -> Result<SpecItem, String> {
 
-    let patterns = [
-        r"openapi:\W*3", 
-        r"asyncapi:\W*1",
-        r"asyncapi:\W*2",
-        r"syntax=.proto3",
-    ];
+    // let patterns = [
+    //     r"openapi:\W*3", 
+    //     r"asyncapi:\W*1",
+    //     r"asyncapi:\W*2",
+    //     r"syntax=.proto3",
+    // ];
 
-    let patterns_as_regexp: Vec<Regex> = patterns.iter().map(|pattern| Regex::new(pattern).expect("Invalid regex pattern")).collect();
+    //let patterns_as_regexp: Vec<Regex> = patterns.iter().map( |pattern| Regex::new(pattern).expect("Invalid regex pattern") ).collect();
+
+    let patterns_as_regexp = vec![
+        Regex::new(r"openapi:\W*3").expect("Invalid regex pattern"), 
+        Regex::new(r"asyncapi:\W*1").expect("Invalid regex pattern"), 
+        Regex::new(r"asyncapi:\W*2").expect("Invalid regex pattern"),
+        Regex::new(r"syntax=.proto3").expect("Invalid regex pattern")
+    ];
 
     let mut returned_val = Err( format!("Unable to parse content for path {:?}", path) );
     for (index, regex) in patterns_as_regexp.iter().enumerate() {

@@ -48,11 +48,20 @@ async fn index(_req: HttpRequest) -> Result<NamedFile, Error> {
 }
 
 
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
+
 /**
  *
  */
 #[actix_web::main]
 async fn main() {
+
+    #[cfg(feature = "dhat-heap")]
+    let _profiler = dhat::Profiler::new_heap();
+
     //TODO std::env::set_var("RUST_LOG", "actix_web=info");
     //env_logger::init();
 

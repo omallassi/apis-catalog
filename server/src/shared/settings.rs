@@ -1,6 +1,6 @@
 use std::env;
 extern crate log;
-use log::{info};
+use log::info;
 
 //extern crate env_logger;
 
